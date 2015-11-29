@@ -1,0 +1,17 @@
+[package]
+authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
+name = "ruma"
+version = "0.1.0"
+description = "A Matrix homeserver."
+license = "MIT"
+readme = "README.md"
+keywords = ["matrix", "matrix.org", "chat", "messaging", "ruma"]
+repository = "https://github.com/ruma/ruma"
+homepage = "https://github.com/ruma/ruma"
+documentation = "http://ruma.github.io/ruma/ruma"
+
+[dependencies]
+clap = "1.5.3"
+hyper = "0.7.0"
+iron = "0.2.5"
+router = "0.0.15"
