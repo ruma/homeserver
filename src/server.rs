@@ -1,22 +1,26 @@
 use hyper::server::Listening;
-use iron::Iron;
+use iron::{Handler, Iron};
 use iron::error::HttpResult;
+use mount::Mount;
 use router::Router;
 
-use api;
+use api::client::r0::authentication;
 
-pub struct Server<H> {
-    iron: Iron<H>,
+pub struct Server<T> where T: Handler {
+    iron: Iron<T>,
 }
 
-impl Server<Router> {
+impl Server<Mount> {
     pub fn new() -> Self {
         let mut router = Router::new();
 
-        router.post("/_matrix/client/api/v2_alpha/register", api::registration::register);
+        router.post("/register", authentication::register);
+
+        let mut mount = Mount::new();
+        mount.mount("/_matrix/client/r0/", router);
 
         Server {
-            iron: Iron::new(router)
+            iron: Iron::new(mount)
         }
     }
 

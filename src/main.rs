@@ -1,11 +1,10 @@
 extern crate clap;
 extern crate hyper;
 extern crate iron;
+extern crate mount;
 extern crate router;
 
-mod api {
-    pub mod registration;
-}
+mod api;
 mod server;
 
 use clap::{App, AppSettings, SubCommand};
