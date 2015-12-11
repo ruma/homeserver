@@ -1,11 +1,19 @@
+extern crate bodyparser;
 extern crate clap;
 extern crate hyper;
 extern crate iron;
 extern crate mount;
+extern crate persistent;
 extern crate router;
+extern crate rustc_serialize;
+extern crate serde;
+extern crate serde_json;
 
 mod api;
+mod error;
+mod middleware;
 mod server;
+mod repository;
 
 use clap::{App, AppSettings, SubCommand};
 
