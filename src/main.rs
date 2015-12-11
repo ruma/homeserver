@@ -9,7 +9,11 @@ extern crate rustc_serialize;
 extern crate serde;
 extern crate serde_json;
 
-mod api;
+mod api {
+    pub mod r0 {
+        pub mod authentication;
+    }
+}
 mod error;
 mod middleware;
 mod server;

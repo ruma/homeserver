@@ -6,7 +6,7 @@ use mount::Mount;
 use persistent::State;
 use router::Router;
 
-use api::client::r0::authentication::Register;
+use api::r0::authentication::Register;
 use repository::Repository;
 
 struct RepositoryState;
