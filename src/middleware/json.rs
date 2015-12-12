@@ -5,17 +5,17 @@ use rustc_serialize;
 
 use error::APIError;
 
-pub struct Json;
+pub struct JsonBody;
 
-impl Key for Json {
+impl Key for JsonBody {
     type Value = rustc_serialize::json::Json;
 }
 
-impl BeforeMiddleware for Json {
+impl BeforeMiddleware for JsonBody {
     fn before(&self, request: &mut Request) -> IronResult<()> {
         match request.get::<bodyparser::Json>() {
             Ok(Some(json)) => {
-                request.extensions.insert::<Json>(json);
+                request.extensions.insert::<JsonBody>(json);
 
                 Ok(())
             },
