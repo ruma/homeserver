@@ -5,7 +5,6 @@ extern crate iron;
 extern crate mount;
 extern crate persistent;
 extern crate router;
-extern crate rustc_serialize;
 extern crate serde;
 extern crate serde_json;
 

@@ -16,7 +16,7 @@ serde_codegen = "0.6.6"
 syntex = "0.22.0"
 
 [dependencies]
-bodyparser = "0.0.6"
+bodyparser = { path = "../body-parser" }
 clap = "1.5.3"
 hyper = "0.7.0"
 iron = "0.2.5"

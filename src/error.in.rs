@@ -27,6 +27,13 @@ impl APIError {
             error: "No JSON found in request body.".to_owned(),
         }
     }
+
+    pub fn wrong_content_type() -> Self {
+        APIError {
+            errcode: APIErrorCode::NotJson,
+            error: "Request's Content-Type header must be application/json.".to_owned(),
+        }
+    }
 }
 
 impl Display for APIError {

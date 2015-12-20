@@ -1,6 +1,6 @@
 use iron::{Chain, Handler, IronResult, Request, Response, status};
 
-use middleware::{InteractiveAuthentication, JsonBody};
+use middleware::{InteractiveAuthentication, JsonRequest};
 
 pub struct Register;
 
@@ -8,7 +8,7 @@ impl Register {
     pub fn chain() -> Chain {
         let mut chain = Chain::new(Register);
 
-        chain.link_before(JsonBody);
+        chain.link_before(JsonRequest);
         chain.link_before(InteractiveAuthentication);
 
         chain
