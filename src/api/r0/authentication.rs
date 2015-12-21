@@ -1,6 +1,7 @@
 use iron::{Chain, Handler, IronResult, Request, Response, status};
 
 use middleware::{InteractiveAuthentication, JsonRequest};
+use modifier::SerializableResponse;
 
 pub struct Register;
 
@@ -17,6 +18,6 @@ impl Register {
 
 impl Handler for Register {
     fn handle(&self, _request: &mut Request) -> IronResult<Response> {
-        Ok(Response::with((status::Ok, "Registered!")))
+        Ok(Response::with((status::Ok, SerializableResponse("Registered!".to_owned()))))
     }
 }

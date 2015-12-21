@@ -15,6 +15,7 @@ mod api {
 }
 mod error;
 mod middleware;
+mod modifier;
 mod server;
 mod repository;
 
