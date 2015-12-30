@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
-use std::io::Error as IoError;
 
 use iron::Response;
 use iron::modifier::Modifier;
@@ -91,8 +90,8 @@ impl CLIError {
     }
 }
 
-impl From<IoError> for CLIError {
-    fn from(error: IoError) -> CLIError {
+impl<E> From<E> for CLIError where E: Error {
+    fn from(error: E) -> CLIError {
         CLIError::new(error.description())
     }
 }

@@ -44,14 +44,23 @@ fn main() {
             let config = match Config::load("ruma.toml") {
                 Ok(config) => config,
                 Err(error) => {
-                    println!("Failed to connect to PostgreSQL: {}", error);
+                    println!("Failed to load configuration file: {}", error);
 
                     return;
                 }
             };
-            let server = Server::new(&config);
-            if let Err(error) = server.start() {
-                println!("{}", error);
+
+            match Server::new(&config) {
+                Ok(server) => {
+                    if let Err(error) = server.start() {
+                        println!("{}", error);
+                    }
+                },
+                Err(error) => {
+                    println!("Failed to create server: {}", error);
+
+                    return;
+                }
             }
         },
         _ => println!("{}", matches.usage()),

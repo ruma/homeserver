@@ -8,6 +8,7 @@ use router::Router;
 
 use api::r0::authentication::Register;
 use config::Config;
+use error::CLIError;
 use db::DB;
 
 pub struct Server<T> where T: Handler {
@@ -15,28 +16,22 @@ pub struct Server<T> where T: Handler {
 }
 
 impl Server<Mount> {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config) -> Result<Server<Mount>, CLIError> {
         let mut router = Router::new();
 
         router.post("/register", Register::chain());
 
         let mut chain = Chain::new(router);
 
-        chain.link_before(
-            Write::<DB>::one(
-                Connection::establish(&config.postgres_url).expect(
-                    "failed to establish connection to PostgreSQL"
-                )
-            )
-        );
+        chain.link_before(Write::<DB>::one(try!(Connection::establish(&config.postgres_url))));
 
         let mut mount = Mount::new();
 
         mount.mount("/_matrix/client/r0/", chain);
 
-        Server {
+        Ok(Server {
             iron: Iron::new(mount),
-        }
+        })
     }
 
     pub fn start(self) -> HttpResult<Listening> {
