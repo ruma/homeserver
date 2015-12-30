@@ -1,33 +1,34 @@
+use diesel::Connection;
 use hyper::server::Listening;
 use iron::{Chain, Handler, Iron};
 use iron::error::HttpResult;
-use iron::typemap::Key;
 use mount::Mount;
-use persistent::State;
+use persistent::Write;
 use router::Router;
 
 use api::r0::authentication::Register;
-use repository::Repository;
-
-struct RepositoryState;
-
-impl Key for RepositoryState {
-    type Value = Repository;
-}
+use config::Config;
+use db::DB;
 
 pub struct Server<T> where T: Handler {
     iron: Iron<T>,
 }
 
 impl Server<Mount> {
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
         let mut router = Router::new();
 
         router.post("/register", Register::chain());
 
         let mut chain = Chain::new(router);
 
-        chain.link_before(State::<RepositoryState>::one(Repository::new()));
+        chain.link_before(
+            Write::<DB>::one(
+                Connection::establish(&config.postgres_url).expect(
+                    "failed to establish connection to PostgreSQL"
+                )
+            )
+        );
 
         let mut mount = Mount::new();
 

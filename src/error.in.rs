@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
+use std::io::Error as IoError;
 
 use iron::Response;
 use iron::modifier::Modifier;
@@ -75,5 +76,29 @@ impl APIErrorCode {
             APIErrorCode::NotJson => Status::BadRequest,
             APIErrorCode::UnknownToken => Status::Unauthorized,
         }
+    }
+}
+
+pub struct CLIError {
+    error: String,
+}
+
+impl CLIError {
+    pub fn new<E>(error: E) -> CLIError where E: Into<String> {
+        CLIError {
+            error: error.into(),
+        }
+    }
+}
+
+impl From<IoError> for CLIError {
+    fn from(error: IoError) -> CLIError {
+        CLIError::new(error.description())
+    }
+}
+
+impl Display for CLIError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        write!(f, "{}", self.error)
     }
 }

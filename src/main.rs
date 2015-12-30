@@ -1,5 +1,6 @@
 extern crate bodyparser;
 extern crate clap;
+extern crate diesel;
 extern crate hyper;
 extern crate iron;
 extern crate mount;
@@ -7,20 +8,23 @@ extern crate persistent;
 extern crate router;
 extern crate serde;
 extern crate serde_json;
+extern crate toml;
 
 mod api {
     pub mod r0 {
         pub mod authentication;
     }
 }
+mod config;
+mod db;
 mod error;
 mod middleware;
 mod modifier;
 mod server;
-mod repository;
 
 use clap::{App, AppSettings, SubCommand};
 
+use config::Config;
 use server::Server;
 
 fn main() {
@@ -37,7 +41,15 @@ fn main() {
 
     match matches.subcommand() {
         ("start", Some(_matches)) => {
-            let server = Server::new();
+            let config = match Config::load("ruma.toml") {
+                Ok(config) => config,
+                Err(error) => {
+                    println!("Failed to connect to PostgreSQL: {}", error);
+
+                    return;
+                }
+            };
+            let server = Server::new(&config);
             if let Err(error) = server.start() {
                 println!("{}", error);
             }
