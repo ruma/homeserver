@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 
-use toml::decode_str;
+use serde_json::from_str;
 
 use error::CLIError;
 
@@ -16,9 +16,6 @@ impl Config {
         let mut contents = String::new();
         try!(file.read_to_string(&mut contents));
 
-        match decode_str(&contents) {
-            Some(config) => Ok(config),
-            None => Err(CLIError::new("failed to decode config file")),
-        }
+        from_str(&contents).map_err(|error| From::from(error))
     }
 }

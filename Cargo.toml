@@ -12,25 +12,21 @@ repository = "https://github.com/ruma/ruma"
 version = "0.1.0"
 
 [build-dependencies]
-serde_codegen = "0.6.7"
-syntex = "0.24.0"
+serde_codegen = "0.6.11"
+syntex = "0.26.0"
 
 [dependencies]
-clap = "1.5.3"
-diesel = "0.3.0"
-hyper = "0.7.0"
-iron = "0.2.5"
+clap = "1.5.5"
+diesel = "0.4.1"
+hyper = "0.7.2"
+iron = "0.2.6"
 mount = "0.0.9"
-persistent = "0.0.8"
-router = "0.0.15"
+persistent = "0.0.9"
+router = "0.1.0"
 rustc-serialize = "0.3.16"
-serde = "0.6.6"
+serde = "0.6.11"
 serde_json = "0.6.0"
 
 [dependencies.bodyparser]
-path = "../body-parser"
-
-[dependencies.toml]
-default-features = false
-features = ["serde"]
-version = "0.1.25"
+git = "https://github.com/jimmycuadra/body-parser"
+branch = "serde"

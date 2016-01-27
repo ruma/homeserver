@@ -8,7 +8,6 @@ extern crate persistent;
 extern crate router;
 extern crate serde;
 extern crate serde_json;
-extern crate toml;
 
 mod api {
     pub mod r0 {
@@ -41,7 +40,7 @@ fn main() {
 
     match matches.subcommand() {
         ("start", Some(_matches)) => {
-            let config = match Config::load("ruma.toml") {
+            let config = match Config::load("ruma.json") {
                 Ok(config) => config,
                 Err(error) => {
                     println!("Failed to load configuration file: {}", error);
