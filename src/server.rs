@@ -7,6 +7,7 @@ use persistent::Write;
 use router::Router;
 
 use api::r0::authentication::Register;
+use api::r0::versions::Versions;
 use config::Config;
 use error::CLIError;
 use db::DB;
@@ -25,8 +26,12 @@ impl Server<Mount> {
 
         chain.link_before(Write::<DB>::one(try!(Connection::establish(&config.postgres_url))));
 
+        let mut versions = Router::new();
+        versions.get("/versions", Versions::new(vec!["r0.0.1"]));
+
         let mut mount = Mount::new();
 
+        mount.mount("/_matrix/client/", versions);
         mount.mount("/_matrix/client/r0/", chain);
 
         Ok(Server {

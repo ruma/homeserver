@@ -12,6 +12,7 @@ extern crate serde_json;
 mod api {
     pub mod r0 {
         pub mod authentication;
+        pub mod versions;
     }
 }
 mod config;
