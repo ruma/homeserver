@@ -40,6 +40,8 @@ impl Server<Mount> {
     }
 
     pub fn start(self) -> HttpResult<Listening> {
+        info!("Starting Ruma server on localhost:3000.");
+
         self.iron.http("localhost:3000")
     }
 }

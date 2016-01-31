@@ -1,8 +1,10 @@
 extern crate bodyparser;
 extern crate clap;
 extern crate diesel;
+extern crate env_logger;
 extern crate hyper;
-extern crate iron;
+#[macro_use] extern crate iron;
+#[macro_use] extern crate log;
 extern crate mount;
 extern crate persistent;
 extern crate router;
@@ -28,6 +30,8 @@ use config::Config;
 use server::Server;
 
 fn main() {
+    env_logger::init().expect("Failed to initialize logger.");
+
     let matches = App::new("ruma")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A Matrix homeserver")
