@@ -30,5 +30,5 @@ serde = "0.6.11"
 serde_json = "0.6.0"
 
 [dependencies.bodyparser]
-git = "https://github.com/jimmycuadra/body-parser"
 branch = "serde"
+git = "https://github.com/jimmycuadra/body-parser"

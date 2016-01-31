@@ -14,21 +14,21 @@ pub struct APIError {
 }
 
 impl APIError {
-    pub fn bad_json(error: &Error) -> Self {
+    pub fn bad_json() -> APIError {
         APIError {
             errcode: APIErrorCode::BadJson,
-            error: error.description().to_owned(),
+            error: "Invalid or missing key-value pairs in JSON.".to_owned(),
         }
     }
 
-    pub fn not_json() -> Self {
+    pub fn not_json() -> APIError {
         APIError {
             errcode: APIErrorCode::NotJson,
             error: "No JSON found in request body.".to_owned(),
         }
     }
 
-    pub fn wrong_content_type() -> Self {
+    pub fn wrong_content_type() -> APIError {
         APIError {
             errcode: APIErrorCode::NotJson,
             error: "Request's Content-Type header must be application/json.".to_owned(),
@@ -68,7 +68,7 @@ pub enum APIErrorCode {
 impl APIErrorCode {
     pub fn status_code(&self) -> Status {
         match *self {
-            APIErrorCode::BadJson => Status::BadRequest,
+            APIErrorCode::BadJson => Status::UnprocessableEntity,
             APIErrorCode::Forbidden => Status::Forbidden,
             APIErrorCode::LimitExceeded => Status::TooManyRequests,
             APIErrorCode::NotFound => Status::NotFound,

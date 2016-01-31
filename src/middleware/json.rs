@@ -39,16 +39,11 @@ impl BeforeMiddleware for JsonRequest {
 
                 Ok(())
             },
-            Ok(None) => {
+            Ok(_) | Err(_) => {
                 let error = APIError::not_json();
 
                 Err(IronError::new(error.clone(), error))
             },
-            Err(err) => {
-                let error = APIError::bad_json(&err);
-
-                Err(IronError::new(error.clone(), error))
-           }
         }
     }
 }
