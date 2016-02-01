@@ -11,7 +11,6 @@ repository = "https://github.com/ruma/ruma"
 version = "0.1.0"
 
 [dependencies]
-bodyparser = { git = "https://github.com/jimmycuadra/body-parser", branch = "serde" }
 clap = "1.5.5"
 diesel = "0.4.1"
 env_logger = "0.3.2"
@@ -20,7 +19,14 @@ iron = "0.2.6"
 log = "0.3.5"
 mount = "0.0.9"
 persistent = "0.0.9"
+r2d2 = "0.6.3"
+r2d2-diesel = "0.4.0"
+rand = "0.3.13"
 router = "0.1.0"
 serde = "0.6.11"
 serde_json = "0.6.0"
 serde_macros = "0.6.11"
+
+[dependencies.bodyparser]
+branch = "serde"
+git = "https://github.com/jimmycuadra/body-parser"

@@ -1,4 +1,5 @@
 use bodyparser;
+use diesel::query_builder::insert;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 
 use error::APIError;
@@ -33,6 +34,7 @@ impl Handler for Register {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[insertable_into(users)]
 struct RegistrationRequest {
     bind_email: Option<bool>,
     password: String,

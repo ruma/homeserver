@@ -1,10 +1,11 @@
-use diesel::Connection;
 use diesel::migrations::run_pending_migrations;
 use hyper::server::Listening;
 use iron::{Chain, Handler, Iron};
 use iron::error::HttpResult;
 use mount::Mount;
 use persistent::Write;
+use r2d2::{Config as R2D2Config, Pool};
+use r2d2_diesel::ConnectionManager;
 use router::Router;
 
 use api::r0::authentication::Register;
@@ -26,7 +27,10 @@ impl Server<Mount> {
         let mut chain = Chain::new(router);
 
         debug!("Connecting to PostgreSQL.");
-        let connection = try!(Connection::establish(&config.postgres_url));
+        let r2d2_config = R2D2Config::default();
+        let connection_manager = ConnectionManager::new(&config.postgres_url[..]);
+        let connection_pool = try!(Pool::new(r2d2_config, connection_manager));
+        let connection = try!(connection_pool.get());
 
         debug!("Running pending migrations.");
         match run_pending_migrations(&connection) {
@@ -34,7 +38,7 @@ impl Server<Mount> {
             Err(error) => return Err(CLIError::new(format!("{:?}", error))),
         }
 
-        chain.link_before(Write::<DB>::one(connection));
+        chain.link_before(Write::<DB>::one(connection_pool));
 
         let mut versions = Router::new();
         versions.get("/versions", Versions::new(vec!["r0.0.1"]));
