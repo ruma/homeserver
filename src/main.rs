@@ -3,7 +3,7 @@
 
 extern crate bodyparser;
 extern crate clap;
-extern crate diesel;
+#[macro_use] extern crate diesel;
 extern crate env_logger;
 extern crate hyper;
 #[macro_use] extern crate iron;
@@ -26,6 +26,7 @@ mod error;
 mod middleware;
 mod modifier;
 mod server;
+mod tables;
 
 use clap::{App, AppSettings, SubCommand};
 

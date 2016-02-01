@@ -1,4 +1,5 @@
 use diesel::Connection;
+use diesel::migrations::run_pending_migrations;
 use hyper::server::Listening;
 use iron::{Chain, Handler, Iron};
 use iron::error::HttpResult;
@@ -24,7 +25,16 @@ impl Server<Mount> {
 
         let mut chain = Chain::new(router);
 
-        chain.link_before(Write::<DB>::one(try!(Connection::establish(&config.postgres_url))));
+        debug!("Connecting to PostgreSQL.");
+        let connection = try!(Connection::establish(&config.postgres_url));
+
+        debug!("Running pending migrations.");
+        match run_pending_migrations(&connection) {
+            Ok(_) => {},
+            Err(error) => return Err(CLIError::new(format!("{:?}", error))),
+        }
+
+        chain.link_before(Write::<DB>::one(connection));
 
         let mut versions = Router::new();
         versions.get("/versions", Versions::new(vec!["r0.0.1"]));
