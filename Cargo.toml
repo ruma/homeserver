@@ -1,6 +1,5 @@
 [package]
 authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
-build = "build.rs"
 description = "A Matrix homeserver."
 documentation = "http://ruma.github.io/ruma/ruma"
 homepage = "https://github.com/ruma/ruma"
@@ -11,11 +10,8 @@ readme = "README.md"
 repository = "https://github.com/ruma/ruma"
 version = "0.1.0"
 
-[build-dependencies]
-serde_codegen = "0.6.11"
-syntex = "0.26.0"
-
 [dependencies]
+bodyparser = { git = "https://github.com/jimmycuadra/body-parser", branch = "serde" }
 clap = "1.5.5"
 diesel = "0.4.1"
 env_logger = "0.3.2"
@@ -25,10 +21,6 @@ log = "0.3.5"
 mount = "0.0.9"
 persistent = "0.0.9"
 router = "0.1.0"
-rustc-serialize = "0.3.16"
 serde = "0.6.11"
 serde_json = "0.6.0"
-
-[dependencies.bodyparser]
-branch = "serde"
-git = "https://github.com/jimmycuadra/body-parser"
+serde_macros = "0.6.11"
