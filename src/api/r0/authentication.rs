@@ -1,6 +1,7 @@
 use bodyparser;
 use diesel::query_builder::insert;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
+use rand::{Rng, thread_rng};
 
 use error::APIError;
 use middleware::JsonRequest;
@@ -20,7 +21,7 @@ impl Register {
 
 impl Handler for Register {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
+        let mut registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
             Ok(Some(registration_request)) => registration_request,
             Ok(None) | Err(_) => {
                 let error = APIError::not_json();
@@ -29,6 +30,10 @@ impl Handler for Register {
             }
         };
 
+        if registration_request.username.is_none() {
+            registration_request.username = Some(thread_rng().gen_ascii_chars().take(12).collect());
+        }
+
         Ok(Response::with((status::Ok, SerializableResponse("Registered!".to_owned()))))
     }
 }
@@ -36,7 +41,7 @@ impl Handler for Register {
 #[derive(Clone, Debug, Deserialize)]
 #[insertable_into(users)]
 struct RegistrationRequest {
-    bind_email: Option<bool>,
-    password: String,
-    username: Option<String>,
+    pub bind_email: Option<bool>,
+    pub password: String,
+    pub username: Option<String>,
 }
