@@ -2,13 +2,17 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
 
-use iron::Response;
+use iron::{IronError, Response};
 use iron::modifier::Modifier;
 use iron::status::Status;
+use persistent::PersistentError;
+use r2d2::GetTimeout;
 use serde_json;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct APIError {
+    #[serde(skip_serializing)]
+    debug_message: Option<String>,
     errcode: APIErrorCode,
     error: String,
 }
@@ -16,6 +20,7 @@ pub struct APIError {
 impl APIError {
     pub fn bad_json() -> APIError {
         APIError {
+            debug_message: None,
             errcode: APIErrorCode::BadJson,
             error: "Invalid or missing key-value pairs in JSON.".to_owned(),
         }
@@ -23,6 +28,7 @@ impl APIError {
 
     pub fn not_json() -> APIError {
         APIError {
+            debug_message: None,
             errcode: APIErrorCode::NotJson,
             error: "No JSON found in request body.".to_owned(),
         }
@@ -30,8 +36,25 @@ impl APIError {
 
     pub fn wrong_content_type() -> APIError {
         APIError {
+            debug_message: None,
             errcode: APIErrorCode::NotJson,
             error: "Request's Content-Type header must be application/json.".to_owned(),
+        }
+    }
+
+    pub fn unknown<E>(error: &E) -> APIError where E: Error {
+        APIError {
+            debug_message: Some(error.description().to_owned()),
+            errcode: APIErrorCode::Unknown,
+            error: "An unknown server-side error occurred.".to_owned(),
+        }
+    }
+
+    pub fn unknown_from_string(message: String) -> APIError {
+        APIError {
+            debug_message: Some(message),
+            errcode: APIErrorCode::Unknown,
+            error: "An unknown server-side error occurred.".to_owned(),
         }
     }
 }
@@ -45,6 +68,24 @@ impl Display for APIError {
 impl Error for APIError {
     fn description(&self) -> &str {
         &self.error
+    }
+}
+
+impl From<PersistentError> for APIError {
+    fn from(error: PersistentError) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
+impl From<GetTimeout> for APIError {
+    fn from(error: GetTimeout) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
+impl From<APIError> for IronError {
+    fn from(error: APIError) -> IronError {
+        IronError::new(error.clone(), error)
     }
 }
 
@@ -62,6 +103,7 @@ pub enum APIErrorCode {
     LimitExceeded,
     NotFound,
     NotJson,
+    Unknown,
     UnknownToken,
 }
 
@@ -73,6 +115,7 @@ impl APIErrorCode {
             APIErrorCode::LimitExceeded => Status::TooManyRequests,
             APIErrorCode::NotFound => Status::NotFound,
             APIErrorCode::NotJson => Status::BadRequest,
+            APIErrorCode::Unknown => Status::InternalServerError,
             APIErrorCode::UnknownToken => Status::Unauthorized,
         }
     }

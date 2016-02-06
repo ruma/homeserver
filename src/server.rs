@@ -33,7 +33,7 @@ impl Server<Mount> {
         let connection = try!(connection_pool.get());
 
         debug!("Running pending migrations.");
-        match run_pending_migrations(&connection) {
+        match run_pending_migrations(&*connection) {
             Ok(_) => {},
             Err(error) => return Err(CLIError::new(format!("{:?}", error))),
         }

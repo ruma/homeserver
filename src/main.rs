@@ -1,10 +1,12 @@
 //! Ruma is a server for Matrix.org's client-server API.
 
 #![feature(custom_attribute, custom_derive, plugin)]
+#![plugin(diesel_codegen)]
 #![plugin(serde_macros)]
 
 extern crate bodyparser;
 extern crate clap;
+extern crate crypto;
 #[macro_use] extern crate diesel;
 extern crate env_logger;
 extern crate hyper;
@@ -19,6 +21,15 @@ extern crate router;
 extern crate serde;
 extern crate serde_json;
 
+table! {
+    users {
+        id -> Text,
+        password_hash -> Text,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
 mod api {
     pub mod r0 {
         pub mod authentication;
@@ -31,7 +42,6 @@ mod error;
 mod middleware;
 mod modifier;
 mod server;
-mod tables;
 
 use clap::{App, AppSettings, SubCommand};
 
