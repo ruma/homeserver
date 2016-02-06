@@ -4,6 +4,8 @@
 #![plugin(diesel_codegen)]
 #![plugin(serde_macros)]
 
+extern crate argon2rs;
+extern crate base64;
 extern crate bodyparser;
 extern crate clap;
 extern crate crypto;
@@ -21,15 +23,6 @@ extern crate router;
 extern crate serde;
 extern crate serde_json;
 
-table! {
-    users {
-        id -> Text,
-        password_hash -> Text,
-        created_at -> Timestamp,
-        updated_at -> Timestamp,
-    }
-}
-
 mod api {
     pub mod r0 {
         pub mod authentication;
@@ -41,7 +34,9 @@ mod db;
 mod error;
 mod middleware;
 mod modifier;
+mod schema;
 mod server;
+mod user;
 
 use clap::{App, AppSettings, SubCommand};
 

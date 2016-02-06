@@ -1,7 +1,10 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
+use std::string::FromUtf8Error;
 
+use base64::Base64Error;
+use diesel::result::Error as DieselError;
 use iron::{IronError, Response};
 use iron::modifier::Modifier;
 use iron::status::Status;
@@ -71,6 +74,18 @@ impl Error for APIError {
     }
 }
 
+impl From<Base64Error> for APIError {
+    fn from(error: Base64Error) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
+impl From<DieselError> for APIError {
+    fn from(error: DieselError) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
 impl From<PersistentError> for APIError {
     fn from(error: PersistentError) -> APIError {
         APIError::unknown(&error)
@@ -79,6 +94,12 @@ impl From<PersistentError> for APIError {
 
 impl From<GetTimeout> for APIError {
     fn from(error: GetTimeout) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
+impl From<FromUtf8Error> for APIError {
+    fn from(error: FromUtf8Error) -> APIError {
         APIError::unknown(&error)
     }
 }
