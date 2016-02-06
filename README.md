@@ -35,15 +35,13 @@ The file should contain a JSON object with the following key-value pairs:
 
 * `"postgres_url"` (string) - A [PostgreSQL connection string](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for Ruma's PostgreSQL database.
 
-Example:
+### Example
 
 ``` json
 {
   "postgres_url": "postgres://alice@localhost:5432/ruma"
 }
 ```
-
-For example
 
 ## Usage
 
