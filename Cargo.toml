@@ -1,9 +1,9 @@
 [package]
 authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
-description = "A Matrix homeserver."
+description = "A server for Matrix.org's client-server API."
 documentation = "http://ruma.github.io/ruma/ruma"
 homepage = "https://github.com/ruma/ruma"
-keywords = ["matrix", "matrix.org", "chat", "messaging", "ruma"]
+keywords = ["matrix", "chat", "messaging", "ruma"]
 license = "MIT"
 name = "ruma"
 readme = "README.md"
