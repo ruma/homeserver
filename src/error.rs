@@ -1,3 +1,5 @@
+//! Error types and conversions.
+
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
@@ -12,6 +14,7 @@ use persistent::PersistentError;
 use r2d2::GetTimeout;
 use serde_json;
 
+/// A client-facing error.
 #[derive(Clone, Debug, Serialize)]
 pub struct APIError {
     #[serde(skip_serializing)]
@@ -21,6 +24,7 @@ pub struct APIError {
 }
 
 impl APIError {
+    /// Create an error for invalid or incomplete JSON in request bodies.
     pub fn bad_json() -> APIError {
         APIError {
             debug_message: None,
@@ -29,6 +33,7 @@ impl APIError {
         }
     }
 
+    /// Create an error for requests without JSON bodies.
     pub fn not_json() -> APIError {
         APIError {
             debug_message: None,
@@ -37,6 +42,7 @@ impl APIError {
         }
     }
 
+    /// Create an error for requests that are not marked as containing JSON.
     pub fn wrong_content_type() -> APIError {
         APIError {
             debug_message: None,
@@ -45,6 +51,7 @@ impl APIError {
         }
     }
 
+    /// Create a generic error for anything not specifically covered by the Matrix spec.
     pub fn unknown<E>(error: &E) -> APIError where E: Error {
         APIError {
             debug_message: Some(error.description().to_owned()),
@@ -53,6 +60,9 @@ impl APIError {
         }
     }
 
+    /// Create a generic error for anything not specifically covered by the Matrix spec.
+    ///
+    /// Like `unknown`, but uses a `String` instead of an `Error` to create the value.
     pub fn unknown_from_string(message: String) -> APIError {
         APIError {
             debug_message: Some(message),
@@ -117,6 +127,7 @@ impl Modifier<Response> for APIError {
     }
 }
 
+/// The error code for a client-facing error.
 #[derive(Clone, Debug, Serialize)]
 pub enum APIErrorCode {
     BadJson,
@@ -142,11 +153,13 @@ impl APIErrorCode {
     }
 }
 
+/// An operator-facing error.
 pub struct CLIError {
     error: String,
 }
 
 impl CLIError {
+    /// Create a new `CLIError` from any `Error` type.
     pub fn new<E>(error: E) -> CLIError where E: Into<String> {
         CLIError {
             error: error.into(),

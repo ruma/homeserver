@@ -7,6 +7,7 @@ use serde_json;
 
 use error::APIError;
 
+/// Ensures that requests contain valid JSON and stores the parsed JSON in the Iron request.
 pub struct JsonRequest;
 
 impl Key for JsonRequest {

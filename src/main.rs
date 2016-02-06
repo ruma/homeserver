@@ -23,20 +23,22 @@ extern crate router;
 extern crate serde;
 extern crate serde_json;
 
-mod api {
+/// API endpoints as Iron handlers.
+pub mod api {
+    /// API endpoints for the 0.x.x version of the Matrix spec.
     pub mod r0 {
         pub mod authentication;
         pub mod versions;
     }
 }
-mod config;
-mod db;
-mod error;
-mod middleware;
-mod modifier;
-mod schema;
-mod server;
-mod user;
+pub mod config;
+pub mod db;
+pub mod error;
+pub mod middleware;
+pub mod modifier;
+pub mod schema;
+pub mod server;
+pub mod user;
 
 use clap::{App, AppSettings, SubCommand};
 

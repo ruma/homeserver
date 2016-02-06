@@ -1,3 +1,5 @@
+//! Iron middleware.
+
 mod authentication;
 mod json;
 

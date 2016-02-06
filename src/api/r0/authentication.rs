@@ -1,3 +1,5 @@
+//! Endpoints for user authentication.
+
 use std::error::Error;
 
 use base64::u8en;
@@ -30,9 +32,11 @@ struct RegistrationResponse {
     pub user_id: String,
 }
 
+/// The /register endpoint.
 pub struct Register;
 
 impl Register {
+    /// Create a `Register` with all necessary middleware.
     pub fn chain() -> Chain {
         let mut chain = Chain::new(Register);
 

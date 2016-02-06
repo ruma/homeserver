@@ -1,3 +1,4 @@
+//! Iron web server that serves the API.
 use diesel::migrations::run_pending_migrations;
 use hyper::server::Listening;
 use iron::{Chain, Handler, Iron};
@@ -14,11 +15,13 @@ use config::Config;
 use error::CLIError;
 use db::DB;
 
+/// Ruma's web server.
 pub struct Server<T> where T: Handler {
     iron: Iron<T>,
 }
 
 impl Server<Mount> {
+    /// Create a new `Server` from a `Config`.
     pub fn new(config: &Config) -> Result<Server<Mount>, CLIError> {
         let mut router = Router::new();
 
@@ -53,6 +56,7 @@ impl Server<Mount> {
         })
     }
 
+    /// Start the server and block the current thread until stopped or interrupted.
     pub fn start(self) -> HttpResult<Listening> {
         info!("Starting Ruma server on localhost:3000.");
 
