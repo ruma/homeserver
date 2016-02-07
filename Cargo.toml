@@ -11,6 +11,7 @@ repository = "https://github.com/ruma/ruma"
 version = "0.1.0"
 
 [dependencies]
+argon2rs = "0.2.1"
 base64 = "0.1.1"
 bodyparser = "0.1.0"
 clap = "1.5.5"
@@ -29,10 +30,6 @@ rust-crypto = "0.2.34"
 serde = "0.6.11"
 serde_json = "0.6.0"
 serde_macros = "0.6.11"
-
-[dependencies.argon2rs]
-branch = "default-kib"
-git = "https://github.com/jimmycuadra/argon2rs"
 
 [dependencies.diesel_codegen]
 default-features = false
