@@ -11,19 +11,19 @@ use router::Router;
 
 use api::r0::authentication::Register;
 use api::r0::versions::Versions;
-use config::Config;
+use config::FinalConfig;
 use error::CLIError;
 use db::DB;
 
 /// Ruma's web server.
 pub struct Server<'a, T> where T: Handler {
-    config: &'a Config,
+    config: &'a FinalConfig,
     iron: Iron<T>,
 }
 
 impl<'a> Server<'a, Mount> {
-    /// Create a new `Server` from a `Config`.
-    pub fn new(config: &Config) -> Result<Server<Mount>, CLIError> {
+    /// Create a new `Server` from a `FinalConfig`.
+    pub fn new(config: &FinalConfig) -> Result<Server<Mount>, CLIError> {
         let mut router = Router::new();
 
         router.post("/register", Register::chain());
@@ -60,14 +60,10 @@ impl<'a> Server<'a, Mount> {
 
     /// Start the server and block the current thread until stopped or interrupted.
     pub fn start(self) -> HttpResult<Listening> {
-        let bind = format!(
-            "{}:{}",
-            self.config.bind_address.as_ref().unwrap_or(&"127.0.0.1".to_owned()),
-            self.config.bind_port.as_ref().unwrap_or(&"3000".to_owned()),
-        );
+        let address = format!("{}:{}", self.config.bind_address, self.config.bind_port);
 
-        info!("Starting Ruma server on {}.", bind);
+        info!("Starting Ruma server on {}.", address);
 
-        self.iron.http(&bind[..])
+        self.iron.http(&address[..])
     }
 }

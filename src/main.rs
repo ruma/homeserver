@@ -42,7 +42,7 @@ pub mod user;
 
 use clap::{App, AppSettings, SubCommand};
 
-use config::Config;
+use config::load;
 use server::Server;
 
 fn main() {
@@ -61,7 +61,7 @@ fn main() {
 
     match matches.subcommand() {
         ("start", Some(_matches)) => {
-            let config = match Config::load("ruma.json") {
+            let config = match load("ruma.json") {
                 Ok(config) => config,
                 Err(error) => {
                     println!("Failed to load configuration file: {}", error);
