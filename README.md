@@ -31,17 +31,16 @@ Note that this documentation is for Ruma's internal Rust code, not the public-fa
 ## Configuration
 
 Ruma requires a configuration file named `ruma.json` in the directory `ruma` is executed from.
-The file should contain a JSON object with the following key-value pairs:
-
-* `"postgres_url"` (string) - A [PostgreSQL connection string](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for Ruma's PostgreSQL database.
-
-### Example
+The file should contain a JSON object that looks something like this:
 
 ``` json
 {
-  "postgres_url": "postgres://alice@localhost:5432/ruma"
+  "domain": "example.com",
+  "postgres_url": "postgres://jimmy@localhost:5432/postgres"
 }
 ```
+
+The complete schema for the configuration file is documented through the Rust API docs for `ruma::config::Config`.
 
 ## Usage
 

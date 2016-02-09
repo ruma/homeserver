@@ -16,11 +16,12 @@ use error::CLIError;
 use db::DB;
 
 /// Ruma's web server.
-pub struct Server<T> where T: Handler {
+pub struct Server<'a, T> where T: Handler {
+    config: &'a Config,
     iron: Iron<T>,
 }
 
-impl Server<Mount> {
+impl<'a> Server<'a, Mount> {
     /// Create a new `Server` from a `Config`.
     pub fn new(config: &Config) -> Result<Server<Mount>, CLIError> {
         let mut router = Router::new();
@@ -52,14 +53,21 @@ impl Server<Mount> {
         mount.mount("/_matrix/client/r0/", chain);
 
         Ok(Server {
+            config: config,
             iron: Iron::new(mount),
         })
     }
 
     /// Start the server and block the current thread until stopped or interrupted.
     pub fn start(self) -> HttpResult<Listening> {
-        info!("Starting Ruma server on localhost:3000.");
+        let bind = format!(
+            "{}:{}",
+            self.config.bind_address.as_ref().unwrap_or(&"127.0.0.1".to_owned()),
+            self.config.bind_port.as_ref().unwrap_or(&"3000".to_owned()),
+        );
 
-        self.iron.http("localhost:3000")
+        info!("Starting Ruma server on {}.", bind);
+
+        self.iron.http(&bind[..])
     }
 }

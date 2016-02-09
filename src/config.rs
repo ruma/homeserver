@@ -10,6 +10,12 @@ use error::CLIError;
 /// The user's configuration.
 #[derive(Deserialize)]
 pub struct Config {
+    /// The network address where the server should listen for connections. Defaults to 127.0.0.1.
+    pub bind_address: Option<String>,
+    /// The network port where the server should listen for connections. Defaults to 3000.
+    pub bind_port: Option<String>,
+    /// The DNS name where clients can reach the server. Used as the hostname portion of user IDs.
+    pub domain: String,
     /// A [PostgreSQL connection string](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for Ruma's PostgreSQL database.
     pub postgres_url: String,
 }
