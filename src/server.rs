@@ -4,7 +4,7 @@ use hyper::server::Listening;
 use iron::{Chain, Handler, Iron};
 use iron::error::HttpResult;
 use mount::Mount;
-use persistent::Write;
+use persistent::{Read, Write};
 use r2d2::{Config as R2D2Config, Pool};
 use r2d2_diesel::ConnectionManager;
 use router::Router;
@@ -42,6 +42,7 @@ impl<'a> Server<'a, Mount> {
             Err(error) => return Err(CLIError::new(format!("{:?}", error))),
         }
 
+        chain.link_before(Read::<FinalConfig>::one(config.clone()));
         chain.link_before(Write::<DB>::one(connection_pool));
 
         let mut versions = Router::new();

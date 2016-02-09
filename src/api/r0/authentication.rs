@@ -7,9 +7,10 @@ use argon2rs::argon2i_simple;
 use bodyparser;
 use diesel::{LoadDsl, insert};
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
-use persistent::Write;
+use persistent::{Read, Write};
 use rand::{Rng, thread_rng};
 
+use config::FinalConfig;
 use db::DB;
 use error::APIError;
 use middleware::JsonRequest;
@@ -82,12 +83,14 @@ impl Handler for Register {
             insert(&new_user).into(users::table).get_result(&*connection).map_err(APIError::from)
         );
 
+        let config = try!(request.get_ref::<Read<FinalConfig>>().map_err(APIError::from));
+
         Ok(
             Response::with((
                 status::Ok,
                 SerializableResponse(RegistrationResponse {
                     access_token: "fake access token".to_owned(),
-                    home_server: "fake home server".to_owned(),
+                    home_server: config.domain.clone(),
                     user_id: user.id,
                 })
             ))

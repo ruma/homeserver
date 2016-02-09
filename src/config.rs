@@ -3,6 +3,7 @@
 use std::fs::File;
 use std::io::Read;
 
+use iron::typemap::Key;
 use serde_json::from_str;
 
 use error::CLIError;
@@ -42,9 +43,14 @@ pub struct Config {
 /// The user's configuration with defaults for missing fields filled in.
 ///
 /// Refer to `Config` for the description of the fields.
+#[derive(Clone)]
 pub struct FinalConfig {
     pub bind_address: String,
     pub bind_port: String,
     pub domain: String,
     pub postgres_url: String,
+}
+
+impl Key for FinalConfig {
+    type Value = FinalConfig;
 }
