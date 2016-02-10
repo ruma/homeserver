@@ -18,7 +18,7 @@ Initial efforts on the Ruma codebase itself will be focused on the user registra
 ## Development
 
 Ruma currently requires the nightly version of Rust, primarily because it makes heavy use of the code generation features of [Diesel](https://github.com/sgrif/diesel) and [Serde](https://github.com/serde-rs/serde), which use compiler plugins, an unstable Rust feature.
-This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/), but is probably a very long way off from making it to stable Rust.
+This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/)), but is probably a very long way off from making it to stable Rust.
 
 To install a nightly version of Rust, head over to the [Rust Downloads](https://www.rust-lang.org/downloads.html) page.
 
