@@ -7,11 +7,11 @@ use argon2rs::argon2i_simple;
 use bodyparser;
 use diesel::{LoadDsl, insert};
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
-use persistent::{Read, Write};
+use persistent::Read;
 use rand::{Rng, thread_rng};
 
 use config::FinalConfig;
-use db::DB;
+use db::get_connection;
 use error::APIError;
 use middleware::JsonRequest;
 use modifier::SerializableResponse;
@@ -73,11 +73,7 @@ impl Handler for Register {
             ),
         };
 
-        let pool_mutex = try!(request.get::<Write<DB>>().map_err(APIError::from));
-        let pool = try!(pool_mutex.lock().map_err(|error| {
-            APIError::unknown_from_string(format!("{}", error))
-        }));
-        let connection = try!(pool.get().map_err(APIError::from));
+        let connection = try!(get_connection(request));
 
         let user: User = try!(
             insert(&new_user).into(users::table).get_result(&*connection).map_err(APIError::from)
