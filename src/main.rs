@@ -8,7 +8,6 @@ extern crate argon2rs;
 extern crate base64;
 extern crate bodyparser;
 extern crate clap;
-extern crate crypto;
 #[macro_use] extern crate diesel;
 extern crate env_logger;
 extern crate hyper;
@@ -32,6 +31,7 @@ pub mod api {
     }
 }
 pub mod config;
+pub mod crypto;
 pub mod db;
 pub mod error;
 pub mod middleware;

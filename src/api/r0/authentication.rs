@@ -2,14 +2,13 @@
 
 use std::error::Error;
 
-use base64::u8en;
-use argon2rs::argon2i_simple;
 use bodyparser;
 use diesel::{LoadDsl, insert};
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 use rand::{Rng, thread_rng};
 
 use config::get_config;
+use crypto::hash_password;
 use db::get_connection;
 use error::APIError;
 use middleware::JsonRequest;
@@ -61,15 +60,7 @@ impl Handler for Register {
             id: registration_request.username.unwrap_or(
                 thread_rng().gen_ascii_chars().take(12).collect()
             ),
-            password_hash: try!(
-                String::from_utf8(
-                    try!(
-                        u8en(
-                            &argon2i_simple(&registration_request.password, "extremely insecure")
-                        ).map_err(APIError::from)
-                    )
-                ).map_err(APIError::from)
-            ),
+            password_hash: try!(hash_password(&registration_request.password)),
         };
 
         let connection = try!(get_connection(request));

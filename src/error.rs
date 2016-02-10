@@ -3,6 +3,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
+use std::io::Error as IoError;
 use std::string::FromUtf8Error;
 
 use base64::Base64Error;
@@ -81,6 +82,12 @@ impl Display for APIError {
 impl Error for APIError {
     fn description(&self) -> &str {
         &self.error
+    }
+}
+
+impl From<IoError> for APIError {
+    fn from(error: IoError) -> APIError {
+        APIError::unknown(&error)
     }
 }
 
