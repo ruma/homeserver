@@ -2,11 +2,14 @@
 
 use std::fs::File;
 use std::io::Read;
+use std::sync::Arc;
 
+use iron::{Plugin, Request};
 use iron::typemap::Key;
+use persistent::Read as PersistentRead;
 use serde_json::from_str;
 
-use error::CLIError;
+use error::{APIError, CLIError};
 
 /// Load the user's configuration from a JSON file.
 pub fn load(path: &str) -> Result<FinalConfig, CLIError> {
@@ -25,6 +28,11 @@ pub fn load(path: &str) -> Result<FinalConfig, CLIError> {
         domain: config.domain,
         postgres_url: config.postgres_url,
     })
+}
+
+/// Extract the `FinalConfig` stored in the request.
+pub fn get_config(request: &mut Request) -> Result<Arc<FinalConfig>, APIError> {
+    request.get::<PersistentRead<FinalConfig>>().map_err(APIError::from)
 }
 
 /// The user's configuration.
