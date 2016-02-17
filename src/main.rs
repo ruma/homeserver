@@ -26,7 +26,7 @@ extern crate serde_json;
 pub mod api {
     /// API endpoints for the 0.x.x version of the Matrix spec.
     pub mod r0 {
-        pub mod authentication;
+        pub mod registration;
         pub mod versions;
     }
 }

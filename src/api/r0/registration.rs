@@ -1,4 +1,4 @@
-//! Endpoints for user authentication.
+//! Endpoints for user account registration.
 
 use std::error::Error;
 
