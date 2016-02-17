@@ -3,9 +3,7 @@
 use std::error::Error;
 
 use bodyparser;
-use diesel::{LoadDsl, insert};
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
-use rand::{Rng, thread_rng};
 
 use config::get_config;
 use crypto::hash_password;
@@ -13,8 +11,7 @@ use db::get_connection;
 use error::APIError;
 use middleware::JsonRequest;
 use modifier::SerializableResponse;
-use schema::users;
-use user::{NewUser, User};
+use user::{NewUser, User, generate_user_id, insert_user};
 
 
 #[derive(Clone, Debug, Deserialize)]
@@ -57,29 +54,22 @@ impl Handler for Register {
         };
 
         let new_user = NewUser {
-            id: registration_request.username.unwrap_or(
-                thread_rng().gen_ascii_chars().take(12).collect()
-            ),
+            id: registration_request.username.unwrap_or(generate_user_id()),
             password_hash: try!(hash_password(&registration_request.password)),
         };
 
         let connection = try!(get_connection(request));
 
-        let user: User = try!(
-            insert(&new_user).into(users::table).get_result(&*connection).map_err(APIError::from)
-        );
+        let user: User = try!(insert_user(&connection, &new_user));
 
         let config = try!(get_config(request));
 
-        Ok(
-            Response::with((
-                status::Ok,
-                SerializableResponse(RegistrationResponse {
-                    access_token: "fake access token".to_owned(),
-                    home_server: config.domain.clone(),
-                    user_id: user.id,
-                })
-            ))
-        )
+        let response = RegistrationResponse {
+            access_token: "fake access token".to_owned(),
+            home_server: config.domain.clone(),
+            user_id: user.id,
+        };
+
+        Ok(Response::with((status::Ok, SerializableResponse(response))))
     }
 }

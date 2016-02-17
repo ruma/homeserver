@@ -1,7 +1,11 @@
 //! Matrix users.
 
+use diesel::{LoadDsl, insert};
+use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use rand::{Rng, thread_rng};
 
+use error::APIError;
 use schema::users;
 
 /// A Matrix user.
@@ -25,4 +29,17 @@ pub struct NewUser {
     pub id: String,
     /// The user's password as plaintext.
     pub password_hash: String,
+}
+
+/// Insert a new user in the database.
+pub fn insert_user<'a>(
+    connection: &'a PgConnection,
+    new_user: &'a NewUser,
+) -> Result<User, APIError> {
+    insert(new_user).into(users::table).get_result(connection).map_err(APIError::from)
+}
+
+/// Generate a random user ID.
+pub fn generate_user_id() -> String {
+    thread_rng().gen_ascii_chars().take(12).collect()
 }
