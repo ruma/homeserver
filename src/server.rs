@@ -28,7 +28,7 @@ impl<'a> Server<'a, Mount> {
 
         router.post("/register", Register::chain());
 
-        let mut chain = Chain::new(router);
+        let mut r0 = Chain::new(router);
 
         debug!("Connecting to PostgreSQL.");
         let r2d2_config = R2D2Config::default();
@@ -42,8 +42,8 @@ impl<'a> Server<'a, Mount> {
             Err(error) => return Err(CLIError::new(format!("{:?}", error))),
         }
 
-        chain.link_before(Read::<FinalConfig>::one(config.clone()));
-        chain.link_before(Write::<DB>::one(connection_pool));
+        r0.link_before(Read::<FinalConfig>::one(config.clone()));
+        r0.link_before(Write::<DB>::one(connection_pool));
 
         let mut versions = Router::new();
         versions.get("/versions", Versions::new(vec!["r0.0.1"]));
@@ -51,7 +51,7 @@ impl<'a> Server<'a, Mount> {
         let mut mount = Mount::new();
 
         mount.mount("/_matrix/client/", versions);
-        mount.mount("/_matrix/client/r0/", chain);
+        mount.mount("/_matrix/client/r0/", r0);
 
         Ok(Server {
             config: config,
