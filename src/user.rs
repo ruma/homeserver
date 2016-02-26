@@ -1,10 +1,11 @@
 //! Matrix users.
 
-use diesel::{LoadDsl, insert};
+use diesel::{Connection, LoadDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
 
+use access_token::{AccessToken, create_access_token};
 use error::APIError;
 use schema::users;
 
@@ -35,8 +36,16 @@ pub struct NewUser {
 pub fn insert_user<'a>(
     connection: &'a PgConnection,
     new_user: &'a NewUser,
-) -> Result<User, APIError> {
-    insert(new_user).into(users::table).get_result(connection).map_err(APIError::from)
+) -> Result<(User, AccessToken), APIError> {
+    connection.transaction::<(User, AccessToken), APIError, _>(|| {
+        let user: User = try!(
+            insert(new_user).into(users::table).get_result(connection).map_err(APIError::from)
+        );
+
+        let access_token = try!(create_access_token(connection, &user.id[..]));
+
+        Ok((user, access_token))
+    }).map_err(APIError::from)
 }
 
 /// Generate a random user ID.

@@ -9,7 +9,7 @@ use db::get_connection;
 use error::APIError;
 use middleware::JsonRequest;
 use modifier::SerializableResponse;
-use user::{NewUser, User, generate_user_id, insert_user};
+use user::{NewUser, generate_user_id, insert_user};
 
 
 #[derive(Clone, Debug, Deserialize)]
@@ -58,12 +58,12 @@ impl Handler for Register {
 
         let connection = try!(get_connection(request));
 
-        let user: User = try!(insert_user(&connection, &new_user));
+        let (user, access_token) = try!(insert_user(&connection, &new_user));
 
         let config = try!(get_config(request));
 
         let response = RegistrationResponse {
-            access_token: "fake access token".to_owned(),
+            access_token: access_token.value,
             home_server: config.domain.clone(),
             user_id: user.id,
         };

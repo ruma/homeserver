@@ -22,6 +22,7 @@ extern crate router;
 extern crate serde;
 extern crate serde_json;
 
+pub mod access_token;
 /// API endpoints as Iron handlers.
 pub mod api {
     /// API endpoints for the 0.x.x version of the Matrix spec.

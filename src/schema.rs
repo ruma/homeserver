@@ -3,6 +3,15 @@
 //! Each child module represents a table in the database.
 
 table! {
+    access_tokens {
+        id -> BigSerial,
+        user_id -> Text,
+        value -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
     users {
         id -> Text,
         password_hash -> Text,

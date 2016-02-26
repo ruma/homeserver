@@ -7,7 +7,7 @@ use std::io::Error as IoError;
 use std::string::FromUtf8Error;
 
 use base64::Base64Error;
-use diesel::result::Error as DieselError;
+use diesel::result::{TransactionError, Error as DieselError};
 use iron::{IronError, Response};
 use iron::modifier::Modifier;
 use iron::status::Status;
@@ -99,6 +99,12 @@ impl From<Base64Error> for APIError {
 
 impl From<DieselError> for APIError {
     fn from(error: DieselError) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
+impl<T> From<TransactionError<T>> for APIError where T: Error {
+    fn from(error: TransactionError<T>) -> APIError {
         APIError::unknown(&error)
     }
 }
