@@ -1,7 +1,5 @@
 //! Endpoints for user account registration.
 
-use std::error::Error;
-
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 

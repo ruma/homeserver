@@ -1,2 +1,3 @@
-ruma.json
-target
+/.cargo
+/ruma.json
+/target
