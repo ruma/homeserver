@@ -28,7 +28,7 @@ pub fn load(path: &str) -> Result<FinalConfig, CLIError> {
             32 => bytes,
             _ => return Err(CLIError::new( "macaroon_secret_key must be 32 bytes.")),
         },
-        Err(error) => return Err(CLIError::new(
+        Err(_) => return Err(CLIError::new(
             "macaroon_secret_key must be valid Base64."
         )),
     };
