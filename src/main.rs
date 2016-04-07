@@ -31,6 +31,7 @@ pub mod api {
         pub mod versions;
     }
 }
+pub mod authentication;
 pub mod config;
 pub mod crypto;
 pub mod db;

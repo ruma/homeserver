@@ -3,11 +3,12 @@
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 
+use authentication::{AuthType, EmailAuthType, Flow};
 use config::get_config;
 use crypto::hash_password;
 use db::get_connection;
 use error::APIError;
-use middleware::JsonRequest;
+use middleware::{InteractiveAuthentication, JsonRequest};
 use modifier::SerializableResponse;
 use user::{NewUser, generate_user_id, insert_user};
 
@@ -35,6 +36,17 @@ impl Register {
         let mut chain = Chain::new(Register);
 
         chain.link_before(JsonRequest);
+        chain.link_before(
+            InteractiveAuthentication::new(
+                vec![
+                    Flow::new(
+                        vec![
+                            AuthType::Email(EmailAuthType::Identity),
+                        ]
+                    )
+                ]
+            )
+        );
 
         chain
     }
