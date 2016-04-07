@@ -57,10 +57,10 @@ FLAGS:
 
 SUBCOMMANDS:
     help     Prints this message
-    start    Starts the Ruma server
+    run      Starts the Ruma server
 ```
 
-Before you run `ruma start`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically manage the schema of the PostgreSQL database, but it will not create the database itself. You are responsible for providing Ruma with a valid PostgreSQL role and database that it can use.
+Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically manage the schema of the PostgreSQL database, but it will not create the database itself. You are responsible for providing Ruma with a valid PostgreSQL role and database that it can use.
 
 ## License
 

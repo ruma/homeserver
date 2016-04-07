@@ -59,8 +59,8 @@ impl<'a> Server<'a, Mount> {
         })
     }
 
-    /// Start the server and block the current thread until stopped or interrupted.
-    pub fn start(self) -> HttpResult<Listening> {
+    /// Run the server and block the current thread until stopped or interrupted.
+    pub fn run(self) -> HttpResult<Listening> {
         let address = format!("{}:{}", self.config.bind_address, self.config.bind_port);
 
         info!("Starting Ruma server on {}.", address);

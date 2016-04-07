@@ -55,13 +55,13 @@ fn main() {
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            SubCommand::with_name("start")
-                .about("Starts the Ruma server")
+            SubCommand::with_name("run")
+                .about("Runs the Ruma server")
         )
         .get_matches();
 
     match matches.subcommand() {
-        ("start", Some(_matches)) => {
+        ("run", Some(_matches)) => {
             let config = match load("ruma.json") {
                 Ok(config) => config,
                 Err(error) => {
@@ -73,7 +73,7 @@ fn main() {
 
             match Server::new(&config) {
                 Ok(server) => {
-                    if let Err(error) = server.start() {
+                    if let Err(error) = server.run() {
                         println!("{}", error);
                     }
                 },
