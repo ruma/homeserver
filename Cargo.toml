@@ -34,3 +34,6 @@ serde_macros = "0.7.2"
 default-features = false
 features = ["postgres"]
 version = "0.6.0"
+
+[dev-dependencies]
+clippy = "0.0.63"

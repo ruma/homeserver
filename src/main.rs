@@ -3,6 +3,7 @@
 #![feature(custom_attribute, custom_derive, plugin)]
 #![plugin(diesel_codegen)]
 #![plugin(serde_macros)]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate argon2rs;
 extern crate base64;
