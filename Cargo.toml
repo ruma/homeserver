@@ -37,3 +37,11 @@ version = "0.6.0"
 
 [dev-dependencies]
 clippy = "0.0.63"
+
+[[bin]]
+name = "ruma"
+test = false
+
+[lib]
+doctest = false
+test = false
