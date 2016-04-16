@@ -1,5 +1,5 @@
 //! Iron web server that serves the API.
-use diesel::migrations::run_pending_migrations;
+use diesel::migrations::{run_pending_migrations, setup_database};
 use hyper::server::Listening;
 use iron::{Chain, Handler, Iron};
 use iron::error::HttpResult;
@@ -36,10 +36,14 @@ impl<'a> Server<'a, Mount> {
         let connection_pool = try!(Pool::new(r2d2_config, connection_manager));
         let connection = try!(connection_pool.get());
 
-        debug!("Running pending migrations.");
-        match run_pending_migrations(&*connection) {
-            Ok(_) => {},
-            Err(error) => return Err(CLIError::new(format!("{:?}", error))),
+        debug!("Setting up database.");
+        if let Err(error) =  setup_database(&*connection) {
+            return Err(CLIError::new(format!("{:?}", error)));
+        }
+
+        debug!("Running pending database migrations.");
+        if let Err(error) = run_pending_migrations(&*connection) {
+            return Err(CLIError::new(format!("{:?}", error)));
         }
 
         r0.link_before(Read::<FinalConfig>::one(config.clone()));
