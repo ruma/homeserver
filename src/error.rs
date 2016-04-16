@@ -18,8 +18,6 @@ use serde_json;
 /// A client-facing error.
 #[derive(Clone, Debug, Serialize)]
 pub struct APIError {
-    #[serde(skip_serializing)]
-    debug_message: Option<String>,
     errcode: APIErrorCode,
     error: String,
 }
@@ -28,7 +26,6 @@ impl APIError {
     /// Create an error for invalid or incomplete JSON in request bodies.
     pub fn bad_json() -> APIError {
         APIError {
-            debug_message: None,
             errcode: APIErrorCode::BadJson,
             error: "Invalid or missing key-value pairs in JSON.".to_owned(),
         }
@@ -37,7 +34,6 @@ impl APIError {
     /// Create an error for requests without JSON bodies.
     pub fn not_json() -> APIError {
         APIError {
-            debug_message: None,
             errcode: APIErrorCode::NotJson,
             error: "No JSON found in request body.".to_owned(),
         }
@@ -46,7 +42,6 @@ impl APIError {
     /// Create an error for requests that are not marked as containing JSON.
     pub fn wrong_content_type() -> APIError {
         APIError {
-            debug_message: None,
             errcode: APIErrorCode::NotJson,
             error: "Request's Content-Type header must be application/json.".to_owned(),
         }
@@ -54,8 +49,9 @@ impl APIError {
 
     /// Create a generic error for anything not specifically covered by the Matrix spec.
     pub fn unknown<E>(error: &E) -> APIError where E: Error {
+        debug!("APIError::unknown: {}", error);
+
         APIError {
-            debug_message: Some(error.description().to_owned()),
             errcode: APIErrorCode::Unknown,
             error: "An unknown server-side error occurred.".to_owned(),
         }
@@ -65,8 +61,9 @@ impl APIError {
     ///
     /// Like `unknown`, but uses a `String` instead of an `Error` to create the value.
     pub fn unknown_from_string(message: String) -> APIError {
+        debug!("APIError::unknown_from_string: {}", message);
+
         APIError {
-            debug_message: Some(message),
             errcode: APIErrorCode::Unknown,
             error: "An unknown server-side error occurred.".to_owned(),
         }
