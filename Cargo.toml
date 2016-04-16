@@ -45,3 +45,7 @@ test = false
 [lib]
 doctest = false
 test = false
+
+[[test]]
+name = "integration"
+path = "tests/main.rs"

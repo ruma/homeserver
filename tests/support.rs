@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::env::var;
 use std::fmt::Display;
 use std::process::{Command, Stdio};
 use std::sync::{Once, ONCE_INIT};
@@ -9,6 +10,7 @@ use env_logger::LogBuilder;
 use hyper::client::{Body, Client, IntoUrl};
 use hyper::header::{ContentType, Headers};
 use hyper::status::StatusCode;
+use serde_json::{Value, from_str};
 
 use ruma::config::FinalConfig;
 use ruma::server::Server;
@@ -27,6 +29,7 @@ pub struct Test {
 pub struct Response {
     pub body: String,
     pub headers: Headers,
+    pub json: Value,
     pub status: StatusCode,
 }
 
@@ -35,7 +38,10 @@ impl Test {
         START.call_once(|| {
             let mut builder = LogBuilder::new();
 
-            builder.parse("ruma=trace,diesel=trace");
+            match var("RUST_LOG") {
+                Ok(directives) => { builder.parse(&directives); }
+                Err(_) => { builder.parse("ruma=error"); }
+            }
 
             builder.init().expect("Failed to initialize logger");
         });
@@ -138,9 +144,15 @@ impl Test {
                     panic!("Failed to read HTTP response body: {}", error);
                 }
 
+                let json = match from_str(&body) {
+                    Ok(json) => json,
+                    Err(error) => panic!("Failed to parse response as JSON: {}", error),
+                };
+
                 Response {
                     body: body,
                     headers: response.headers.clone(),
+                    json: json,
                     status: response.status.clone(),
                 }
             }
