@@ -28,6 +28,13 @@ You can also build and run Ruma in one step with `cargo run`.
 To generate API documentation, run `cargo doc`. Then open `target/doc/ruma/index.html` in your browser.
 Note that this documentation is for Ruma's internal Rust code, not the public-facing Matrix API.
 
+## Testing
+
+Ruma includes an integration test suite.
+The test suite relies on Docker for ephemeral PostgreSQL databases.
+To install Docker, see the installation instructions for [OS X](https://docs.docker.com/mac/), [Linux](https://docs.docker.com/linux/), or [Windows](https://docs.docker.com/windows/).
+Once Docker is installed, run `cargo test` to run the test suite.
+
 ## Configuration
 
 Ruma requires a configuration file named `ruma.json` in the directory `ruma` is executed from.
@@ -57,10 +64,10 @@ FLAGS:
 
 SUBCOMMANDS:
     help     Prints this message
-    run      Starts the Ruma server
+    run      Runs the Ruma server
 ```
 
-Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically manage the schema of the PostgreSQL database, but it will not create the database itself. You are responsible for providing Ruma with a valid PostgreSQL role and database that it can use.
+Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically create the database (if it doesn't already exist) and manage the database schema. You are responsible for providing Ruma with a valid PostgreSQL server URL and role that can perform these operations.
 
 ## License
 
