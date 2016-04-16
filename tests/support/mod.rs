@@ -1,17 +1,24 @@
+use std::fmt::Display;
 use std::process::{Command, Stdio};
 use std::sync::mpsc::channel;
 use std::thread::{Builder, JoinHandle};
 
+use hyper::client::{Body, Client, IntoUrl, Response};
+use hyper::header::ContentType;
+
 use ruma::config::FinalConfig;
 use ruma::server::Server;
 
-pub struct RumaTest {
+pub struct Test {
+    client: Client,
     postgres_container_name: String,
+    // Must keep a reference to this so the thread stays alive until the struct is dropped.
+    #[allow(dead_code)]
     server_thread: JoinHandle<()>,
     server_thread_port: String,
 }
 
-impl RumaTest {
+impl Test {
     pub fn new() -> Self {
         let docker_postgres = Command::new("docker").args(&[
             "run",
@@ -69,19 +76,28 @@ impl RumaTest {
 
         let server_thread_port = rx.recv().expect("Failed to receive Iron server port");
 
-        RumaTest {
+        Test {
+            client: Client::new(),
             postgres_container_name: postgres_container_name,
             server_thread: server_thread,
             server_thread_port: server_thread_port,
         }
     }
 
-    pub fn base_url(&self) -> String {
-        format!("http://ruma.test:{}", self.server_thread_port)
+    pub fn post<'a, U, B>(&'a self, url: U, body: B) -> Response
+    where U: Display + IntoUrl, B: Into<Body<'a>> {
+        let uri = format!("http://127.0.0.1:{}{}", self.server_thread_port, url);
+
+        println!("{}", uri);
+
+        match self.client.post(&uri).header(ContentType::json()).body(body).send() {
+            Ok(response) => response,
+            Err(error)  => panic!("{}", error),
+        }
     }
 }
 
-impl Drop for RumaTest {
+impl Drop for Test {
     fn drop(&mut self) {
         Command::new("docker").args(&[
             "rm",
