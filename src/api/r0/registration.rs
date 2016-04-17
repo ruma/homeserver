@@ -2,6 +2,7 @@
 
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
+use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
 use authentication::{AuthType, EmailAuthType, Flow};
 use config::get_config;
@@ -12,12 +13,18 @@ use middleware::{InteractiveAuthentication, JsonRequest};
 use modifier::SerializableResponse;
 use user::{NewUser, generate_user_id, insert_user};
 
-
 #[derive(Clone, Debug, Deserialize)]
 struct RegistrationRequest {
     pub bind_email: Option<bool>,
+    pub kind: Option<RegistrationKind>,
     pub password: String,
     pub username: Option<String>,
+}
+
+#[derive(Copy, Clone, Debug)]
+enum RegistrationKind {
+    Guest,
+    User,
 }
 
 #[derive(Debug, Serialize)]
@@ -29,6 +36,29 @@ struct RegistrationResponse {
 
 /// The /register endpoint.
 pub struct Register;
+
+impl Deserialize for RegistrationKind {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error> where D: Deserializer {
+        struct RegistrationKindVisitor;
+
+        impl Visitor for RegistrationKindVisitor {
+            type Value = RegistrationKind;
+
+            fn visit_str<E>(&mut self, value: &str) -> Result<RegistrationKind, E>
+            where E: SerdeError {
+                match value {
+                    "guest" => Ok(RegistrationKind::Guest),
+                    "user" => Ok(RegistrationKind::User),
+                    _ => Err(SerdeError::custom(
+                        r#"Parameter "kind" must be "guest" or "user""#
+                    )),
+                }
+            }
+        }
+
+        deserializer.deserialize(RegistrationKindVisitor)
+    }
+}
 
 impl Register {
     /// Create a `Register` with all necessary middleware.
@@ -62,6 +92,17 @@ impl Handler for Register {
                 return Err(IronError::new(error.clone(), error));
             }
         };
+
+        if let Some(kind) = registration_request.kind {
+            match kind {
+                RegistrationKind::Guest => {
+                    let error = APIError::guest_forbidden();
+
+                    return Err(IronError::new(error.clone(), error));
+                }
+                _ => {},
+            }
+        }
 
         let new_user = NewUser {
             id: registration_request.username.unwrap_or(generate_user_id()),

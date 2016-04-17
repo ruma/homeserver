@@ -13,6 +13,7 @@ use iron::modifier::Modifier;
 use iron::status::Status;
 use persistent::PersistentError;
 use r2d2::GetTimeout;
+use serde::ser::{Serialize, Serializer};
 use serde_json;
 
 /// A client-facing error.
@@ -28,6 +29,14 @@ impl APIError {
         APIError {
             errcode: APIErrorCode::BadJson,
             error: "Invalid or missing key-value pairs in JSON.".to_owned(),
+        }
+    }
+
+    /// Create an error for endpoints where guest accounts are not supported.
+    pub fn guest_forbidden() -> APIError {
+        APIError {
+            errcode: APIErrorCode::GuestAccessForbidden,
+            error: "Guest accounts are forbidden.".to_string(),
         }
     }
 
@@ -138,10 +147,11 @@ impl Modifier<Response> for APIError {
 }
 
 /// The error code for a client-facing error.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub enum APIErrorCode {
     BadJson,
     Forbidden,
+    GuestAccessForbidden,
     LimitExceeded,
     NotFound,
     NotJson,
@@ -154,12 +164,30 @@ impl APIErrorCode {
         match *self {
             APIErrorCode::BadJson => Status::UnprocessableEntity,
             APIErrorCode::Forbidden => Status::Forbidden,
+            APIErrorCode::GuestAccessForbidden => Status::Forbidden,
             APIErrorCode::LimitExceeded => Status::TooManyRequests,
             APIErrorCode::NotFound => Status::NotFound,
             APIErrorCode::NotJson => Status::BadRequest,
             APIErrorCode::Unknown => Status::InternalServerError,
             APIErrorCode::UnknownToken => Status::Unauthorized,
         }
+    }
+}
+
+impl Serialize for APIErrorCode {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error> where S: Serializer {
+        let value = match *self {
+            APIErrorCode::BadJson => "M_BAD_JSON",
+            APIErrorCode::Forbidden => "M_FORBIDDEN",
+            APIErrorCode::GuestAccessForbidden => "M_GUEST_ACCESS_FORBIDDEN",
+            APIErrorCode::LimitExceeded => "M_LIMIT_EXCEEDED",
+            APIErrorCode::NotFound => "M_NOT_FOUND",
+            APIErrorCode::NotJson => "M_NOT_JSON",
+            APIErrorCode::Unknown => "M_UNKNOWN",
+            APIErrorCode::UnknownToken => "M_UNKNOWN_TOKEN",
+        };
+
+        serializer.serialize_str(value)
     }
 }
 
