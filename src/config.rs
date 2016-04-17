@@ -34,8 +34,8 @@ pub fn load(path: &str) -> Result<FinalConfig, CLIError> {
     };
 
     Ok(FinalConfig {
-        bind_address: config.bind_address.unwrap_or("127.0.0.1".to_owned()),
-        bind_port: config.bind_port.unwrap_or("3000".to_owned()),
+        bind_address: config.bind_address.unwrap_or("127.0.0.1".to_string()),
+        bind_port: config.bind_port.unwrap_or("3000".to_string()),
         domain: config.domain,
         macaroon_secret_key: macaroon_secret_key,
         postgres_url: config.postgres_url,

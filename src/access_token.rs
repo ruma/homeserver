@@ -41,7 +41,7 @@ pub fn create_access_token(
     macaroon_secret_key: &Vec<u8>,
 ) -> Result<AccessToken, APIError> {
     let new_access_token = NewAccessToken {
-        user_id: user_id.to_owned(),
+        user_id: user_id.to_string(),
         value: try!(create_macaroon(macaroon_secret_key, user_id)),
     };
 

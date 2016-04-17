@@ -28,7 +28,7 @@ impl APIError {
     pub fn bad_json() -> APIError {
         APIError {
             errcode: APIErrorCode::BadJson,
-            error: "Invalid or missing key-value pairs in JSON.".to_owned(),
+            error: "Invalid or missing key-value pairs in JSON.".to_string(),
         }
     }
 
@@ -44,7 +44,7 @@ impl APIError {
     pub fn not_json() -> APIError {
         APIError {
             errcode: APIErrorCode::NotJson,
-            error: "No JSON found in request body.".to_owned(),
+            error: "No JSON found in request body.".to_string(),
         }
     }
 
@@ -52,7 +52,7 @@ impl APIError {
     pub fn wrong_content_type() -> APIError {
         APIError {
             errcode: APIErrorCode::NotJson,
-            error: "Request's Content-Type header must be application/json.".to_owned(),
+            error: "Request's Content-Type header must be application/json.".to_string(),
         }
     }
 
@@ -62,7 +62,7 @@ impl APIError {
 
         APIError {
             errcode: APIErrorCode::Unknown,
-            error: "An unknown server-side error occurred.".to_owned(),
+            error: "An unknown server-side error occurred.".to_string(),
         }
     }
 
@@ -74,7 +74,7 @@ impl APIError {
 
         APIError {
             errcode: APIErrorCode::Unknown,
-            error: "An unknown server-side error occurred.".to_owned(),
+            error: "An unknown server-side error occurred.".to_string(),
         }
     }
 }
