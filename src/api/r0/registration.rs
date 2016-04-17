@@ -69,10 +69,11 @@ impl Handler for Register {
         };
 
         let connection = try!(get_connection(request));
-
-        let (user, access_token) = try!(insert_user(&connection, &new_user));
-
         let config = try!(get_config(request));
+
+        let (user, access_token) = try!(
+            insert_user(&connection, &new_user, &config.macaroon_secret_key)
+        );
 
         let response = RegistrationResponse {
             access_token: access_token.value,

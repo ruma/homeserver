@@ -33,16 +33,17 @@ pub struct NewUser {
 }
 
 /// Insert a new user in the database.
-pub fn insert_user<'a>(
-    connection: &'a PgConnection,
-    new_user: &'a NewUser,
+pub fn insert_user(
+    connection: &PgConnection,
+    new_user: &NewUser,
+    macaroon_secret_key: &Vec<u8>,
 ) -> Result<(User, AccessToken), APIError> {
     connection.transaction::<(User, AccessToken), APIError, _>(|| {
         let user: User = try!(
             insert(new_user).into(users::table).get_result(connection).map_err(APIError::from)
         );
 
-        let access_token = try!(create_access_token(connection, &user.id[..]));
+        let access_token = try!(create_access_token(connection, &user.id[..], macaroon_secret_key));
 
         Ok((user, access_token))
     }).map_err(APIError::from)

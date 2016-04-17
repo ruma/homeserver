@@ -26,7 +26,7 @@ pub fn load(path: &str) -> Result<FinalConfig, CLIError> {
     let macaroon_secret_key = match u8de(config.macaroon_secret_key.as_bytes()) {
         Ok(bytes) => match bytes.len() {
             32 => bytes,
-            _ => return Err(CLIError::new( "macaroon_secret_key must be 32 bytes.")),
+            _ => return Err(CLIError::new("macaroon_secret_key must be 32 bytes.")),
         },
         Err(_) => return Err(CLIError::new(
             "macaroon_secret_key must be valid Base64."

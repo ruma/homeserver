@@ -8,10 +8,12 @@
 extern crate argon2rs;
 extern crate base64;
 extern crate bodyparser;
+extern crate chrono;
 #[macro_use] extern crate diesel;
 extern crate hyper;
 #[macro_use] extern crate iron;
 #[macro_use] extern crate log;
+extern crate macaroons;
 extern crate mount;
 extern crate persistent;
 extern crate r2d2;

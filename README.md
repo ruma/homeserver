@@ -22,6 +22,10 @@ This particular use of compiler plugins is likely to be replaced by a new macro 
 
 To install a nightly version of Rust, head over to the [Rust Downloads](https://www.rust-lang.org/downloads.html) page.
 
+Ruma also requires the C library [libsodium](https://github.com/jedisct1/libsodium) for some cryptographic operations.
+Install libsodium via your method of choice before building Ruma.
+Packages for libsodium are available through most system package managers.
+
 To build Ruma, run `cargo build`. The application will be written to `target/debug/ruma`.
 You can also build and run Ruma in one step with `cargo run`.
 
