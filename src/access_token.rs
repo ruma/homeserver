@@ -18,7 +18,7 @@ pub struct AccessToken {
     pub id: i64,
     /// The ID of the user who owns the access token.
     pub user_id: String,
-    /// The value of the access token. This is a macaroon.
+    /// The value of the access token. This is a Base64-encoded macaroon.
     pub value: String,
     /// The time the access token was created.
     pub created_at: PgTimestamp,
@@ -30,7 +30,7 @@ pub struct AccessToken {
 pub struct NewAccessToken {
     /// The ID of the user who owns the access token.
     pub user_id: String,
-    /// The value of the access token. This is a macaroon.
+    /// The value of the access token. This is a Base64-encoded macaroon.
     pub value: String,
 }
 
