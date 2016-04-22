@@ -1,0 +1,36 @@
+- name: component/api
+  color: bfd4f2
+- name: component/auth
+  color: bfd4f2
+- name: component/config
+  color: bfd4f2
+- name: component/crypto
+  color: bfd4f2
+- name: component/database
+  color: bfd4f2
+- name: component/docs
+  color: bfd4f2
+- name: effort/easy
+  color: bfe5bf
+- name: effort/normal
+  color: bfe5bf
+- name: effort/hard
+  color: bfe5bf
+- name: status/accepted
+  color: fef2c0
+- name: status/blocked
+  color: fef2c0
+- name: status/needs more info
+  color: fef2c0
+- name: status/rejected
+  color: fef2c0
+- name: status/under consideration
+  color: fef2c0
+- name: type/bug
+  color: f7c6c7
+- name: type/feature
+  color: f7c6c7
+- name: type/improvement
+  color: f7c6c7
+- name: type/question
+  color: f7c6c7
