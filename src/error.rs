@@ -56,6 +56,14 @@ impl APIError {
         }
     }
 
+    /// Create an error for requests that did not provide required authentication parameters.
+    pub fn unauthorized() -> APIError {
+        APIError {
+            errcode: APIErrorCode::Forbidden,
+            error: "Authentication is required.".to_string(),
+        }
+    }
+
     /// Create a generic error for anything not specifically covered by the Matrix spec.
     pub fn unknown<E>(error: &E) -> APIError where E: Error {
         debug!("APIError::unknown: {}", error);

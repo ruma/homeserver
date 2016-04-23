@@ -3,7 +3,7 @@ use iron::{BeforeMiddleware, IronError, IronResult, Plugin, Request};
 use iron::headers::ContentType;
 use iron::mime::{Mime, SubLevel, TopLevel};
 use iron::typemap::Key;
-use serde_json;
+use serde_json::Value;
 
 use error::APIError;
 
@@ -11,7 +11,7 @@ use error::APIError;
 pub struct JsonRequest;
 
 impl Key for JsonRequest {
-    type Value = serde_json::Value;
+    type Value = Value;
 }
 
 impl BeforeMiddleware for JsonRequest {
