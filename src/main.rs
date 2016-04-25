@@ -5,6 +5,7 @@ extern crate ruma;
 use clap::{App, AppSettings, SubCommand};
 
 use ruma::config::load;
+use ruma::crypto::generate_macaroon_secret_key;
 use ruma::server::Server;
 
 fn main() {
@@ -19,10 +20,14 @@ fn main() {
             SubCommand::with_name("run")
                 .about("Runs the Ruma server")
         )
+        .subcommand(
+            SubCommand::with_name("secret")
+                .about("Generates a random value to be used as a macaroon secret key")
+        )
         .get_matches();
 
     match matches.subcommand() {
-        ("run", Some(_matches)) => {
+        ("run", Some(_)) => {
             let config = match load("ruma.json") {
                 Ok(config) => config,
                 Err(error) => {
@@ -44,6 +49,10 @@ fn main() {
                     return;
                 }
             }
+        }
+        ("secret", Some(_)) => match generate_macaroon_secret_key() {
+            Ok(key) => println!("{}", key),
+            Err(error) => println!("Failed to generate macaroon secret key: {}", error),
         },
         _ => println!("{}", matches.usage()),
     };
