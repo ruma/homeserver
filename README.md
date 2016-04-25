@@ -57,7 +57,7 @@ The complete schema for the configuration file is documented through the Rust AP
 
 ```
 ruma 0.1.0
-A server for Matrix.org's client-server API.
+A Matrix client-server API
 
 USAGE:
     ruma [FLAGS] [SUBCOMMAND]
