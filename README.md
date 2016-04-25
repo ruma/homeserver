@@ -60,15 +60,16 @@ ruma 0.1.0
 A server for Matrix.org's client-server API.
 
 USAGE:
-	ruma [FLAGS] [SUBCOMMAND]
+    ruma [FLAGS] [SUBCOMMAND]
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 SUBCOMMANDS:
-    help     Prints this message
-    run      Runs the Ruma server
+    help      Prints this message or the help message of the given subcommand(s)
+    run       Runs the Ruma server
+    secret    Generates a random value to be used as a macaroon secret key
 ```
 
 Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically create the database (if it doesn't already exist) and manage the database schema. You are responsible for providing Ruma with a valid PostgreSQL server URL and role that can perform these operations.

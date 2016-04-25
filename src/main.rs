@@ -13,7 +13,7 @@ fn main() {
 
     let matches = App::new("ruma")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A server for Matrix.org's client-server API.")
+        .about("A Matrix client-server API")
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
