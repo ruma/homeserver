@@ -74,6 +74,13 @@ SUBCOMMANDS:
 
 Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically create the database (if it doesn't already exist) and manage the database schema. You are responsible for providing Ruma with a valid PostgreSQL server URL and role that can perform these operations.
 
+## Swagger
+
+Ruma includes an HTTP endpoint to server [Swagger](http://swagger.io/) data at http://example.com/ruma/swagger.json (substituting the host and port of your Ruma server with example.com, of course.)
+Point a copy of [Swagger UI](https://github.com/swagger-api/swagger-ui) at this URL to see complete documentation for the Matrix client-server API.
+If you don't need this functionality, you can create a smaller `ruma` binary by building Ruma with `cargo build --no-default-features`.
+The Swagger endpoint is compiled conditionally when the "swagger" Cargo feature is enabled.
+
 ## License
 
 [MIT](http://opensource.org/licenses/MIT)

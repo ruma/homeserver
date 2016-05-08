@@ -14,6 +14,7 @@ use api::r0::versions::Versions;
 use config::FinalConfig;
 use error::CLIError;
 use db::DB;
+use swagger::mount_swagger;
 
 /// Ruma's web server.
 pub struct Server<'a, T> where T: Handler {
@@ -56,6 +57,8 @@ impl<'a> Server<'a, Mount> {
 
         mount.mount("/_matrix/client/", versions);
         mount.mount("/_matrix/client/r0/", r0);
+
+        mount_swagger(&mut mount);
 
         Ok(Server {
             config: config,

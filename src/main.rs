@@ -49,6 +49,7 @@ pub mod middleware;
 pub mod modifier;
 pub mod schema;
 pub mod server;
+pub mod swagger;
 #[cfg(test)] pub mod test;
 pub mod user;
 
