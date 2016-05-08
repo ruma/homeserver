@@ -12,8 +12,10 @@ use hyper::header::{ContentType, Headers};
 use hyper::status::StatusCode;
 use serde_json::{Value, from_str};
 
-use ruma::config::FinalConfig;
-use ruma::server::Server;
+use config::FinalConfig;
+use server::Server;
+
+pub mod registration;
 
 static START: Once = ONCE_INIT;
 

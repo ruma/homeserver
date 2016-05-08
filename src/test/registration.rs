@@ -1,4 +1,4 @@
-use support::Test;
+use super::Test;
 
 #[test]
 fn minimum_input_parameters() {
