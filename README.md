@@ -76,8 +76,10 @@ Before you run `ruma run`, make sure you have a configuration file in the workin
 
 ## Swagger
 
-Ruma includes an HTTP endpoint to server [Swagger](http://swagger.io/) data at http://example.com/ruma/swagger.json (substituting the host and port of your Ruma server with example.com, of course.)
+Ruma includes an HTTP endpoint to serve [Swagger](http://swagger.io/) data at http://example.com/ruma/swagger.json (substituting the host and port of your Ruma server for example.com, of course.)
 Point a copy of [Swagger UI](https://github.com/swagger-api/swagger-ui) at this URL to see complete documentation for the Matrix client-server API.
+Note that Ruma does not actually implement all these API endpoints yet.
+
 If you don't need this functionality, you can create a smaller `ruma` binary by building Ruma with `cargo build --no-default-features`.
 The Swagger endpoint is compiled conditionally when the "swagger" Cargo feature is enabled.
 
