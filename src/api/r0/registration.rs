@@ -4,12 +4,11 @@ use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
-use authentication::{AuthType, Flow, InteractiveAuth};
 use config::get_config;
 use crypto::hash_password;
 use db::get_connection;
 use error::APIError;
-use middleware::{AuthRequest, JsonRequest};
+use middleware::JsonRequest;
 use modifier::SerializableResponse;
 use user::{NewUser, generate_user_id, insert_user};
 
@@ -66,9 +65,6 @@ impl Register {
         let mut chain = Chain::new(Register);
 
         chain.link_before(JsonRequest);
-        chain.link_before(
-            AuthRequest::new(InteractiveAuth::new(vec![Flow::new(vec![AuthType::Dummy])]))
-        );
 
         chain
     }
