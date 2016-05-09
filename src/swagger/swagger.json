@@ -1,5 +1,5 @@
 {
-    "basePath": "/_matrix/client/unstable",
+    "basePath": "/",
     "consumes": [
         "application/json"
     ],
@@ -9,7 +9,7 @@
         "version": "unstable"
     },
     "paths": {
-        "/account/3pid": {
+        "/_matrix/client/unstable/account/3pid": {
             "get": {
                 "description": "Gets a list of the third party identifiers that the homeserver has\nassociated with the user's account.\n\nThis is *not* the same as the list of third party identifiers bound to\nthe user's Matrix ID in Identity Servers.\n\nIdentifiers in this list may be used by the homeserver as, for example,\nidentifiers that it will accept to reset the user's account password.",
                 "responses": {
@@ -129,18 +129,45 @@
                 ]
             }
         },
-        "/account/password": {
+        "/_matrix/client/unstable/account/password": {
             "post": {
-                "description": "This API endpoint uses the User-Interactive Authentication API.\nAn access token should be submitted to this endpoint if the client has\nan active session.\nThe homeserver may change the flows available depending on whether a\nvalid access token is provided.",
+                "description": "Changes the password for an account on this homeserver.\n\nThis API endpoint uses the `User-Interactive Authentication API`_.\n\nAn access token should be submitted to this endpoint if the client has\nan active session.\n\nThe homeserver may change the flows available depending on whether a\nvalid access token is provided.",
                 "parameters": [
                     {
                         "in": "body",
                         "name": "body",
                         "schema": {
-                            "example": "{\n  \"new_password\": \"ihatebananas\"\n}",
                             "properties": {
+                                "auth": {
+                                    "additionalProperties": {
+                                        "description": "Keys dependent on the login type",
+                                        "type": "object"
+                                    },
+                                    "description": "Additional authentication information for the user-interactive authentication API.",
+                                    "example": {
+                                        "example_credential": "verypoorsharedsecret",
+                                        "session": "xxxxx",
+                                        "type": "example.type.foo"
+                                    },
+                                    "properties": {
+                                        "session": {
+                                            "description": "The value of the session key given by the homeserver.",
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "description": "The login type that the client is attempting to complete.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "type"
+                                    ],
+                                    "title": "Authentication Data",
+                                    "type": "object"
+                                },
                                 "new_password": {
                                     "description": "The new password for the account.",
+                                    "example": "ihatebananas",
                                     "type": "string"
                                 }
                             },
@@ -158,6 +185,65 @@
                             "application/json": "{}"
                         },
                         "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "401": {
+                        "description": "The homeserver requires additional authentication information.",
+                        "schema": {
+                            "description": "Used by servers to indicate that additional authentication information is required,",
+                            "properties": {
+                                "completed": {
+                                    "description": "A list of the stages the client has completed successfully",
+                                    "items": {
+                                        "example": "example.type.foo",
+                                        "type": "string"
+                                    },
+                                    "type": "array"
+                                },
+                                "flows": {
+                                    "description": "A list of the login flows supported by the server for this API.",
+                                    "items": {
+                                        "properties": {
+                                            "stages": {
+                                                "description": "The login type of each of the stages required to complete this\nauthentication flow",
+                                                "items": {
+                                                    "example": "example.type.foo",
+                                                    "type": "string"
+                                                },
+                                                "type": "array"
+                                            }
+                                        },
+                                        "required": [
+                                            "stages"
+                                        ],
+                                        "type": "object"
+                                    },
+                                    "title": "Flow information",
+                                    "type": "array"
+                                },
+                                "params": {
+                                    "additionalProperties": {
+                                        "type": "object"
+                                    },
+                                    "description": "Contains any information that the client will need to know in order to\nuse a given type of authentication. For each login type presented,\nthat type may be present as a key in this dictionary. For example, the\npublic part of an OAuth client ID could be given here.",
+                                    "example": {
+                                        "example.type.baz": {
+                                            "example_key": "foobar"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "session": {
+                                    "description": "This is a session identifier that the client must pass back to the home\nserver, if one is provided, in subsequent attempts to authenticate in the\nsame API call.",
+                                    "example": "xxxxxxyz",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "flows"
+                            ],
+                            "title": "Authentication response",
                             "type": "object"
                         }
                     },
@@ -193,7 +279,7 @@
                 ]
             }
         },
-        "/admin/whois/{userId}": {
+        "/_matrix/client/unstable/admin/whois/{userId}": {
             "get": {
                 "description": "Gets information about a particular user.\n\nThis API may be restricted to only be called by the user being looked\nup, or by a server admin. Server-local administrator privileges are not\nspecified in this document.",
                 "parameters": [
@@ -277,7 +363,7 @@
                 ]
             }
         },
-        "/createRoom": {
+        "/_matrix/client/unstable/createRoom": {
             "post": {
                 "description": "Create a new room with various configuration options.",
                 "parameters": [
@@ -412,54 +498,143 @@
                 ]
             }
         },
-        "/download/{serverName}/{mediaId}": {
-            "get": {
+        "/_matrix/client/unstable/directory/room/{roomAlias}": {
+            "delete": {
+                "description": "Remove a mapping of room alias to room ID.\n\nServers may choose to implement additional access control checks here, for instance that room aliases can only be deleted by their creator or a server administrator.",
                 "parameters": [
                     {
-                        "description": "The server name from the ``mxc://`` URI (the authoritory component)\n",
+                        "description": "The room alias to remove.",
                         "in": "path",
-                        "name": "serverName",
+                        "name": "roomAlias",
                         "required": true,
                         "type": "string",
-                        "x-example": "matrix.org"
-                    },
-                    {
-                        "description": "The media ID from the ``mxc://`` URI (the path component)\n",
-                        "in": "path",
-                        "name": "mediaId",
-                        "required": true,
-                        "type": "string",
-                        "x-example": "ascERGshawAWawugaAcauga"
+                        "x-example": "#monkeys:matrix.org"
                     }
-                ],
-                "produces": [
-                    "*/*"
                 ],
                 "responses": {
                     "200": {
-                        "description": "The content that was previously uploaded.",
-                        "headers": {
-                            "Content-Disposition": {
-                                "description": "The name of the file that was previously uploaded, if set.",
-                                "type": "string"
-                            },
-                            "Content-Type": {
-                                "description": "The content type of the file that was previously uploaded.",
-                                "type": "string"
-                            }
+                        "description": "The mapping was deleted.",
+                        "examples": {
+                            "application/json": "{}"
                         },
                         "schema": {
-                            "type": "file"
+                            "type": "object"
                         }
                     }
                 },
-                "summary": "Download content from the content repository.",
+                "security": [
+                    {
+                        "accessToken": []
+                    }
+                ],
+                "summary": "Remove a mapping of room alias to room ID.",
                 "tags": [
-                    "Media"
+                    "Room directory"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "description": "The room alias.",
+                        "in": "path",
+                        "name": "roomAlias",
+                        "required": true,
+                        "type": "string",
+                        "x-example": "#monkeys:matrix.org"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The room ID and other information for this alias.",
+                        "examples": {
+                            "application/json": "{\n  \"room_id\": \"!abnjk1jdasj98:capuchins.com\",\n  \"servers\": [\n    \"capuchins.com\",\n    \"matrix.org\",\n    \"another.com\"\n  ]\n}"
+                        },
+                        "schema": {
+                            "properties": {
+                                "room_id": {
+                                    "description": "The room ID for this room alias.",
+                                    "type": "string"
+                                },
+                                "servers": {
+                                    "description": "A list of servers that are aware of this room ID.",
+                                    "items": {
+                                        "description": "A server which is aware of this room ID.",
+                                        "type": "string"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "There is no mapped room ID for this room alias.",
+                        "examples": {
+                            "application/json": "{\n  \"errcode\": \"M_NOT_FOUND\",\n  \"error\": \"Room ID !abnjk1jdasj98:capuchins.com not found.\"\n}"
+                        }
+                    },
+                    "409": {
+                        "description": "A room alias with that name already exists.",
+                        "examples": {
+                            "application/json": "{\n  \"errcode\": \"M_UNKNOWN\",\n  \"error\": \"Room alias #monkeys:matrix.org already exists.\"\n}"
+                        }
+                    }
+                },
+                "summary": "Get the room ID corresponding to this room alias.",
+                "tags": [
+                    "Room directory"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "The room alias to set.",
+                        "in": "path",
+                        "name": "roomAlias",
+                        "required": true,
+                        "type": "string",
+                        "x-example": "#monkeys:matrix.org"
+                    },
+                    {
+                        "description": "Information about this room alias.",
+                        "in": "body",
+                        "name": "roomInfo",
+                        "required": true,
+                        "schema": {
+                            "example": "{\n  \"room_id\": \"!abnjk1jdasj98:capuchins.com\"\n}",
+                            "properties": {
+                                "room_id": {
+                                    "description": "The room ID to set.",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The mapping was created.",
+                        "examples": {
+                            "application/json": "{}"
+                        },
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "accessToken": []
+                    }
+                ],
+                "summary": "Create a new mapping from room alias to room ID.",
+                "tags": [
+                    "Room directory"
                 ]
             }
         },
-        "/events": {
+        "/_matrix/client/unstable/events": {
             "get": {
                 "deprecated": true,
                 "description": "This will listen for new events and return them to the caller. This will\nblock until an event is received, or until the ``timeout`` is reached.",
@@ -587,7 +762,7 @@
                 ]
             }
         },
-        "/events/{eventId}": {
+        "/_matrix/client/unstable/events/{eventId}": {
             "get": {
                 "deprecated": true,
                 "description": "Get a single event based on ``event_id``. You must have permission to\nretrieve this event e.g. by being a member in the room for this event.",
@@ -643,7 +818,7 @@
                 ]
             }
         },
-        "/initialSync": {
+        "/_matrix/client/unstable/initialSync": {
             "get": {
                 "deprecated": true,
                 "description": "This returns the full state for this user, with an optional limit on the\nnumber of messages per room to return.",
@@ -892,7 +1067,7 @@
                                                                 "type": "object"
                                                             },
                                                             "invite_room_state": {
-                                                                "description": "A subset of the state of the room at the time of the invite, if ``membership`` is ``invite``. Note that this state is informational, and SHOULD NOT be trusted; once the client has joined the room, it SHOULD SHOULD fetch the live state from the server and discard the invite_room_state. Also, clients must not rely on any particular state being present here; they SHOULD behave properly (with possibly a degraded but not a broken experience) in the absence of any particular events here. If they are set on the room, at least the state for ``m.room.avatar``, ``m.room.canonical_alias``, ``m.room.join_rules``, and ``m.room.name`` SHOULD be included.",
+                                                                "description": "A subset of the state of the room at the time of the invite, if ``membership`` is ``invite``. Note that this state is informational, and SHOULD NOT be trusted; once the client has joined the room, it SHOULD fetch the live state from the server and discard the invite_room_state. Also, clients must not rely on any particular state being present here; they SHOULD behave properly (with possibly a degraded but not a broken experience) in the absence of any particular events here. If they are set on the room, at least the state for ``m.room.avatar``, ``m.room.canonical_alias``, ``m.room.join_rules``, and ``m.room.name`` SHOULD be included.",
                                                                 "items": {
                                                                     "description": "A stripped down state event, with only the ``type``, ``state_key`` and ``content`` keys.",
                                                                     "properties": {
@@ -1178,7 +1353,7 @@
                 ]
             }
         },
-        "/join/{roomIdOrAlias}": {
+        "/_matrix/client/unstable/join/{roomIdOrAlias}": {
             "post": {
                 "description": "*Note that this API takes either a room ID or alias, unlike* ``/room/{roomId}/join``.\n\nThis API starts a user participating in a particular room, if that user\nis allowed to participate in that room. After this call, the client is\nallowed to see all current state events in the room, and all subsequent\nevents associated with the room until the user leaves the room.\n\nAfter a user has joined a room, the room will appear as an entry in the\nresponse of the |/initialSync|_ and |/sync|_ APIs.\n\nIf a ``third_party_signed`` was supplied, the homeserver must verify\nthat it matches a pending ``m.room.third_party_invite`` event in the\nroom, and perform key validity checking if required by the event.",
                 "parameters": [
@@ -1288,9 +1463,9 @@
                 ]
             }
         },
-        "/login": {
+        "/_matrix/client/unstable/login": {
             "post": {
-                "description": "Authenticates the user by password, and issues an access token they can\nuse to authorize themself in subsequent requests.",
+                "description": "Authenticates the user, and issues an access token they can\nuse to authorize themself in subsequent requests.",
                 "parameters": [
                     {
                         "in": "body",
@@ -1298,6 +1473,14 @@
                         "schema": {
                             "example": "{\n  \"type\": \"m.login.password\",\n  \"user\": \"cheeky_monkey\",\n  \"password\": \"ilovebananas\"\n}",
                             "properties": {
+                                "address": {
+                                    "description": "Third party identifier for the user.",
+                                    "type": "string"
+                                },
+                                "medium": {
+                                    "description": "When logging in using a third party identifier, the medium of the identifier. Must be 'email'.",
+                                    "type": "string"
+                                },
                                 "password": {
                                     "description": "The user's password.",
                                     "type": "string"
@@ -1313,7 +1496,6 @@
                             },
                             "required": [
                                 "type",
-                                "user",
                                 "password"
                             ],
                             "type": "object"
@@ -1381,18 +1563,36 @@
                         }
                     }
                 },
-                "security": [
-                    {
-                        "accessToken": []
-                    }
-                ],
                 "summary": "Authenticates the user.",
                 "tags": [
                     "Session management"
                 ]
             }
         },
-        "/presence/list/{userId}": {
+        "/_matrix/client/unstable/logout": {
+            "post": {
+                "description": "Invalidates an existing access token, so that it can no longer be used for\nauthorization.",
+                "responses": {
+                    "200": {
+                        "description": "The access token used in the request was succesfully invalidated.",
+                        "schema": {
+                            "properties": {},
+                            "type": "object"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "accessToken": []
+                    }
+                ],
+                "summary": "Invalidates a user access token",
+                "tags": [
+                    "Session management"
+                ]
+            }
+        },
+        "/_matrix/client/unstable/presence/list/{userId}": {
             "get": {
                 "description": "Retrieve a list of presence events for every user on this list.",
                 "parameters": [
@@ -1525,7 +1725,7 @@
                 ]
             }
         },
-        "/presence/{userId}/status": {
+        "/_matrix/client/unstable/presence/{userId}/status": {
             "get": {
                 "description": "Get the given user's presence state.",
                 "parameters": [
@@ -1663,7 +1863,7 @@
                 ]
             }
         },
-        "/profile/{userId}": {
+        "/_matrix/client/unstable/profile/{userId}": {
             "get": {
                 "description": "Get the combined profile information for this user. This API may be used\nto fetch the user's own profile information or other users; either\nlocally or on remote homeservers. This API may return keys which are not\nlimited to ``displayname`` or ``avatar_url``.",
                 "parameters": [
@@ -1706,7 +1906,7 @@
                 ]
             }
         },
-        "/profile/{userId}/avatar_url": {
+        "/_matrix/client/unstable/profile/{userId}/avatar_url": {
             "get": {
                 "description": "Get the user's avatar URL. This API may be used to fetch the user's\nown avatar URL or to query the URL of other users; either locally or\non remote homeservers.",
                 "parameters": [
@@ -1814,7 +2014,7 @@
                 ]
             }
         },
-        "/profile/{userId}/displayname": {
+        "/_matrix/client/unstable/profile/{userId}/displayname": {
             "get": {
                 "description": "Get the user's display name. This API may be used to fetch the user's\nown displayname or to query the name of other users; either locally or\non remote homeservers.",
                 "parameters": [
@@ -1922,7 +2122,7 @@
                 ]
             }
         },
-        "/publicRooms": {
+        "/_matrix/client/unstable/publicRooms": {
             "get": {
                 "description": "Lists the public rooms on the server.\n\nThis API returns paginated responses.",
                 "responses": {
@@ -2002,7 +2202,7 @@
                 ]
             }
         },
-        "/pushers": {
+        "/_matrix/client/unstable/pushers": {
             "get": {
                 "description": "Gets all currently active pushers for the authenticated user",
                 "responses": {
@@ -2079,7 +2279,7 @@
                 ]
             }
         },
-        "/pushers/set": {
+        "/_matrix/client/unstable/pushers/set": {
             "post": {
                 "description": "This endpoint allows the creation, modification and deletion of `pushers`_\nfor this user ID. The behaviour of this endpoint varies depending on the\nvalues in the JSON body.",
                 "parameters": [
@@ -2199,7 +2399,7 @@
                 ]
             }
         },
-        "/pushrules/": {
+        "/_matrix/client/unstable/pushrules/": {
             "get": {
                 "description": "Retrieve all push rulesets for this user. Clients can \"drill-down\" on\nthe rulesets by suffixing a ``scope`` to this path e.g.\n``/pushrules/global/``. This will return a subset of this data under the\nspecified key e.g. the ``global`` key.",
                 "responses": {
@@ -2406,7 +2606,7 @@
                 ]
             }
         },
-        "/pushrules/{scope}/{kind}/{ruleId}": {
+        "/_matrix/client/unstable/pushrules/{scope}/{kind}/{ruleId}": {
             "delete": {
                 "description": "This endpoint removes the push rule defined in the path.",
                 "parameters": [
@@ -2700,7 +2900,7 @@
                 ]
             }
         },
-        "/pushrules/{scope}/{kind}/{ruleId}/actions": {
+        "/_matrix/client/unstable/pushrules/{scope}/{kind}/{ruleId}/actions": {
             "put": {
                 "description": "This endpoint allows clients to change the actions of a push rule.\nThis can be used to change the actions of builtin rules.",
                 "parameters": [
@@ -2786,7 +2986,7 @@
                 ]
             }
         },
-        "/pushrules/{scope}/{kind}/{ruleId}/enabled": {
+        "/_matrix/client/unstable/pushrules/{scope}/{kind}/{ruleId}/enabled": {
             "put": {
                 "description": "This endpoint allows clients to enable or disable the specified push rule.",
                 "parameters": [
@@ -2863,9 +3063,9 @@
                 ]
             }
         },
-        "/register": {
+        "/_matrix/client/unstable/register": {
             "post": {
-                "description": "Register for an account on this homeserver.\n\nThere are two kinds of user account:\n\n- `user` accounts. These accounts may use the full API described in this specification.\n\n- `guest` accounts. These accounts may have limited permissions and may not be supported by all servers.",
+                "description": "This API endpoint uses the `User-Interactive Authentication API`.\n\nRegister for an account on this homeserver.\n\nThere are two kinds of user account:\n\n- `user` accounts. These accounts may use the full API described in this specification.\n\n- `guest` accounts. These accounts may have limited permissions and may not be supported by all servers.",
                 "parameters": [
                     {
                         "default": "user",
@@ -2884,18 +3084,47 @@
                         "in": "body",
                         "name": "body",
                         "schema": {
-                            "example": "{\n  \"username\": \"cheeky_monkey\",\n  \"password\": \"ilovebananas\",\n  \"bind_email\": false\n}",
                             "properties": {
+                                "auth": {
+                                    "additionalProperties": {
+                                        "description": "Keys dependent on the login type",
+                                        "type": "object"
+                                    },
+                                    "description": "Additional authentication information for the user-interactive authentication API.",
+                                    "example": {
+                                        "example_credential": "verypoorsharedsecret",
+                                        "session": "xxxxx",
+                                        "type": "example.type.foo"
+                                    },
+                                    "properties": {
+                                        "session": {
+                                            "description": "The value of the session key given by the homeserver.",
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "description": "The login type that the client is attempting to complete.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "type"
+                                    ],
+                                    "title": "Authentication Data",
+                                    "type": "object"
+                                },
                                 "bind_email": {
                                     "description": "If true, the server binds the email used for authentication to\nthe Matrix ID with the ID Server.",
+                                    "example": false,
                                     "type": "boolean"
                                 },
                                 "password": {
                                     "description": "The desired password for the account.",
+                                    "example": "ilovebananas",
                                     "type": "string"
                                 },
                                 "username": {
                                     "description": "The local part of the desired Matrix ID. If omitted,\nthe homeserver MUST generate a Matrix ID local part.",
+                                    "example": "cheeky_monkey",
                                     "type": "string"
                                 }
                             },
@@ -2935,9 +3164,68 @@
                         }
                     },
                     "400": {
-                        "description": "Part of the request was invalid. This may include one of the following error codes:\n\n* ``M_USER_IN_USE`` : The desired user ID is already taken.\n* ``M_INVALID_USERNAME`` : The desired user ID is not a valid user name.\n* ``M_EXCLUSIVE`` : The desired user ID is in the exclusive namespace\n  claimed by an application service.\n\nThese errors may be returned at any stage of the registration process,\nincluding after authentication if the requested user ID was registered\nwhilst the client was performing authentication.\n\nHomeservers MUST perform the relevant checks and return these codes before\nperforming `User-Interactive Authentication`_, although they may also return\nthem after authentication is completed if, for example, the requested user ID\nwas registered whilst the client was performing authentication.",
+                        "description": "Part of the request was invalid. This may include one of the following error codes:\n\n* ``M_USER_IN_USE`` : The desired user ID is already taken.\n* ``M_INVALID_USERNAME`` : The desired user ID is not a valid user name.\n* ``M_EXCLUSIVE`` : The desired user ID is in the exclusive namespace\n  claimed by an application service.\n\nThese errors may be returned at any stage of the registration process,\nincluding after authentication if the requested user ID was registered\nwhilst the client was performing authentication.\n\nHomeservers MUST perform the relevant checks and return these codes before\nperforming User-Interactive Authentication, although they may also return\nthem after authentication is completed if, for example, the requested user ID\nwas registered whilst the client was performing authentication.",
                         "examples": {
                             "application/json": "{\n    \"errcode\": \"M_USER_IN_USE\",\n    \"error\": \"Desired user ID is already taken.\"\n}"
+                        }
+                    },
+                    "401": {
+                        "description": "The homeserver requires additional authentication information.",
+                        "schema": {
+                            "description": "Used by servers to indicate that additional authentication information is required,",
+                            "properties": {
+                                "completed": {
+                                    "description": "A list of the stages the client has completed successfully",
+                                    "items": {
+                                        "example": "example.type.foo",
+                                        "type": "string"
+                                    },
+                                    "type": "array"
+                                },
+                                "flows": {
+                                    "description": "A list of the login flows supported by the server for this API.",
+                                    "items": {
+                                        "properties": {
+                                            "stages": {
+                                                "description": "The login type of each of the stages required to complete this\nauthentication flow",
+                                                "items": {
+                                                    "example": "example.type.foo",
+                                                    "type": "string"
+                                                },
+                                                "type": "array"
+                                            }
+                                        },
+                                        "required": [
+                                            "stages"
+                                        ],
+                                        "type": "object"
+                                    },
+                                    "title": "Flow information",
+                                    "type": "array"
+                                },
+                                "params": {
+                                    "additionalProperties": {
+                                        "type": "object"
+                                    },
+                                    "description": "Contains any information that the client will need to know in order to\nuse a given type of authentication. For each login type presented,\nthat type may be present as a key in this dictionary. For example, the\npublic part of an OAuth client ID could be given here.",
+                                    "example": {
+                                        "example.type.baz": {
+                                            "example_key": "foobar"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "session": {
+                                    "description": "This is a session identifier that the client must pass back to the home\nserver, if one is provided, in subsequent attempts to authenticate in the\nsame API call.",
+                                    "example": "xxxxxxyz",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "flows"
+                            ],
+                            "title": "Authentication response",
+                            "type": "object"
                         }
                     },
                     "429": {
@@ -2967,143 +3255,7 @@
                 ]
             }
         },
-        "/room/{roomAlias}": {
-            "delete": {
-                "description": "Remove a mapping of room alias to room ID.\n\nServers may choose to implement additional access control checks here, for instance that room aliases can only be deleted by their creator or a server administrator.",
-                "parameters": [
-                    {
-                        "description": "The room alias to remove.",
-                        "in": "path",
-                        "name": "roomAlias",
-                        "required": true,
-                        "type": "string",
-                        "x-example": "#monkeys:matrix.org"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The mapping was deleted.",
-                        "examples": {
-                            "application/json": "{}"
-                        },
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "accessToken": []
-                    }
-                ],
-                "summary": "Remove a mapping of room alias to room ID.",
-                "tags": [
-                    "Room directory"
-                ]
-            },
-            "get": {
-                "parameters": [
-                    {
-                        "description": "The room alias.",
-                        "in": "path",
-                        "name": "roomAlias",
-                        "required": true,
-                        "type": "string",
-                        "x-example": "#monkeys:matrix.org"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The room ID and other information for this alias.",
-                        "examples": {
-                            "application/json": "{\n  \"room_id\": \"!abnjk1jdasj98:capuchins.com\",\n  \"servers\": [\n    \"capuchins.com\",\n    \"matrix.org\",\n    \"another.com\"\n  ]\n}"
-                        },
-                        "schema": {
-                            "properties": {
-                                "room_id": {
-                                    "description": "The room ID for this room alias.",
-                                    "type": "string"
-                                },
-                                "servers": {
-                                    "description": "A list of servers that are aware of this room ID.",
-                                    "items": {
-                                        "description": "A server which is aware of this room ID.",
-                                        "type": "string"
-                                    },
-                                    "type": "array"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    },
-                    "404": {
-                        "description": "There is no mapped room ID for this room alias.",
-                        "examples": {
-                            "application/json": "{\n  \"errcode\": \"M_NOT_FOUND\",\n  \"error\": \"Room ID !abnjk1jdasj98:capuchins.com not found.\"\n}"
-                        }
-                    },
-                    "409": {
-                        "description": "A room alias with that name already exists.",
-                        "examples": {
-                            "application/json": "{\n  \"errcode\": \"M_UNKNOWN\",\n  \"error\": \"Room alias #monkeys:matrix.org already exists.\"\n}"
-                        }
-                    }
-                },
-                "summary": "Get the room ID corresponding to this room alias.",
-                "tags": [
-                    "Room directory"
-                ]
-            },
-            "put": {
-                "parameters": [
-                    {
-                        "description": "The room alias to set.",
-                        "in": "path",
-                        "name": "roomAlias",
-                        "required": true,
-                        "type": "string",
-                        "x-example": "#monkeys:matrix.org"
-                    },
-                    {
-                        "description": "Information about this room alias.",
-                        "in": "body",
-                        "name": "roomInfo",
-                        "required": true,
-                        "schema": {
-                            "example": "{\n  \"room_id\": \"!abnjk1jdasj98:capuchins.com\"\n}",
-                            "properties": {
-                                "room_id": {
-                                    "description": "The room ID to set.",
-                                    "type": "string"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The mapping was created.",
-                        "examples": {
-                            "application/json": "{}"
-                        },
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "accessToken": []
-                    }
-                ],
-                "summary": "Create a new mapping from room alias to room ID.",
-                "tags": [
-                    "Room directory"
-                ]
-            }
-        },
-        "/rooms/{roomId}/ban": {
+        "/_matrix/client/unstable/rooms/{roomId}/ban": {
             "post": {
                 "description": "Ban a user in the room. If the user is currently in the room, also kick them.\n\nWhen a user is banned from a room, they may not join it or be invited to it until they are unbanned.\n\nThe caller must have the required power level in order to perform this operation.",
                 "parameters": [
@@ -3166,7 +3318,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/context/{eventId}": {
+        "/_matrix/client/unstable/rooms/{roomId}/context/{eventId}": {
             "get": {
                 "description": "This API returns a number of events that happened just before and\nafter the specified event. This allows clients to get the context\nsurrounding an event.",
                 "parameters": [
@@ -3521,7 +3673,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/forget": {
+        "/_matrix/client/unstable/rooms/{roomId}/forget": {
             "post": {
                 "description": "This API stops a user remembering about a particular room.\n\nIn general, history is a first class citizen in Matrix. After this API\nis called, however, a user will no longer be able to retrieve history\nfor this room. If all users on a homeserver forget a room, the room is\neligible for deletion from that homeserver.\n\nIf the user is currently joined to the room, they will implicitly leave\nthe room as part of this API call.",
                 "parameters": [
@@ -3576,7 +3728,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/initialSync": {
+        "/_matrix/client/unstable/rooms/{roomId}/initialSync": {
             "get": {
                 "deprecated": true,
                 "description": "Get a copy of the current state and the most recent messages in a room.",
@@ -3852,7 +4004,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/invite": {
+        "/_matrix/client/unstable/rooms/{roomId}/invite": {
             "post": {
                 "description": ".. _invite-by-third-party-id-endpoint:\n\n*Note that there are two forms of this API, which are documented separately.\nThis version of the API does not require that the inviter know the Matrix\nidentifier of the invitee, and instead relies on third party identifiers.\nThe homeserver uses an identity server to perform the mapping from\nthird party identifier to a Matrix identifier. The other is documented in the*\n`joining rooms section`_.\n\nThis API invites a user to participate in a particular room.\nThey do not start participating in the room until they actually join the\nroom.\n\nOnly users currently in a particular room can invite other users to\njoin that room.\n\nIf the identity server did know the Matrix user identifier for the\nthird party identifier, the homeserver will append a ``m.room.member``\nevent to the room.\n\nIf the identity server does not know a Matrix user identifier for the\npassed third party identifier, the homeserver will issue an invitation\nwhich can be accepted upon providing proof of ownership of the third\nparty identifier. This is achieved by the identity server generating a\ntoken, which it gives to the inviting homeserver. The homeserver will\nadd an ``m.room.third_party_invite`` event into the graph for the room,\ncontaining that token.\n\nWhen the invitee binds the invited third party identifier to a Matrix\nuser ID, the identity server will give the user a list of pending\ninvitations, each containing:\n\n- The room ID to which they were invited\n\n- The token given to the homeserver\n\n- A signature of the token, signed with the identity server's private key\n\n- The matrix user ID who invited them to the room\n\nIf a token is requested from the identity server, the homeserver will\nappend a ``m.room.third_party_invite`` event to the room.\n\n.. _joining rooms section: `invite-by-user-id-endpoint`_",
                 "parameters": [
@@ -3941,7 +4093,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/invite ": {
+        "/_matrix/client/unstable/rooms/{roomId}/invite ": {
             "post": {
                 "description": ".. _invite-by-user-id-endpoint:\n\n*Note that there are two forms of this API, which are documented separately.\nThis version of the API requires that the inviter knows the Matrix\nidentifier of the invitee. The other is documented in the*\n`third party invites section`_.\n\nThis API invites a user to participate in a particular room.\nThey do not start participating in the room until they actually join the\nroom.\n\nOnly users currently in a particular room can invite other users to\njoin that room.\n\nIf the user was invited to the room, the homeserver will append a\n``m.room.member`` event to the room.\n\n.. _third party invites section: `invite-by-third-party-id-endpoint`_",
                 "parameters": [
@@ -4020,7 +4172,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/join": {
+        "/_matrix/client/unstable/rooms/{roomId}/join": {
             "post": {
                 "description": "*Note that this API requires a room ID, not alias.* ``/join/{roomIdOrAlias}`` *exists if you have a room alias.*\n\nThis API starts a user participating in a particular room, if that user\nis allowed to participate in that room. After this call, the client is\nallowed to see all current state events in the room, and all subsequent\nevents associated with the room until the user leaves the room.\n\nAfter a user has joined a room, the room will appear as an entry in the\nresponse of the |/initialSync|_ and |/sync|_ APIs.\n\nIf a ``third_party_signed`` was supplied, the homeserver must verify\nthat it matches a pending ``m.room.third_party_invite`` event in the\nroom, and perform key validity checking if required by the event.",
                 "parameters": [
@@ -4121,7 +4273,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/kick": {
+        "/_matrix/client/unstable/rooms/{roomId}/kick": {
             "post": {
                 "description": "Kick a user from the room.\n\nThe caller must have the required power level in order to perform this operation.",
                 "parameters": [
@@ -4184,7 +4336,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/leave": {
+        "/_matrix/client/unstable/rooms/{roomId}/leave": {
             "post": {
                 "description": "This API stops a user participating in a particular room.\n\nIf the user was already in the room, they will no longer be able to see\nnew events in the room. If the room requires an invite to join, they\nwill need to be re-invited before they can re-join.\n\nIf the user was invited to the room, but had not joined, this call\nserves to reject the invite.\n\nThe user will still be allowed to retrieve history from the room which\nthey were previously allowed to see.",
                 "parameters": [
@@ -4239,7 +4391,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/members": {
+        "/_matrix/client/unstable/rooms/{roomId}/members": {
             "get": {
                 "description": "Get the list of members for this room.",
                 "parameters": [
@@ -4421,7 +4573,7 @@
                                                         "type": "object"
                                                     },
                                                     "invite_room_state": {
-                                                        "description": "A subset of the state of the room at the time of the invite, if ``membership`` is ``invite``. Note that this state is informational, and SHOULD NOT be trusted; once the client has joined the room, it SHOULD SHOULD fetch the live state from the server and discard the invite_room_state. Also, clients must not rely on any particular state being present here; they SHOULD behave properly (with possibly a degraded but not a broken experience) in the absence of any particular events here. If they are set on the room, at least the state for ``m.room.avatar``, ``m.room.canonical_alias``, ``m.room.join_rules``, and ``m.room.name`` SHOULD be included.",
+                                                        "description": "A subset of the state of the room at the time of the invite, if ``membership`` is ``invite``. Note that this state is informational, and SHOULD NOT be trusted; once the client has joined the room, it SHOULD fetch the live state from the server and discard the invite_room_state. Also, clients must not rely on any particular state being present here; they SHOULD behave properly (with possibly a degraded but not a broken experience) in the absence of any particular events here. If they are set on the room, at least the state for ``m.room.avatar``, ``m.room.canonical_alias``, ``m.room.join_rules``, and ``m.room.name`` SHOULD be included.",
                                                         "items": {
                                                             "description": "A stripped down state event, with only the ``type``, ``state_key`` and ``content`` keys.",
                                                             "properties": {
@@ -4483,7 +4635,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/messages": {
+        "/_matrix/client/unstable/rooms/{roomId}/messages": {
             "get": {
                 "description": "This API returns a list of message and state events for a room. It uses\npagination query parameters to paginate history in the room.",
                 "parameters": [
@@ -4567,7 +4719,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/receipt/{receiptType}/{eventId}": {
+        "/_matrix/client/unstable/rooms/{roomId}/receipt/{receiptType}/{eventId}": {
             "post": {
                 "description": "This API updates the marker for the given receipt type to the event ID\nspecified.",
                 "parameters": [
@@ -4650,7 +4802,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/redact/{eventId}/{txnId}": {
+        "/_matrix/client/unstable/rooms/{roomId}/redact/{eventId}/{txnId}": {
             "put": {
                 "description": "Strips all information out of an event which isn't critical to the\nintegrity of the server-side representation of the room.\n\nThis cannot be undone.\n\nUsers may redact their own events, and any user with a power level\ngreater than or equal to the `redact` power level of the room may\nredact events there.",
                 "parameters": [
@@ -4721,7 +4873,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/send/{eventType}/{txnId}": {
+        "/_matrix/client/unstable/rooms/{roomId}/send/{eventType}/{txnId}": {
             "put": {
                 "description": "This endpoint is used to send a message event to a room. Message events\nallow access to historical events and pagination, making them suited\nfor \"once-off\" activity in a room.\n\nThe body of the request should be the content object of the event; the\nfields in this object will vary depending on the type of event. See\n`Room Events`_ for the m. event specification.",
                 "parameters": [
@@ -4786,7 +4938,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/state": {
+        "/_matrix/client/unstable/rooms/{roomId}/state": {
             "get": {
                 "description": "Get the state events for the current state of a room.",
                 "parameters": [
@@ -4914,7 +5066,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/state/{eventType}": {
+        "/_matrix/client/unstable/rooms/{roomId}/state/{eventType}": {
             "get": {
                 "description": "Looks up the contents of a state event in a room. If the user is\njoined to the room then the state is taken from the current\nstate of the room. If the user has left the room then the state is\ntaken from the state of the room when they left.\n\nThis looks up the state event with the empty state key.",
                 "parameters": [
@@ -5018,7 +5170,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/state/{eventType}/{stateKey}": {
+        "/_matrix/client/unstable/rooms/{roomId}/state/{eventType}/{stateKey}": {
             "get": {
                 "description": "Looks up the contents of a state event in a room. If the user is\njoined to the room then the state is taken from the current\nstate of the room. If the user has left the room then the state is\ntaken from the state of the room when they left.",
                 "parameters": [
@@ -5138,7 +5290,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/typing/{userId}": {
+        "/_matrix/client/unstable/rooms/{roomId}/typing/{userId}": {
             "put": {
                 "description": "This tells the server that the user is typing for the next N\nmilliseconds where N is the value specified in the ``timeout`` key.\nAlternatively, if ``typing`` is ``false``, it tells the server that the\nuser has stopped typing.",
                 "parameters": [
@@ -5224,7 +5376,7 @@
                 ]
             }
         },
-        "/rooms/{roomId}/unban": {
+        "/_matrix/client/unstable/rooms/{roomId}/unban": {
             "post": {
                 "description": "Unban a user from the room. This allows them to be invited to the room,\nand join if they would otherwise be allowed to join according to its join rules.\n\nThe caller must have the required power level in order to perform this operation.",
                 "parameters": [
@@ -5283,7 +5435,7 @@
                 ]
             }
         },
-        "/search": {
+        "/_matrix/client/unstable/search": {
             "post": {
                 "description": "Performs a full text search across different categories.",
                 "parameters": [
@@ -5486,66 +5638,60 @@
                                                                         "items": {
                                                                             "allOf": [
                                                                                 {
-                                                                                    "allOf": [
-                                                                                        {
-                                                                                            "description": "The basic set of fields all events must have.",
-                                                                                            "properties": {
-                                                                                                "content": {
-                                                                                                    "description": "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body.",
-                                                                                                    "title": "EventContent",
-                                                                                                    "type": "object"
-                                                                                                },
-                                                                                                "type": {
-                                                                                                    "description": "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. 'com.example.subdomain.event.type'",
-                                                                                                    "type": "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "title": "Event",
-                                                                                            "type": "object"
-                                                                                        }
-                                                                                    ],
-                                                                                    "description": "In addition to the Event fields, Room Events may have the following additional fields.",
+                                                                                    "description": "The basic set of fields all events must have.",
                                                                                     "properties": {
-                                                                                        "event_id": {
-                                                                                            "description": "Required. The globally unique event identifier.",
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "room_id": {
-                                                                                            "description": "Required. The ID of the room associated with this event.",
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "sender": {
-                                                                                            "description": "Required. Contains the fully-qualified ID of the user who *sent* this event.",
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "unsigned": {
-                                                                                            "description": "Contains optional extra information about the event.",
-                                                                                            "properties": {
-                                                                                                "age": {
-                                                                                                    "description": "The time in milliseconds that has elapsed since the event was sent",
-                                                                                                    "type": "integer"
-                                                                                                },
-                                                                                                "redacted_because": {
-                                                                                                    "description": "The reason this event was redacted, if it was redacted",
-                                                                                                    "type": "string"
-                                                                                                },
-                                                                                                "transaction_id": {
-                                                                                                    "description": "The client-supplied transaction ID, if the client being given the event is the same one which sent it.",
-                                                                                                    "type": "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "title": "UnsignedData",
+                                                                                        "content": {
+                                                                                            "description": "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body.",
+                                                                                            "title": "EventContent",
                                                                                             "type": "object"
+                                                                                        },
+                                                                                        "type": {
+                                                                                            "description": "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. 'com.example.subdomain.event.type'",
+                                                                                            "type": "string"
                                                                                         }
                                                                                     },
-                                                                                    "required": [
-                                                                                        "event_id",
-                                                                                        "room_id",
-                                                                                        "sender"
-                                                                                    ],
-                                                                                    "title": "Room Event",
+                                                                                    "title": "Event",
                                                                                     "type": "object"
                                                                                 }
+                                                                            ],
+                                                                            "description": "In addition to the Event fields, Room Events may have the following additional fields.",
+                                                                            "properties": {
+                                                                                "event_id": {
+                                                                                    "description": "Required. The globally unique event identifier.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "room_id": {
+                                                                                    "description": "Required. The ID of the room associated with this event.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "sender": {
+                                                                                    "description": "Required. Contains the fully-qualified ID of the user who *sent* this event.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "unsigned": {
+                                                                                    "description": "Contains optional extra information about the event.",
+                                                                                    "properties": {
+                                                                                        "age": {
+                                                                                            "description": "The time in milliseconds that has elapsed since the event was sent",
+                                                                                            "type": "integer"
+                                                                                        },
+                                                                                        "redacted_because": {
+                                                                                            "description": "The reason this event was redacted, if it was redacted",
+                                                                                            "type": "string"
+                                                                                        },
+                                                                                        "transaction_id": {
+                                                                                            "description": "The client-supplied transaction ID, if the client being given the event is the same one which sent it.",
+                                                                                            "type": "string"
+                                                                                        }
+                                                                                    },
+                                                                                    "title": "UnsignedData",
+                                                                                    "type": "object"
+                                                                                }
+                                                                            },
+                                                                            "required": [
+                                                                                "event_id",
+                                                                                "room_id",
+                                                                                "sender"
                                                                             ],
                                                                             "title": "Event",
                                                                             "type": "object"
@@ -5558,66 +5704,60 @@
                                                                         "items": {
                                                                             "allOf": [
                                                                                 {
-                                                                                    "allOf": [
-                                                                                        {
-                                                                                            "description": "The basic set of fields all events must have.",
-                                                                                            "properties": {
-                                                                                                "content": {
-                                                                                                    "description": "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body.",
-                                                                                                    "title": "EventContent",
-                                                                                                    "type": "object"
-                                                                                                },
-                                                                                                "type": {
-                                                                                                    "description": "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. 'com.example.subdomain.event.type'",
-                                                                                                    "type": "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "title": "Event",
-                                                                                            "type": "object"
-                                                                                        }
-                                                                                    ],
-                                                                                    "description": "In addition to the Event fields, Room Events may have the following additional fields.",
+                                                                                    "description": "The basic set of fields all events must have.",
                                                                                     "properties": {
-                                                                                        "event_id": {
-                                                                                            "description": "Required. The globally unique event identifier.",
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "room_id": {
-                                                                                            "description": "Required. The ID of the room associated with this event.",
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "sender": {
-                                                                                            "description": "Required. Contains the fully-qualified ID of the user who *sent* this event.",
-                                                                                            "type": "string"
-                                                                                        },
-                                                                                        "unsigned": {
-                                                                                            "description": "Contains optional extra information about the event.",
-                                                                                            "properties": {
-                                                                                                "age": {
-                                                                                                    "description": "The time in milliseconds that has elapsed since the event was sent",
-                                                                                                    "type": "integer"
-                                                                                                },
-                                                                                                "redacted_because": {
-                                                                                                    "description": "The reason this event was redacted, if it was redacted",
-                                                                                                    "type": "string"
-                                                                                                },
-                                                                                                "transaction_id": {
-                                                                                                    "description": "The client-supplied transaction ID, if the client being given the event is the same one which sent it.",
-                                                                                                    "type": "string"
-                                                                                                }
-                                                                                            },
-                                                                                            "title": "UnsignedData",
+                                                                                        "content": {
+                                                                                            "description": "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body.",
+                                                                                            "title": "EventContent",
                                                                                             "type": "object"
+                                                                                        },
+                                                                                        "type": {
+                                                                                            "description": "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. 'com.example.subdomain.event.type'",
+                                                                                            "type": "string"
                                                                                         }
                                                                                     },
-                                                                                    "required": [
-                                                                                        "event_id",
-                                                                                        "room_id",
-                                                                                        "sender"
-                                                                                    ],
-                                                                                    "title": "Room Event",
+                                                                                    "title": "Event",
                                                                                     "type": "object"
                                                                                 }
+                                                                            ],
+                                                                            "description": "In addition to the Event fields, Room Events may have the following additional fields.",
+                                                                            "properties": {
+                                                                                "event_id": {
+                                                                                    "description": "Required. The globally unique event identifier.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "room_id": {
+                                                                                    "description": "Required. The ID of the room associated with this event.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "sender": {
+                                                                                    "description": "Required. Contains the fully-qualified ID of the user who *sent* this event.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "unsigned": {
+                                                                                    "description": "Contains optional extra information about the event.",
+                                                                                    "properties": {
+                                                                                        "age": {
+                                                                                            "description": "The time in milliseconds that has elapsed since the event was sent",
+                                                                                            "type": "integer"
+                                                                                        },
+                                                                                        "redacted_because": {
+                                                                                            "description": "The reason this event was redacted, if it was redacted",
+                                                                                            "type": "string"
+                                                                                        },
+                                                                                        "transaction_id": {
+                                                                                            "description": "The client-supplied transaction ID, if the client being given the event is the same one which sent it.",
+                                                                                            "type": "string"
+                                                                                        }
+                                                                                    },
+                                                                                    "title": "UnsignedData",
+                                                                                    "type": "object"
+                                                                                }
+                                                                            },
+                                                                            "required": [
+                                                                                "event_id",
+                                                                                "room_id",
+                                                                                "sender"
                                                                             ],
                                                                             "title": "Event",
                                                                             "type": "object"
@@ -5660,68 +5800,61 @@
                                                             "result": {
                                                                 "allOf": [
                                                                     {
-                                                                        "allOf": [
-                                                                            {
-                                                                                "description": "The basic set of fields all events must have.",
-                                                                                "properties": {
-                                                                                    "content": {
-                                                                                        "description": "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body.",
-                                                                                        "title": "EventContent",
-                                                                                        "type": "object"
-                                                                                    },
-                                                                                    "type": {
-                                                                                        "description": "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. 'com.example.subdomain.event.type'",
-                                                                                        "type": "string"
-                                                                                    }
-                                                                                },
-                                                                                "title": "Event",
-                                                                                "type": "object"
-                                                                            }
-                                                                        ],
-                                                                        "description": "In addition to the Event fields, Room Events may have the following additional fields.",
+                                                                        "description": "The basic set of fields all events must have.",
                                                                         "properties": {
-                                                                            "event_id": {
-                                                                                "description": "Required. The globally unique event identifier.",
-                                                                                "type": "string"
-                                                                            },
-                                                                            "room_id": {
-                                                                                "description": "Required. The ID of the room associated with this event.",
-                                                                                "type": "string"
-                                                                            },
-                                                                            "sender": {
-                                                                                "description": "Required. Contains the fully-qualified ID of the user who *sent* this event.",
-                                                                                "type": "string"
-                                                                            },
-                                                                            "unsigned": {
-                                                                                "description": "Contains optional extra information about the event.",
-                                                                                "properties": {
-                                                                                    "age": {
-                                                                                        "description": "The time in milliseconds that has elapsed since the event was sent",
-                                                                                        "type": "integer"
-                                                                                    },
-                                                                                    "redacted_because": {
-                                                                                        "description": "The reason this event was redacted, if it was redacted",
-                                                                                        "type": "string"
-                                                                                    },
-                                                                                    "transaction_id": {
-                                                                                        "description": "The client-supplied transaction ID, if the client being given the event is the same one which sent it.",
-                                                                                        "type": "string"
-                                                                                    }
-                                                                                },
-                                                                                "title": "UnsignedData",
+                                                                            "content": {
+                                                                                "description": "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body.",
+                                                                                "title": "EventContent",
                                                                                 "type": "object"
+                                                                            },
+                                                                            "type": {
+                                                                                "description": "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. 'com.example.subdomain.event.type'",
+                                                                                "type": "string"
                                                                             }
                                                                         },
-                                                                        "required": [
-                                                                            "event_id",
-                                                                            "room_id",
-                                                                            "sender"
-                                                                        ],
-                                                                        "title": "Room Event",
+                                                                        "title": "Event",
                                                                         "type": "object"
                                                                     }
                                                                 ],
                                                                 "description": "The event that matched.",
+                                                                "properties": {
+                                                                    "event_id": {
+                                                                        "description": "Required. The globally unique event identifier.",
+                                                                        "type": "string"
+                                                                    },
+                                                                    "room_id": {
+                                                                        "description": "Required. The ID of the room associated with this event.",
+                                                                        "type": "string"
+                                                                    },
+                                                                    "sender": {
+                                                                        "description": "Required. Contains the fully-qualified ID of the user who *sent* this event.",
+                                                                        "type": "string"
+                                                                    },
+                                                                    "unsigned": {
+                                                                        "description": "Contains optional extra information about the event.",
+                                                                        "properties": {
+                                                                            "age": {
+                                                                                "description": "The time in milliseconds that has elapsed since the event was sent",
+                                                                                "type": "integer"
+                                                                            },
+                                                                            "redacted_because": {
+                                                                                "description": "The reason this event was redacted, if it was redacted",
+                                                                                "type": "string"
+                                                                            },
+                                                                            "transaction_id": {
+                                                                                "description": "The client-supplied transaction ID, if the client being given the event is the same one which sent it.",
+                                                                                "type": "string"
+                                                                            }
+                                                                        },
+                                                                        "title": "UnsignedData",
+                                                                        "type": "object"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "event_id",
+                                                                    "room_id",
+                                                                    "sender"
+                                                                ],
                                                                 "title": "Event",
                                                                 "type": "object"
                                                             }
@@ -5798,7 +5931,22 @@
                                                                     "type": "object"
                                                                 }
                                                             ],
-                                                            "title": "Event",
+                                                            "description": "In addition to the Room Event fields, State Events have the following additional fields.",
+                                                            "properties": {
+                                                                "prev_content": {
+                                                                    "description": "Optional. The previous ``content`` for this event. If there is no previous content, this key will be missing.",
+                                                                    "title": "EventContent",
+                                                                    "type": "object"
+                                                                },
+                                                                "state_key": {
+                                                                    "description": "A unique key which defines the overwriting semantics for this piece of room state. This value is often a zero-length string. The presence of this key makes this event a State Event. The key MUST NOT start with '_'.",
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "state_key"
+                                                            ],
+                                                            "title": "State Event",
                                                             "type": "object"
                                                         },
                                                         "title": "Room State",
@@ -5859,7 +6007,7 @@
                 ]
             }
         },
-        "/sync": {
+        "/_matrix/client/unstable/sync": {
             "get": {
                 "description": "Synchronise the client's state with the latest state on the server.\nClients use this API when they first log in to get an initial snapshot\nof the state on the server, and then continue to call this API to get\nincremental deltas to the state, and to receive new messages.",
                 "parameters": [
@@ -6577,80 +6725,7 @@
                 ]
             }
         },
-        "/thumbnail/{serverName}/{mediaId}": {
-            "get": {
-                "parameters": [
-                    {
-                        "description": "The server name from the ``mxc://`` URI (the authoritory component)\n",
-                        "in": "path",
-                        "name": "serverName",
-                        "required": true,
-                        "type": "string",
-                        "x-example": "matrix.org"
-                    },
-                    {
-                        "description": "The media ID from the ``mxc://`` URI (the path component)\n",
-                        "in": "path",
-                        "name": "mediaId",
-                        "required": true,
-                        "type": "string",
-                        "x-example": "ascERGshawAWawugaAcauga"
-                    },
-                    {
-                        "description": "The *desired* width of the thumbnail. The actual thumbnail may not\nmatch the size specified.",
-                        "in": "query",
-                        "name": "width",
-                        "type": "integer",
-                        "x-example": 64
-                    },
-                    {
-                        "description": "The *desired* height of the thumbnail. The actual thumbnail may not\nmatch the size specified.",
-                        "in": "query",
-                        "name": "height",
-                        "type": "integer",
-                        "x-example": 64
-                    },
-                    {
-                        "description": "The desired resizing method.",
-                        "enum": [
-                            "crop",
-                            "scale"
-                        ],
-                        "in": "query",
-                        "name": "method",
-                        "type": "string",
-                        "x-example": "scale"
-                    }
-                ],
-                "produces": [
-                    "image/jpeg",
-                    "image/png"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "A thumbnail of the requested content.",
-                        "headers": {
-                            "Content-Type": {
-                                "description": "The content type of the thumbnail.",
-                                "enum": [
-                                    "image/jpeg",
-                                    "image/png"
-                                ],
-                                "type": "string"
-                            }
-                        },
-                        "schema": {
-                            "type": "file"
-                        }
-                    }
-                },
-                "summary": "Download a thumbnail of the content from the content repository.",
-                "tags": [
-                    "Media"
-                ]
-            }
-        },
-        "/tokenrefresh": {
+        "/_matrix/client/unstable/tokenrefresh": {
             "post": {
                 "description": "Exchanges a refresh token for a new access token.\nThis is intended to be used if the access token has expired.",
                 "parameters": [
@@ -6730,58 +6805,7 @@
                 ]
             }
         },
-        "/upload": {
-            "post": {
-                "parameters": [
-                    {
-                        "description": "The content type of the file being uploaded",
-                        "in": "header",
-                        "name": "Content-Type",
-                        "type": "string",
-                        "x-example": "Content-Type: audio/mpeg"
-                    },
-                    {
-                        "description": "The content to be uploaded.",
-                        "in": "body",
-                        "name": "<content>",
-                        "required": true,
-                        "schema": {
-                            "example": "<bytes>",
-                            "format": "byte",
-                            "type": "string"
-                        }
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The MXC URI for the uploaded content.",
-                        "examples": {
-                            "application/json": "{\n  \"content_uri\": \"mxc://example.com/AQwafuaFswefuhsfAFAgsw\"\n}"
-                        },
-                        "schema": {
-                            "properties": {
-                                "content_uri": {
-                                    "description": "The MXC URI to the uploaded content.",
-                                    "type": "string"
-                                }
-                            },
-                            "required": [
-                                "content_uri"
-                            ],
-                            "type": "object"
-                        }
-                    }
-                },
-                "summary": "Upload some content to the content repository.",
-                "tags": [
-                    "Media"
-                ]
-            }
-        },
-        "/user/{userId}/account_data/{type}": {
+        "/_matrix/client/unstable/user/{userId}/account_data/{type}": {
             "put": {
                 "description": "Set some account_data for the client. This config is only visible to the user\nthat set the account_data. The config will be synced to clients in the\ntop-level ``account_data``.",
                 "parameters": [
@@ -6828,7 +6852,7 @@
                 ]
             }
         },
-        "/user/{userId}/filter": {
+        "/_matrix/client/unstable/user/{userId}/filter": {
             "post": {
                 "description": "Uploads a new filter definition to the homeserver.\nReturns a filter ID that may be used in future requests to\nrestrict which events are returned to the client.",
                 "parameters": [
@@ -7272,7 +7296,7 @@
                 ]
             }
         },
-        "/user/{userId}/filter/{filterId}": {
+        "/_matrix/client/unstable/user/{userId}/filter/{filterId}": {
             "get": {
                 "parameters": [
                     {
@@ -7702,7 +7726,7 @@
                 ]
             }
         },
-        "/user/{userId}/rooms/{roomId}/account_data/{type}": {
+        "/_matrix/client/unstable/user/{userId}/rooms/{roomId}/account_data/{type}": {
             "put": {
                 "description": "Set some account_data for the client on a given room. This config is only\nvisible to the user that set the account_data. The config will be synced to\nclients in the per-room ``account_data``.",
                 "parameters": [
@@ -7757,7 +7781,7 @@
                 ]
             }
         },
-        "/user/{userId}/rooms/{roomId}/tags": {
+        "/_matrix/client/unstable/user/{userId}/rooms/{roomId}/tags": {
             "get": {
                 "description": "List the tags set by a user on a room.",
                 "parameters": [
@@ -7806,7 +7830,7 @@
                 ]
             }
         },
-        "/user/{userId}/rooms/{roomId}/tags/{tag}": {
+        "/_matrix/client/unstable/user/{userId}/rooms/{roomId}/tags/{tag}": {
             "delete": {
                 "description": "Remove a tag from the room.",
                 "parameters": [
@@ -7916,37 +7940,7 @@
                 ]
             }
         },
-        "/versions": {
-            "get": {
-                "description": "Gets the versions of the specification supported by the server.\n\nValues will take the form ``rX.Y.Z``.\n\nOnly the latest ``Z`` value will be reported for each supported ``X.Y`` value.\ni.e. if the server implements ``r0.0.0``, ``r0.0.1``, and ``r1.2.0``, it will report ``r0.0.1`` and ``r1.2.0``.",
-                "responses": {
-                    "200": {
-                        "description": "The versions supported by the server.",
-                        "examples": {
-                            "application/json": "{\n  \"versions\": [\"r0.0.1\"]\n}"
-                        },
-                        "schema": {
-                            "properties": {
-                                "versions": {
-                                    "description": "The supported versions.",
-                                    "items": {
-                                        "description": "The supported versions",
-                                        "type": "string"
-                                    },
-                                    "type": "array"
-                                }
-                            },
-                            "type": "object"
-                        }
-                    }
-                },
-                "summary": "Gets the versions of the specification supported by the server.",
-                "tags": [
-                    "Server administration"
-                ]
-            }
-        },
-        "/voip/turnServer": {
+        "/_matrix/client/unstable/voip/turnServer": {
             "get": {
                 "description": "This API provides credentials for the client to use when initiating\ncalls.",
                 "responses": {
@@ -8015,6 +8009,207 @@
                 "summary": "Obtain TURN server credentials.",
                 "tags": [
                     "VOIP"
+                ]
+            }
+        },
+        "/_matrix/client/versions": {
+            "get": {
+                "description": "Gets the versions of the specification supported by the server.\n\nValues will take the form ``rX.Y.Z``.\n\nOnly the latest ``Z`` value will be reported for each supported ``X.Y`` value.\ni.e. if the server implements ``r0.0.0``, ``r0.0.1``, and ``r1.2.0``, it will report ``r0.0.1`` and ``r1.2.0``.",
+                "responses": {
+                    "200": {
+                        "description": "The versions supported by the server.",
+                        "examples": {
+                            "application/json": "{\n  \"versions\": [\"r0.0.1\"]\n}"
+                        },
+                        "schema": {
+                            "properties": {
+                                "versions": {
+                                    "description": "The supported versions.",
+                                    "items": {
+                                        "description": "The supported versions",
+                                        "type": "string"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "summary": "Gets the versions of the specification supported by the server.",
+                "tags": [
+                    "Server administration"
+                ]
+            }
+        },
+        "/_matrix/media/unstable/download/{serverName}/{mediaId}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "The server name from the ``mxc://`` URI (the authoritory component)\n",
+                        "in": "path",
+                        "name": "serverName",
+                        "required": true,
+                        "type": "string",
+                        "x-example": "matrix.org"
+                    },
+                    {
+                        "description": "The media ID from the ``mxc://`` URI (the path component)\n",
+                        "in": "path",
+                        "name": "mediaId",
+                        "required": true,
+                        "type": "string",
+                        "x-example": "ascERGshawAWawugaAcauga"
+                    }
+                ],
+                "produces": [
+                    "*/*"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The content that was previously uploaded.",
+                        "headers": {
+                            "Content-Disposition": {
+                                "description": "The name of the file that was previously uploaded, if set.",
+                                "type": "string"
+                            },
+                            "Content-Type": {
+                                "description": "The content type of the file that was previously uploaded.",
+                                "type": "string"
+                            }
+                        },
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                },
+                "summary": "Download content from the content repository.",
+                "tags": [
+                    "Media"
+                ]
+            }
+        },
+        "/_matrix/media/unstable/thumbnail/{serverName}/{mediaId}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "The server name from the ``mxc://`` URI (the authoritory component)\n",
+                        "in": "path",
+                        "name": "serverName",
+                        "required": true,
+                        "type": "string",
+                        "x-example": "matrix.org"
+                    },
+                    {
+                        "description": "The media ID from the ``mxc://`` URI (the path component)\n",
+                        "in": "path",
+                        "name": "mediaId",
+                        "required": true,
+                        "type": "string",
+                        "x-example": "ascERGshawAWawugaAcauga"
+                    },
+                    {
+                        "description": "The *desired* width of the thumbnail. The actual thumbnail may not\nmatch the size specified.",
+                        "in": "query",
+                        "name": "width",
+                        "type": "integer",
+                        "x-example": 64
+                    },
+                    {
+                        "description": "The *desired* height of the thumbnail. The actual thumbnail may not\nmatch the size specified.",
+                        "in": "query",
+                        "name": "height",
+                        "type": "integer",
+                        "x-example": 64
+                    },
+                    {
+                        "description": "The desired resizing method.",
+                        "enum": [
+                            "crop",
+                            "scale"
+                        ],
+                        "in": "query",
+                        "name": "method",
+                        "type": "string",
+                        "x-example": "scale"
+                    }
+                ],
+                "produces": [
+                    "image/jpeg",
+                    "image/png"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A thumbnail of the requested content.",
+                        "headers": {
+                            "Content-Type": {
+                                "description": "The content type of the thumbnail.",
+                                "enum": [
+                                    "image/jpeg",
+                                    "image/png"
+                                ],
+                                "type": "string"
+                            }
+                        },
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                },
+                "summary": "Download a thumbnail of the content from the content repository.",
+                "tags": [
+                    "Media"
+                ]
+            }
+        },
+        "/_matrix/media/unstable/upload": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "The content type of the file being uploaded",
+                        "in": "header",
+                        "name": "Content-Type",
+                        "type": "string",
+                        "x-example": "Content-Type: audio/mpeg"
+                    },
+                    {
+                        "description": "The content to be uploaded.",
+                        "in": "body",
+                        "name": "<content>",
+                        "required": true,
+                        "schema": {
+                            "example": "<bytes>",
+                            "format": "byte",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The MXC URI for the uploaded content.",
+                        "examples": {
+                            "application/json": "{\n  \"content_uri\": \"mxc://example.com/AQwafuaFswefuhsfAFAgsw\"\n}"
+                        },
+                        "schema": {
+                            "properties": {
+                                "content_uri": {
+                                    "description": "The MXC URI to the uploaded content.",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "content_uri"
+                            ],
+                            "type": "object"
+                        }
+                    }
+                },
+                "summary": "Upload some content to the content repository.",
+                "tags": [
+                    "Media"
                 ]
             }
         }
