@@ -1,3 +1,5 @@
+//! Data for [Swagger UI](https://github.com/swagger-api/swagger-ui).
+
 use iron::{Handler, IronResult, Request, Response, status};
 use iron::headers::{AccessControlAllowOrigin, ContentType};
 use iron::modifiers::Header;
