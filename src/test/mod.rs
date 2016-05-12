@@ -35,11 +35,13 @@ lazy_static! {
         builder.init().expect("Failed to initialize logger");
 
         // Set up Postgres Docker container
-        let docker_postgres = match Command::new("docker").args(&[
+        match Command::new("docker").args(&[
             "run",
             "-d",
             "-e",
             "POSTGRES_PASSWORD=test",
+            "--name",
+            "ruma_test_postgres",
             "-P",
             "postgres",
         ]).output() {
@@ -47,16 +49,12 @@ lazy_static! {
             Err(error) => panic!("`docker run postgres` failed: {}", error),
         };
 
-        let postgres_container_name = String::from_utf8(docker_postgres.stdout).expect(
-            "`docker run` output was not valid UTF-8"
-        ).trim_right().to_string();
-
         let postgres_container_host_ip = String::from_utf8(
             match Command::new("docker").args(&[
                 "inspect",
                 "-f",
                 "{{(index (index .NetworkSettings.Ports \"5432/tcp\") 0).HostIp}}",
-                &postgres_container_name,
+                "ruma_test_postgres",
             ]).output() {
                 Ok(output) => output.stdout,
                 Err(error) => panic!("`docker inspect postgres` for IP failed: {}", error),
@@ -68,7 +66,7 @@ lazy_static! {
                 "inspect",
                 "-f",
                 "{{(index (index .NetworkSettings.Ports \"5432/tcp\") 0).HostPort}}",
-                &postgres_container_name,
+                "ruma_test_postgres",
             ]).output() {
                 Ok(output) => output.stdout,
                 Err(error) => panic!("`docker inspect postgres` for port failed: {}", error),
@@ -76,7 +74,6 @@ lazy_static! {
         ).expect("`docker inspect` output was not valid UTF-8").trim_right().to_string();
 
         let postgres_container = PostgresContainer {
-            name: postgres_container_name,
             url: format!(
                 "postgres://postgres:test@{}:{}/postgres",
                 &postgres_container_host_ip,
@@ -102,25 +99,23 @@ lazy_static! {
 }
 
 pub struct PostgresContainer {
-    name: String,
     url: String,
 }
 
 // TODO: Find a way to actually execute this. Apparently the lazy static doesn't get dropped. :(
 impl Drop for PostgresContainer {
     fn drop(&mut self) {
-        let exit_status = Command::new("docker").args(&["rm", "-f", "-v", &self.name])
+        println!("DROP IS RUNNING OMG");
+        let exit_status = Command::new("docker").args(&["rm", "-f", "-v", "ruma_test_postgres"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status().ok().expect(&format!(
-            "Failed to remove PostgreSQL container {}",
-            &self.name,
-        ));
+        .status().ok().expect("Failed to remove PostgreSQL container ruma_test_postgres");
 
         assert!(exit_status.success());
     }
 }
+
 pub struct Test {
     client: Client,
     // Must keep a reference to this so the thread stays alive until the struct is dropped.

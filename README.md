@@ -37,7 +37,7 @@ Note that this documentation is for Ruma's internal Rust code, not the public-fa
 Ruma includes an integration test suite.
 The test suite relies on Docker for ephemeral PostgreSQL databases.
 To install Docker, see the installation instructions for [OS X](https://docs.docker.com/mac/), [Linux](https://docs.docker.com/linux/), or [Windows](https://docs.docker.com/windows/).
-Once Docker is installed, run `cargo test` to run the test suite.
+Once Docker is installed, run `make` to run the test suite.
 
 ## Configuration
 
