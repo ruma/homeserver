@@ -14,6 +14,7 @@ extern crate env_logger;
 #[macro_use] extern crate diesel;
 extern crate hyper;
 #[macro_use] extern crate iron;
+#[cfg(test)] #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
 extern crate macaroons;
 extern crate mount;

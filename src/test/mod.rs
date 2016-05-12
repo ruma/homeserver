@@ -2,52 +2,39 @@ use std::io::Read;
 use std::env::var;
 use std::fmt::Display;
 use std::process::{Command, Stdio};
-use std::sync::{Once, ONCE_INIT};
 use std::sync::mpsc::channel;
 use std::thread::{Builder, JoinHandle};
 
+use diesel::Connection;
+use diesel::migrations::{run_pending_migrations, setup_database};
+use diesel::pg::PgConnection;
 use env_logger::LogBuilder;
 use hyper::client::{Body, Client, IntoUrl};
 use hyper::header::{ContentType, Headers};
 use hyper::status::StatusCode;
+use r2d2::{Config as R2D2Config, CustomizeConnection};
+use r2d2_diesel::Error as R2D2DieselError;
 use serde_json::{Value, from_str};
 
 use config::FinalConfig;
 use server::Server;
+use db::create_connection_pool;
 
 pub mod registration;
 
-static START: Once = ONCE_INIT;
+lazy_static! {
+    pub static ref POSTGRES_CONTAINER: PostgresContainer = {
+        // Set up logging
+        let mut builder = LogBuilder::new();
 
-pub struct Test {
-    client: Client,
-    postgres_container_name: String,
-    // Must keep a reference to this so the thread stays alive until the struct is dropped.
-    #[allow(dead_code)]
-    server_thread: JoinHandle<()>,
-    server_thread_port: String,
-}
+        match var("RUST_LOG") {
+            Ok(directives) => { builder.parse(&directives); }
+            Err(_) => { builder.parse("ruma=error"); }
+        }
 
-pub struct Response {
-    pub body: String,
-    pub headers: Headers,
-    pub json: Value,
-    pub status: StatusCode,
-}
+        builder.init().expect("Failed to initialize logger");
 
-impl Test {
-    pub fn new() -> Self {
-        START.call_once(|| {
-            let mut builder = LogBuilder::new();
-
-            match var("RUST_LOG") {
-                Ok(directives) => { builder.parse(&directives); }
-                Err(_) => { builder.parse("ruma=error"); }
-            }
-
-            builder.init().expect("Failed to initialize logger");
-        });
-
+        // Set up Postgres Docker container
         let docker_postgres = match Command::new("docker").args(&[
             "run",
             "-d",
@@ -88,22 +75,95 @@ impl Test {
             }
         ).expect("`docker inspect` output was not valid UTF-8").trim_right().to_string();
 
-        let config = FinalConfig {
-            bind_address: "127.0.0.1".to_string(),
-            bind_port: "0".to_string(),
-            domain: "ruma.test".to_string(),
-            macaroon_secret_key: "YymznQHmKdN9B4f7iBalJB1tWEDy9LdaFSQJEtB3R5w=".into(),
-            postgres_url: format!(
+        let postgres_container = PostgresContainer {
+            name: postgres_container_name,
+            url: format!(
                 "postgres://postgres:test@{}:{}/postgres",
                 &postgres_container_host_ip,
                 &postgres_container_host_port,
             ),
         };
 
+        let connection_pool = create_connection_pool(
+            R2D2Config::default(),
+            &postgres_container.url
+        ).expect("Failed to create PostgreSQL connection pool.");
+
+        let connection = connection_pool.get().expect(
+            "Failed to get PostgreSQL connection pool to set up database and run migrations."
+        );
+
+        setup_database(&*connection).expect("Failed to set up database.");
+
+        run_pending_migrations(&*connection).expect("Failed to run migrations.");
+
+        postgres_container
+    };
+}
+
+pub struct PostgresContainer {
+    name: String,
+    url: String,
+}
+
+// TODO: Find a way to actually execute this. Apparently the lazy static doesn't get dropped. :(
+impl Drop for PostgresContainer {
+    fn drop(&mut self) {
+        let exit_status = Command::new("docker").args(&["rm", "-f", "-v", &self.name])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status().ok().expect(&format!(
+            "Failed to remove PostgreSQL container {}",
+            &self.name,
+        ));
+
+        assert!(exit_status.success());
+    }
+}
+pub struct Test {
+    client: Client,
+    // Must keep a reference to this so the thread stays alive until the struct is dropped.
+    #[allow(dead_code)]
+    server_thread: JoinHandle<()>,
+    server_thread_port: String,
+}
+
+pub struct Response {
+    pub body: String,
+    pub headers: Headers,
+    pub json: Value,
+    pub status: StatusCode,
+}
+
+#[derive(Debug)]
+pub struct TestTransactionConnectionCustomizer;
+
+impl CustomizeConnection<PgConnection, R2D2DieselError> for TestTransactionConnectionCustomizer {
+    fn on_acquire(&self, conn: &mut PgConnection) -> Result<(), R2D2DieselError> {
+        conn.begin_test_transaction().map_err(|error| R2D2DieselError::QueryError(error))
+    }
+}
+
+impl Test {
+    pub fn new() -> Self {
         let (tx, rx) = channel();
 
         let server_thread = match Builder::new().name("iron".to_string()).spawn(move || {
-            let server = match Server::new(&config) {
+            let config = FinalConfig {
+                bind_address: "127.0.0.1".to_string(),
+                bind_port: "0".to_string(),
+                domain: "ruma.test".to_string(),
+                macaroon_secret_key: "YymznQHmKdN9B4f7iBalJB1tWEDy9LdaFSQJEtB3R5w=".into(),
+                postgres_url: POSTGRES_CONTAINER.url.clone(),
+            };
+
+            let r2d2_config = R2D2Config::builder()
+                .pool_size(1)
+                .connection_customizer(Box::new(TestTransactionConnectionCustomizer))
+                .build();
+
+            let server = match Server::with_options(&config, r2d2_config, false) {
                 Ok(server) => server,
                 Err(error) => panic!("Failed to create Iron server: {}", error),
             };
@@ -128,7 +188,6 @@ impl Test {
 
         Test {
             client: Client::new(),
-            postgres_container_name: postgres_container_name,
             server_thread: server_thread,
             server_thread_port: server_thread_port,
         }
@@ -160,25 +219,5 @@ impl Test {
             }
             Err(error)  => panic!("{}", error),
         }
-    }
-}
-
-impl Drop for Test {
-    fn drop(&mut self) {
-        let exit_status = Command::new("docker").args(&[
-            "rm",
-            "-f",
-            "-v",
-            &self.postgres_container_name,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status().ok().expect(&format!(
-            "Failed to remove PostgreSQL container {}",
-            &self.postgres_container_name,
-        ));
-
-        assert!(exit_status.success());
     }
 }
