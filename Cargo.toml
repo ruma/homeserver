@@ -39,7 +39,6 @@ version = "0.6.0"
 
 [dev-dependencies]
 clippy = "0.0.63"
-lazy_static = "0.2.1"
 
 [features]
 default = ["swagger"]

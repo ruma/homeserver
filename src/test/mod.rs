@@ -1,14 +1,10 @@
 use std::io::Read;
-use std::env::var;
 use std::fmt::Display;
-use std::process::{Command, Stdio};
 use std::sync::mpsc::channel;
 use std::thread::{Builder, JoinHandle};
 
 use diesel::Connection;
-use diesel::migrations::{run_pending_migrations, setup_database};
 use diesel::pg::PgConnection;
-use env_logger::LogBuilder;
 use hyper::client::{Body, Client, IntoUrl};
 use hyper::header::{ContentType, Headers};
 use hyper::status::StatusCode;
@@ -18,103 +14,10 @@ use serde_json::{Value, from_str};
 
 use config::FinalConfig;
 use server::Server;
-use db::create_connection_pool;
 
 pub mod registration;
 
-lazy_static! {
-    pub static ref POSTGRES_CONTAINER: PostgresContainer = {
-        // Set up logging
-        let mut builder = LogBuilder::new();
-
-        match var("RUST_LOG") {
-            Ok(directives) => { builder.parse(&directives); }
-            Err(_) => { builder.parse("ruma=error"); }
-        }
-
-        builder.init().expect("Failed to initialize logger");
-
-        // Set up Postgres Docker container
-        match Command::new("docker").args(&[
-            "run",
-            "-d",
-            "-e",
-            "POSTGRES_PASSWORD=test",
-            "--name",
-            "ruma_test_postgres",
-            "-P",
-            "postgres",
-        ]).output() {
-            Ok(output) => output,
-            Err(error) => panic!("`docker run postgres` failed: {}", error),
-        };
-
-        let postgres_container_host_ip = String::from_utf8(
-            match Command::new("docker").args(&[
-                "inspect",
-                "-f",
-                "{{(index (index .NetworkSettings.Ports \"5432/tcp\") 0).HostIp}}",
-                "ruma_test_postgres",
-            ]).output() {
-                Ok(output) => output.stdout,
-                Err(error) => panic!("`docker inspect postgres` for IP failed: {}", error),
-            }
-        ).expect("`docker inspect` output was not valid UTF-8").trim_right().to_string();
-
-        let postgres_container_host_port = String::from_utf8(
-            match Command::new("docker").args(&[
-                "inspect",
-                "-f",
-                "{{(index (index .NetworkSettings.Ports \"5432/tcp\") 0).HostPort}}",
-                "ruma_test_postgres",
-            ]).output() {
-                Ok(output) => output.stdout,
-                Err(error) => panic!("`docker inspect postgres` for port failed: {}", error),
-            }
-        ).expect("`docker inspect` output was not valid UTF-8").trim_right().to_string();
-
-        let postgres_container = PostgresContainer {
-            url: format!(
-                "postgres://postgres:test@{}:{}/postgres",
-                &postgres_container_host_ip,
-                &postgres_container_host_port,
-            ),
-        };
-
-        let connection_pool = create_connection_pool(
-            R2D2Config::default(),
-            &postgres_container.url
-        ).expect("Failed to create PostgreSQL connection pool.");
-
-        let connection = connection_pool.get().expect(
-            "Failed to get PostgreSQL connection pool to set up database and run migrations."
-        );
-
-        setup_database(&*connection).expect("Failed to set up database.");
-
-        run_pending_migrations(&*connection).expect("Failed to run migrations.");
-
-        postgres_container
-    };
-}
-
-pub struct PostgresContainer {
-    url: String,
-}
-
-// TODO: Find a way to actually execute this. Apparently the lazy static doesn't get dropped. :(
-impl Drop for PostgresContainer {
-    fn drop(&mut self) {
-        println!("DROP IS RUNNING OMG");
-        let exit_status = Command::new("docker").args(&["rm", "-f", "-v", "ruma_test_postgres"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status().ok().expect("Failed to remove PostgreSQL container ruma_test_postgres");
-
-        assert!(exit_status.success());
-    }
-}
+const POSTGRES_URL: &'static str = "postgres://postgres:test@127.0.0.1:5432/postgres";
 
 pub struct Test {
     client: Client,
@@ -150,7 +53,7 @@ impl Test {
                 bind_port: "0".to_string(),
                 domain: "ruma.test".to_string(),
                 macaroon_secret_key: "YymznQHmKdN9B4f7iBalJB1tWEDy9LdaFSQJEtB3R5w=".into(),
-                postgres_url: POSTGRES_CONTAINER.url.clone(),
+                postgres_url: POSTGRES_URL.to_string(),
             };
 
             let r2d2_config = R2D2Config::builder()
