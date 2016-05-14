@@ -2,7 +2,7 @@
 use diesel::migrations::{run_pending_migrations, setup_database};
 use diesel::pg::PgConnection;
 use hyper::server::Listening;
-use iron::{Chain, Handler, Iron};
+use iron::{Chain, Iron};
 use iron::error::HttpResult;
 use mount::Mount;
 use persistent::{Read, Write};
@@ -10,6 +10,7 @@ use r2d2::Config as R2D2Config;
 use r2d2_diesel::Error as R2D2DieselError;
 use router::Router;
 
+use api::r0::login::Login;
 use api::r0::registration::Register;
 use api::r0::versions::Versions;
 use config::FinalConfig;
@@ -18,15 +19,15 @@ use db::{DB, create_connection_pool};
 use swagger::mount_swagger;
 
 /// Ruma's web server.
-pub struct Server<'a, T> where T: Handler {
+pub struct Server<'a> {
     config: &'a FinalConfig,
-    iron: Iron<T>,
+    mount: Mount,
 }
 
-impl<'a> Server<'a, Mount> {
+impl<'a> Server<'a> {
     /// Create a new `Server` from a `FinalConfig`.
     pub fn new(config: &FinalConfig)
-    -> Result<Server<Mount>, CLIError> {
+    -> Result<Server, CLIError> {
         Server::with_options(config, R2D2Config::default(), true)
     }
 
@@ -36,9 +37,10 @@ impl<'a> Server<'a, Mount> {
         ruma_config: &FinalConfig,
         r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
         set_up_db: bool,
-    ) -> Result<Server<Mount>, CLIError> {
+    ) -> Result<Server, CLIError> {
         let mut router = Router::new();
 
+        router.post("/login", Login::chain());
         router.post("/register", Register::chain());
 
         let mut r0 = Chain::new(router);
@@ -74,7 +76,7 @@ impl<'a> Server<'a, Mount> {
 
         Ok(Server {
             config: ruma_config,
-            iron: Iron::new(mount),
+            mount: mount,
         })
     }
 
@@ -84,6 +86,12 @@ impl<'a> Server<'a, Mount> {
 
         info!("Starting Ruma server on {}.", address);
 
-        self.iron.http(&address[..])
+        let iron = Iron::new(self.mount);
+
+        iron.http(&address[..])
+    }
+
+    pub fn into_mount(self) -> Mount {
+        self.mount
     }
 }

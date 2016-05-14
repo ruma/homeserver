@@ -14,6 +14,7 @@ extern crate env_logger;
 #[macro_use] extern crate diesel;
 extern crate hyper;
 #[macro_use] extern crate iron;
+#[cfg(test)] extern crate iron_test;
 #[macro_use] extern crate log;
 extern crate macaroons;
 extern crate mount;
@@ -36,6 +37,7 @@ pub mod access_token;
 pub mod api {
     /// API endpoints for the 0.x.x version of the Matrix spec.
     pub mod r0 {
+        pub mod login;
         pub mod registration;
         pub mod versions;
     }

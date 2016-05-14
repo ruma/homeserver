@@ -1,16 +1,19 @@
 #!/bin/bash -eu
 
-docker run -d -e POSTGRES_PASSWORD=test --name ruma_test_postgres -p 5432:5432 postgres > /dev/null
-trap cleanup EXIT
-until diesel database setup --database-url postgres://postgres:test@127.0.0.1:5432/postgres >/dev/null; do
-  sleep 1
-done
-set +e
-cargo test "$@"
-code=$?
-set -e
+code=0
 
 function cleanup() {
   docker rm -fv ruma_test_postgres > /dev/null
   exit $code
 }
+
+cargo test --no-run
+docker run -d -e POSTGRES_PASSWORD=test --name ruma_test_postgres -p 5432:5432 postgres > /dev/null
+trap cleanup EXIT INT
+until diesel database setup --database-url postgres://postgres:test@127.0.0.1:5432/postgres >/dev/null; do
+  sleep 1
+done
+set +e
+cargo test -- --nocapture
+code=$?
+set -e
