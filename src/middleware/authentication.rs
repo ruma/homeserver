@@ -1,54 +1,60 @@
+use bodyparser;
 use iron::{BeforeMiddleware, IronError, IronResult, Request};
+use iron::typemap::Key;
+use plugin::{Pluggable, Plugin};
 use serde_json::from_value;
 
 use authentication::{AuthParams, InteractiveAuth};
+use db::get_connection;
 use error::APIError;
-use middleware::JsonRequest;
+use user::User;
 
 /// Handles Matrix's interactive authentication protocol for all API endpoints that require it.
-pub struct AuthRequest {
+#[derive(Debug)]
+pub struct UIAuth {
     interactive_auth: InteractiveAuth,
 }
 
-impl AuthRequest {
+#[derive(Debug)]
+pub struct AuthRequest;
+
+impl UIAuth {
     pub fn new(interactive_auth: InteractiveAuth) -> Self {
-        AuthRequest {
+        UIAuth {
             interactive_auth: interactive_auth,
         }
     }
+}
 
-    pub fn interactive_auth(&self) -> &InteractiveAuth {
-        &self.interactive_auth
+impl BeforeMiddleware for UIAuth {
+    fn before(&self, request: &mut Request) -> IronResult<()> {
+        match request.get::<AuthRequest>() {
+            Ok(_) => Ok(()),
+            Err(error) => Err(IronError::new(error.clone(), error)),
+        }
     }
 }
 
-impl BeforeMiddleware for AuthRequest {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
-        let interactive_auth = self.interactive_auth();
+impl Key for AuthRequest {
+    type Value = User;
+}
 
-        let json = request.extensions.get::<JsonRequest>().expect(
-           "middleware::JsonRequest should have ensured request body was JSON."
-        );
+impl<'a, 'b> Plugin<Request<'a, 'b>> for AuthRequest {
+    type Error = APIError;
+
+    fn eval(request: &mut Request) -> Result<Self::Value, Self::Error> {
+        let json = request
+            .get::<bodyparser::Json>()
+            .expect("bodyparser failed to parse")
+            .expect("bodyparser did not find JSON in the body");
 
         if let Some(auth_json) = json.find("auth") {
             if let Ok(ref auth_params) = from_value::<AuthParams>(auth_json.clone()) {
-                if interactive_auth.validate(auth_params) {
-                    return Ok(());
-                } else {
-                    return Err(
-                        IronError::new(
-                            APIError::unauthorized(),
-                            interactive_auth,
-                        )
-                    );
-                }
+                let connection = try!(get_connection(request));
+                return auth_params.authenticate(&connection);
             }
         }
 
-        Err(IronError::new(APIError::unauthorized(), interactive_auth))
-    }
-
-    fn catch(&self, _request: &mut Request, err: IronError) -> IronResult<()> {
-        Err(err)
+        Err(APIError::unauthorized())
     }
 }

@@ -1,13 +1,16 @@
 //! User-interactive authentication.
 
+use diesel::pg::PgConnection;
 use iron::Response;
 use iron::modifier::Modifier;
 use serde::{Serialize, Serializer};
 
-use error::APIErrorCode;
+use crypto::hash_password;
+use error::{APIError, APIErrorCode};
+use user::{User, load_user};
 
 /// A set of authorization flows the user can follow to authenticate a request.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct InteractiveAuth {
     flows: Vec<Flow>,
 }
@@ -36,7 +39,7 @@ impl<'a> Modifier<Response> for &'a InteractiveAuth {
 }
 
 /// A list of `AuthType`s that satisfy authentication requirements.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Flow {
     #[serde(rename="stages")]
     auth_types: Vec<AuthType>,
@@ -51,6 +54,7 @@ impl Flow {
 }
 
 /// An individiual authentication mechanism to be used in a `Flow`.
+#[derive(Clone, Debug, Deserialize)]
 pub enum AuthType {
     Dummy,
     Email(EmailAuthType),
@@ -61,6 +65,7 @@ pub enum AuthType {
 }
 
 /// `AuthType`s related to email.
+#[derive(Clone, Debug, Deserialize)]
 pub enum EmailAuthType {
     Identity,
 }
@@ -83,7 +88,35 @@ impl Serialize for AuthType {
 }
 
 /// Authentication parameters submitted by the user in a request.
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub enum AuthParams {
-    Dummy
+    Password(PasswordAuthParams)
+}
+
+/// m.login.password reuqest parameters.
+#[derive(Clone, Debug, Deserialize)]
+pub enum PasswordAuthParams {
+    UserId(UserIdPasswordAuthParams),
+}
+
+/// m.login.password reuqest parameters with a user ID or localpart.
+#[derive(Clone, Debug, Deserialize)]
+pub struct UserIdPasswordAuthParams {
+    auth_type: AuthType,
+    password: String,
+    user: String,
+}
+
+impl AuthParams {
+    pub fn authenticate(&self, connection: &PgConnection) -> Result<User, APIError> {
+        let &AuthParams::Password(ref password_auth_params) = self;
+        let &PasswordAuthParams::UserId(ref creds) = password_auth_params;
+
+        match creds.auth_type {
+            AuthType::Password => {},
+            _ => return Err(APIError::unauthorized()),
+        }
+
+        load_user(connection, &creds.user, &try!(hash_password(&creds.password)))
+    }
 }

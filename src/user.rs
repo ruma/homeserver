@@ -1,6 +1,6 @@
 //! Matrix users.
 
-use diesel::{Connection, LoadDsl, insert};
+use diesel::{Connection, ExpressionMethods, FilterDsl, LoadDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
@@ -10,7 +10,7 @@ use error::APIError;
 use schema::users;
 
 /// A Matrix user.
-#[derive(Debug, Queryable)]
+#[derive(Debug, Clone, Queryable)]
 pub struct User {
     /// The user's username (localpart).
     pub id: String,
@@ -30,6 +30,15 @@ pub struct NewUser {
     pub id: String,
     /// The user's password as plaintext.
     pub password_hash: String,
+}
+
+pub fn load_user(connection: &PgConnection, id: &str, password_hash: &str)
+-> Result<User, APIError> {
+    users::table
+        .filter(users::id.eq(id))
+        .filter(users::password_hash.eq(password_hash))
+        .first(connection)
+        .map_err(|error| APIError::from(error))
 }
 
 /// Insert a new user in the database.

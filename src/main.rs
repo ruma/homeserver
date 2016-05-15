@@ -18,6 +18,7 @@ extern crate hyper;
 #[macro_use] extern crate log;
 extern crate macaroons;
 extern crate mount;
+extern crate plugin;
 extern crate persistent;
 extern crate r2d2;
 extern crate r2d2_diesel;
