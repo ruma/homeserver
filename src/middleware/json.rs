@@ -16,22 +16,13 @@ impl Key for JsonRequest {
 
 impl BeforeMiddleware for JsonRequest {
     fn before(&self, request: &mut Request) -> IronResult<()> {
-        match request.headers.get::<ContentType>() {
-            Some(content_type) => {
-                match **content_type {
-                    Mime(TopLevel::Application, SubLevel::Json, _) => {},
-                    _ => {
-                        let error = APIError::wrong_content_type();
+        if request.headers.get::<ContentType>().and_then(|content_type| match **content_type {
+            Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
+            _ => None,
+        }).is_none() {
+            let error = APIError::wrong_content_type();
 
-                        return Err(IronError::new(error.clone(), error));
-                    }
-                }
-            },
-            None => {
-                let error = APIError::wrong_content_type();
-
-                return Err(IronError::new(error.clone(), error));
-            },
+            return Err(IronError::new(error.clone(), error));
         }
 
         match request.get::<bodyparser::Json>() {
