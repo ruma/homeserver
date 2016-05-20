@@ -1,9 +1,11 @@
 //! Data for [Swagger UI](https://github.com/swagger-api/swagger-ui).
 
-use iron::{Handler, IronResult, Request, Response, status};
-use iron::headers::{AccessControlAllowOrigin, ContentType};
+use iron::{Chain, Handler, IronResult, Request, Response, status};
+use iron::headers::ContentType;
 use iron::modifiers::Header;
 use mount::Mount;
+
+use middleware::Cors;
 
 #[cfg(not(feature = "swagger"))]
 pub fn mount_swagger(_mount: &mut Mount) {}
@@ -19,11 +21,14 @@ pub fn mount_swagger(mount: &mut Mount) {
             Ok(Response::with((
                 status::Ok,
                 Header(ContentType::json()),
-                Header(AccessControlAllowOrigin::Any),
                 json,
             )))
         }
     }
 
-    mount.mount("/ruma/swagger.json", Swagger);
+    let mut swagger = Chain::new(Swagger);
+
+    swagger.link_after(Cors);
+
+    mount.mount("/ruma/swagger.json", swagger);
 }

@@ -15,6 +15,7 @@ use api::r0::versions::Versions;
 use config::FinalConfig;
 use error::CLIError;
 use db::{DB, create_connection_pool};
+use middleware::Cors;
 use swagger::mount_swagger;
 
 /// Ruma's web server.
@@ -37,12 +38,12 @@ impl<'a> Server<'a> {
         r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
         set_up_db: bool,
     ) -> Result<Server, CLIError> {
-        let mut router = Router::new();
+        let mut r0_router = Router::new();
 
-        router.post("/login", Login::chain());
-        router.post("/register", Register::chain());
+        r0_router.post("/login", Login::chain());
+        r0_router.post("/register", Register::chain());
 
-        let mut r0 = Chain::new(router);
+        let mut r0 = Chain::new(r0_router);
 
         debug!("Connecting to PostgreSQL.");
         let connection_pool = try!(create_connection_pool(r2d2_config, &ruma_config.postgres_url));
@@ -62,9 +63,15 @@ impl<'a> Server<'a> {
 
         r0.link_before(Read::<FinalConfig>::one(ruma_config.clone()));
         r0.link_before(Write::<DB>::one(connection_pool));
+        r0.link_after(Cors);
 
-        let mut versions = Router::new();
-        versions.get("/versions", Versions::new(vec!["r0.0.1"]));
+        let mut versions_router = Router::new();
+
+        versions_router.get("/versions", Versions::new(vec!["r0.0.1"]));
+
+        let mut versions = Chain::new(versions_router);
+
+        versions.link_after(Cors);
 
         let mut mount = Mount::new();
 

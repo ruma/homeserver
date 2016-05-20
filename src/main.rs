@@ -25,6 +25,7 @@ extern crate rand;
 extern crate router;
 extern crate serde;
 extern crate serde_json;
+extern crate unicase;
 
 use clap::{App, AppSettings, SubCommand};
 

@@ -30,6 +30,7 @@ router = "0.1.1"
 serde = "0.7.5"
 serde_json = "0.7.0"
 serde_macros = "0.7.5"
+unicase = "1.4.0"
 
 [dependencies.argon2rs]
 git = "https://github.com/bryant/argon2rs"
