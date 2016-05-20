@@ -1,8 +1,7 @@
 //! Iron web server that serves the API.
 use diesel::migrations::{run_pending_migrations, setup_database};
 use diesel::pg::PgConnection;
-use hyper::server::Listening;
-use iron::{Chain, Iron};
+use iron::{Chain, Iron, Listening};
 use iron::error::HttpResult;
 use mount::Mount;
 use persistent::{Read, Write};

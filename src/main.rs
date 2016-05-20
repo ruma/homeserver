@@ -12,7 +12,6 @@ extern crate chrono;
 extern crate clap;
 extern crate env_logger;
 #[macro_use] extern crate diesel;
-extern crate hyper;
 #[macro_use] extern crate iron;
 #[cfg(test)] extern crate iron_test;
 #[macro_use] extern crate log;

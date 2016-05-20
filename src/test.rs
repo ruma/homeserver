@@ -1,7 +1,7 @@
 use diesel::Connection;
 use diesel::pg::PgConnection;
-use hyper::header::{ContentType, Headers};
-use hyper::status::StatusCode;
+use iron::headers::{ContentType, Headers};
+use iron::status::Status;
 use iron_test::{request, response};
 use mount::Mount;
 use r2d2::{Config as R2D2Config, CustomizeConnection};
@@ -21,7 +21,7 @@ pub struct Response {
     pub body: String,
     pub headers: Headers,
     pub json: Value,
-    pub status: StatusCode,
+    pub status: Status,
 }
 
 #[derive(Debug)]

@@ -14,11 +14,10 @@ version = "0.1.0"
 argon2rs = "0.2.1"
 base64 = "0.1.1"
 bodyparser = "0.3.0"
-chrono = "0.2.21"
-clap = "2.2.5"
-diesel = "0.6.0"
+chrono = "0.2.22"
+clap = "2.5.1"
+diesel = "0.6.2"
 env_logger = "0.3.3"
-hyper = "0.8.1"
 iron = "0.3.0"
 log = "0.3.6"
 macaroons = "0.2.1"
@@ -29,17 +28,16 @@ r2d2 = "0.7.0"
 r2d2-diesel = "0.6.0"
 rand = "0.3.14"
 router = "0.1.1"
-serde = "0.7.0"
+serde = "0.7.5"
 serde_json = "0.7.0"
-serde_macros = "0.7.2"
+serde_macros = "0.7.5"
 
 [dependencies.diesel_codegen]
 default-features = false
 features = ["postgres"]
-version = "0.6.0"
+version = "0.6.2"
 
 [dev-dependencies]
-clippy = "0.0.63"
 iron-test = "0.3.0"
 
 [features]
