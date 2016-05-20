@@ -1,3 +1,4 @@
+use env_logger;
 use diesel::Connection;
 use diesel::pg::PgConnection;
 use iron::headers::{ContentType, Headers};
@@ -35,6 +36,13 @@ impl CustomizeConnection<PgConnection, R2D2DieselError> for TestTransactionConne
 
 impl Test {
     pub fn new() -> Self {
+        // Since we don't have control of the `main` function during tests, we initialize the
+        // logger here. It will only actually initialize on the first test that is run. Subsequent
+        // calls will return an error, but we don't care, so just ignore the result.
+        match env_logger::init() {
+            _ => {}
+        }
+
         let config = FinalConfig {
             bind_address: "127.0.0.1".to_string(),
             bind_port: "0".to_string(),

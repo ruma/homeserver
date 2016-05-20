@@ -69,7 +69,7 @@ mod tests {
 
         let response = test.post(
             "/_matrix/client/r0/login",
-            r#"{"user": "carl", "password": "secret"}"#,
+            r#"{"auth": {"type": "m.login.password", "user": "carl", "password": "secret"}}"#,
         );
 
         assert!(response.json.find("access_token").is_some());

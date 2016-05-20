@@ -66,7 +66,7 @@ impl APIError {
 
     /// Create a generic error for anything not specifically covered by the Matrix spec.
     pub fn unknown<E>(error: &E) -> APIError where E: Error {
-        debug!("APIError::unknown: {}", error);
+        debug!("APIError::unknown: {:?}", error);
 
         APIError {
             errcode: APIErrorCode::Unknown,

@@ -6,6 +6,7 @@ use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
 
 use access_token::{AccessToken, create_access_token};
+use crypto::verify_password;
 use error::APIError;
 use schema::users;
 
@@ -28,17 +29,25 @@ pub struct User {
 pub struct NewUser {
     /// The user's username (localpart).
     pub id: String,
-    /// The user's password as plaintext.
+    /// The user's hashed password.
     pub password_hash: String,
 }
 
-pub fn load_user(connection: &PgConnection, id: &str, password_hash: &str)
--> Result<User, APIError> {
-    users::table
-        .filter(users::id.eq(id))
-        .filter(users::password_hash.eq(password_hash))
-        .first(connection)
-        .map_err(|error| APIError::from(error))
+pub fn load_user_with_plaintext_password(
+    connection: &PgConnection,
+    id: &str,
+    plaintext_password: &str,
+) -> Result<User, APIError> {
+    match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
+        Ok(user) => {
+            if try!(verify_password(user.password_hash.as_bytes(), plaintext_password)) {
+                Ok(user)
+            } else {
+                Err(APIError::unauthorized())
+            }
+        }
+        Err(error) => Err(APIError::from(error)),
+    }
 }
 
 /// Insert a new user in the database.
