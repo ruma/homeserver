@@ -9,7 +9,7 @@ use r2d2::{Config as R2D2Config, CustomizeConnection};
 use r2d2_diesel::Error as R2D2DieselError;
 use serde_json::{Value, from_str};
 
-use config::FinalConfig;
+use config::Config;
 use server::Server;
 
 const POSTGRES_URL: &'static str = "postgres://postgres:test@127.0.0.1:5432/postgres";
@@ -43,7 +43,7 @@ impl Test {
             _ => {}
         }
 
-        let config = FinalConfig {
+        let config = Config {
             bind_address: "127.0.0.1".to_string(),
             bind_port: "0".to_string(),
             domain: "ruma.test".to_string(),

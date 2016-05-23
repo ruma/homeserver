@@ -10,7 +10,7 @@ use r2d2_diesel::Error as R2D2DieselError;
 use router::Router;
 
 use api::r0::{Login, Register, Versions};
-use config::FinalConfig;
+use config::Config;
 use error::CLIError;
 use db::{DB, create_connection_pool};
 use middleware::Cors;
@@ -18,21 +18,21 @@ use swagger::mount_swagger;
 
 /// Ruma's web server.
 pub struct Server<'a> {
-    config: &'a FinalConfig,
+    config: &'a Config,
     mount: Mount,
 }
 
 impl<'a> Server<'a> {
-    /// Create a new `Server` from a `FinalConfig`.
-    pub fn new(config: &FinalConfig)
+    /// Create a new `Server` from a `Config`.
+    pub fn new(config: &Config)
     -> Result<Server, CLIError> {
         Server::with_options(config, R2D2Config::default(), true)
     }
 
-    /// Create a new `Server` from a `FinalConfig`, an `r2d2::Config`, and the ability to disable
+    /// Create a new `Server` from a `Config`, an `r2d2::Config`, and the ability to disable
     /// database creation and setup.
     pub fn with_options(
-        ruma_config: &FinalConfig,
+        ruma_config: &Config,
         r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
         set_up_db: bool,
     ) -> Result<Server, CLIError> {
@@ -59,7 +59,7 @@ impl<'a> Server<'a> {
             }
         }
 
-        r0.link_before(Read::<FinalConfig>::one(ruma_config.clone()));
+        r0.link_before(Read::<Config>::one(ruma_config.clone()));
         r0.link_before(Write::<DB>::one(connection_pool));
         r0.link_after(Cors);
 
