@@ -9,9 +9,7 @@ use r2d2::Config as R2D2Config;
 use r2d2_diesel::Error as R2D2DieselError;
 use router::Router;
 
-use api::r0::login::Login;
-use api::r0::registration::Register;
-use api::r0::versions::Versions;
+use api::r0::{Login, Register, Versions};
 use config::FinalConfig;
 use error::CLIError;
 use db::{DB, create_connection_pool};
