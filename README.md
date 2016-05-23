@@ -4,32 +4,26 @@
 
 ## Status
 
-The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix client library, and possibly various application services according to the Matrix specifications.
+The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix identity server, a Matrix client library, and some Matrix application services.
 This repository in particular aims to implement the client-server portion of the Matrix homeserver.
 The homeserver federation API lives at [ruma/ruma-federation](https://github.com/ruma/ruma-federation), but will not be actively developed until the federation API specification has stabilized and the client-server API is in a practically useful state.
-Additional components can be found in the [Ruma organization on GitHub](https://github.com/ruma).
+Additional components shared by multiple applications can be found in the [Ruma organization on GitHub](https://github.com/ruma).
 
-This project is currently very new, experimental and is likely to change drastically.
-In addition to Ruma itself being new, Rust is a very young language, and its library ecosystem is very young as well.
-Currently, a large portion of development time for Ruma is spent contributing missing or incomplete functionality to other libraries in the Rust ecosystem that are needed by Ruma.
-
-Initial efforts on the Ruma codebase itself will be focused on the user registration and login system.
+Ruma is currently pre-alpha and cannot realistically be used from a standard Matrix client, but it's getting closer every week!
 
 ## Development
 
 Ruma currently requires the nightly version of Rust, primarily because it makes heavy use of the code generation features of [Diesel](https://github.com/sgrif/diesel) and [Serde](https://github.com/serde-rs/serde), which use compiler plugins, an unstable Rust feature.
-This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/)), but is probably a very long way off from making it to stable Rust.
+This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/) and the [procedural macros RC](https://github.com/rust-lang/rfcs/pull/1566)), but is probably a very long way off from making it to stable Rust.
 
-To install a nightly version of Rust, head over to the [Rust Downloads](https://www.rust-lang.org/downloads.html) page.
-
-Ruma also requires the C library [libsodium](https://github.com/jedisct1/libsodium) for some cryptographic operations.
-Install libsodium via your method of choice before building Ruma.
-Packages for libsodium are available through most system package managers.
+To install a nightly version of Rust, use [rustup](https://www.rustup.rs/) or head over to the [Rust Downloads](https://www.rust-lang.org/downloads.html) page.
 
 To build Ruma, run `cargo build`. The application will be written to `target/debug/ruma`.
 You can also build and run Ruma in one step with `cargo run`.
+(When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `cargo run -- run`.)
 
-To generate API documentation, run `cargo doc`. Then open `target/doc/ruma/index.html` in your browser.
+To generate API documentation, run `cargo doc`.
+Then open `target/doc/ruma/index.html` in your browser.
 Note that this documentation is for Ruma's internal Rust code, not the public-facing Matrix API.
 
 ## Testing
@@ -47,11 +41,25 @@ The file should contain a JSON object that looks something like this:
 ``` json
 {
   "domain": "example.com",
-  "postgres_url": "postgres://jimmy@localhost:5432/postgres"
+  "postgres_url": "postgres://username:password@example.com:5432/ruma"
 }
 ```
 
-The complete schema for the configuration file is documented through the Rust API docs for `ruma::config::Config`.
+The complete list of attributes in the configuration is as follows:
+
+* **bind_address** (string, default: "127.0.0.1"):
+  The network address where the server should listen for connections.
+* **bind_port** (string, default: "3000"):
+  The network port where the server should listen for connections.
+* **domain** (string, required):
+  The DNS name where clients can reach the server.
+  Used as the hostname portion of user IDs.
+* **macaroon_secret_key** (string, required):
+  The secret key used for generating [Macaroons](https://research.google.com/pubs/pub41892.html).
+  Must be 32 cryptographically random bytes, encoded as a Base64 string.
+  Changing this value will invalidate any previously generated macaroons, effectively ending all user sessions.
+* **postgres_url** (string, required):
+  A [PostgreSQL connection string](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for Ruma's PostgreSQL database.
 
 ## Usage
 
@@ -72,7 +80,9 @@ SUBCOMMANDS:
     secret    Generates a random value to be used as a macaroon secret key
 ```
 
-Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file. Ruma will automatically create the database (if it doesn't already exist) and manage the database schema. You are responsible for providing Ruma with a valid PostgreSQL server URL and role that can perform these operations.
+Before you run `ruma run`, make sure you have a configuration file in the working directory named `ruma.json` and that a PostgreSQL server is running and available at the location specified in the configuration file.
+Ruma will automatically create the database (if it doesn't already exist) and manage the database schema.
+You are responsible for providing Ruma with a valid PostgreSQL server URL and role that can perform these operations.
 
 ## Swagger
 
@@ -80,8 +90,18 @@ Ruma includes an HTTP endpoint to serve [Swagger](http://swagger.io/) data at ht
 Point a copy of [Swagger UI](https://github.com/swagger-api/swagger-ui) at this URL to see complete documentation for the Matrix client-server API.
 Note that Ruma does not actually implement all these API endpoints yet.
 
-If you don't need this functionality, you can create a smaller `ruma` binary by building Ruma with `cargo build --no-default-features`.
+If you don't need this functionality, you can create a smaller `ruma` binary by building Ruma by running:
+
+``` bash
+cargo build --no-default-features
+```
+
 The Swagger endpoint is compiled conditionally when the "swagger" Cargo feature is enabled.
+
+## Contributing
+
+Ruma encourages participation and contributions.
+If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://vector.im/beta/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
 
 ## License
 
