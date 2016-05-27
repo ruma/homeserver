@@ -12,41 +12,6 @@ use serde_json::from_str;
 
 use error::{APIError, CLIError};
 
-/// Load the user's configuration from a JSON file.
-pub fn load(path: &str) -> Result<Config, CLIError> {
-    let mut file = File::open(path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-
-    let config: RawConfig = match from_str(&contents) {
-        Ok(config) => config,
-        Err(error) => return Err(From::from(error)),
-    };
-
-    let macaroon_secret_key = match u8de(config.macaroon_secret_key.as_bytes()) {
-        Ok(bytes) => match bytes.len() {
-            32 => bytes,
-            _ => return Err(CLIError::new("macaroon_secret_key must be 32 bytes.")),
-        },
-        Err(_) => return Err(CLIError::new(
-            "macaroon_secret_key must be valid Base64."
-        )),
-    };
-
-    Ok(Config {
-        bind_address: config.bind_address.unwrap_or("127.0.0.1".to_string()),
-        bind_port: config.bind_port.unwrap_or("3000".to_string()),
-        domain: config.domain,
-        macaroon_secret_key: macaroon_secret_key,
-        postgres_url: config.postgres_url,
-    })
-}
-
-/// Extract the `Config` stored in the request.
-pub fn get_config(request: &mut Request) -> Result<Arc<Config>, APIError> {
-    request.get::<PersistentRead<Config>>().map_err(APIError::from)
-}
-
 /// The user's configuration as loaded from the configuration file.
 ///
 /// Refer to `Config` for the description of the fields.
@@ -76,6 +41,43 @@ pub struct Config {
     /// A [PostgreSQL connection string](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING)
     /// for Ruma's PostgreSQL database.
     pub postgres_url: String,
+}
+
+impl Config {
+    /// Load the user's configuration from a JSON file.
+    pub fn from_file(path: &str) -> Result<Config, CLIError> {
+        let mut file = File::open(path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        let config: RawConfig = match from_str(&contents) {
+            Ok(config) => config,
+            Err(error) => return Err(From::from(error)),
+        };
+
+        let macaroon_secret_key = match u8de(config.macaroon_secret_key.as_bytes()) {
+            Ok(bytes) => match bytes.len() {
+                32 => bytes,
+                _ => return Err(CLIError::new("macaroon_secret_key must be 32 bytes.")),
+            },
+            Err(_) => return Err(CLIError::new(
+                "macaroon_secret_key must be valid Base64."
+            )),
+        };
+
+        Ok(Config {
+            bind_address: config.bind_address.unwrap_or("127.0.0.1".to_string()),
+            bind_port: config.bind_port.unwrap_or("3000".to_string()),
+            domain: config.domain,
+            macaroon_secret_key: macaroon_secret_key,
+            postgres_url: config.postgres_url,
+        })
+    }
+
+    /// Extract the `Config` stored in the request.
+    pub fn from_request(request: &mut Request) -> Result<Arc<Config>, APIError> {
+        request.get::<PersistentRead<Config>>().map_err(APIError::from)
+    }
 }
 
 impl Key for Config {

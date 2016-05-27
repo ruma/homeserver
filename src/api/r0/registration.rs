@@ -4,7 +4,7 @@ use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
-use config::get_config;
+use config::Config;
 use crypto::hash_password;
 use db::get_connection;
 use error::APIError;
@@ -98,7 +98,7 @@ impl Handler for Register {
         };
 
         let connection = get_connection(request)?;
-        let config = get_config(request)?;
+        let config = Config::from_request(request)?;
 
         let (user, access_token) = insert_user(
             &connection,

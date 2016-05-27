@@ -2,7 +2,7 @@ use iron::{Chain, Handler, IronResult, Request, Response, status};
 
 use access_token::AccessToken;
 use authentication::{AuthType, Flow, InteractiveAuth};
-use config::get_config;
+use config::Config;
 use db::get_connection;
 use middleware::{JsonRequest, UIAuth};
 use modifier::SerializableResponse;
@@ -40,7 +40,7 @@ impl Handler for Login {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let user = request.extensions.get::<User>().expect("UIAuth should ensure a user").clone();
         let connection = get_connection(request)?;
-        let config = get_config(request)?;
+        let config = Config::from_request(request)?;
         let access_token = AccessToken::create(&connection, &user.id, &config.macaroon_secret_key)?;
 
         let response = LoginResponse {

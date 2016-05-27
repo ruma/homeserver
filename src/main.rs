@@ -28,7 +28,7 @@ extern crate unicase;
 
 use clap::{App, AppSettings, SubCommand};
 
-use config::load;
+use config::Config;
 use crypto::generate_macaroon_secret_key;
 use server::Server;
 
@@ -70,7 +70,7 @@ fn main() {
 
     match matches.subcommand() {
         ("run", Some(_)) => {
-            let config = match load("ruma.json") {
+            let config = match Config::from_file("ruma.json") {
                 Ok(config) => config,
                 Err(error) => {
                     println!("Failed to load configuration file: {}", error);
