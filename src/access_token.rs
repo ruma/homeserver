@@ -41,6 +41,23 @@ pub struct NewAccessToken {
 }
 
 impl AccessToken {
+    /// Create a new `AccessToken` for the given user.
+    pub fn create(
+        connection: &PgConnection,
+        user_id: &str,
+        macaroon_secret_key: &Vec<u8>,
+    ) -> Result<Self, APIError> {
+        let new_access_token = NewAccessToken {
+            user_id: user_id.to_string(),
+            value: create_macaroon(macaroon_secret_key, user_id)?,
+        };
+
+        insert(&new_access_token)
+            .into(access_tokens::table)
+            .get_result(connection)
+            .map_err(APIError::from)
+    }
+
     /// Creates an `AccessToken` from an access token string value.
     ///
     /// The access token cannot be revoked.
@@ -67,23 +84,6 @@ impl AccessToken {
 
 impl Key for AccessToken {
     type Value = AccessToken;
-}
-
-/// Create a new access token for the given user.
-pub fn create_access_token(
-    connection: &PgConnection,
-    user_id: &str,
-    macaroon_secret_key: &Vec<u8>,
-) -> Result<AccessToken, APIError> {
-    let new_access_token = NewAccessToken {
-        user_id: user_id.to_string(),
-        value: create_macaroon(macaroon_secret_key, user_id)?,
-    };
-
-    insert(&new_access_token)
-        .into(access_tokens::table)
-        .get_result(connection)
-        .map_err(APIError::from)
 }
 
 fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &str) -> Result<String, APIError> {

@@ -1,6 +1,6 @@
 use iron::{Chain, Handler, IronResult, Request, Response, status};
 
-use access_token::create_access_token;
+use access_token::AccessToken;
 use authentication::{AuthType, Flow, InteractiveAuth};
 use config::get_config;
 use db::get_connection;
@@ -41,7 +41,7 @@ impl Handler for Login {
         let user = request.extensions.get::<User>().expect("UIAuth should ensure a user").clone();
         let connection = get_connection(request)?;
         let config = get_config(request)?;
-        let access_token = create_access_token(&connection, &user.id, &config.macaroon_secret_key)?;
+        let access_token = AccessToken::create(&connection, &user.id, &config.macaroon_secret_key)?;
 
         let response = LoginResponse {
             access_token: access_token.value,

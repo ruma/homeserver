@@ -6,7 +6,7 @@ use diesel::pg::data_types::PgTimestamp;
 use iron::typemap::Key;
 use rand::{Rng, thread_rng};
 
-use access_token::{AccessToken, create_access_token};
+use access_token::AccessToken;
 use crypto::verify_password;
 use error::APIError;
 use schema::users;
@@ -80,7 +80,7 @@ pub fn insert_user(
             .get_result(connection)
             .map_err(APIError::from)?;
 
-        let access_token = create_access_token(connection, &user.id[..], macaroon_secret_key)?;
+        let access_token = AccessToken::create(connection, &user.id[..], macaroon_secret_key)?;
 
         Ok((user, access_token))
     }).map_err(APIError::from)
