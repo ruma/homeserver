@@ -9,7 +9,7 @@ use middleware::AccessTokenAuth;
 pub struct Logout;
 
 impl Logout {
-    /// Create a `Login` with all necessary middleware.
+    /// Create a `Logout` with all necessary middleware.
     pub fn chain() -> Chain {
         let mut chain = Chain::new(Logout);
 

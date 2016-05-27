@@ -1,6 +1,15 @@
 //! Matrix users.
 
-use diesel::{Connection, ExpressionMethods, FilterDsl, LoadDsl, insert};
+use diesel::{
+    Connection,
+    ExpressionMethods,
+    FilterDsl,
+    LoadDsl,
+    Queryable,
+    SaveChangesDsl,
+    Table,
+    insert,
+};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use iron::typemap::Key;
@@ -13,6 +22,7 @@ use schema::users;
 
 /// A Matrix user.
 #[derive(Debug, Clone, Queryable)]
+#[changeset_for(users)]
 pub struct User {
     /// The user's username (localpart).
     pub id: String,
