@@ -20,8 +20,12 @@ pub struct AccessToken {
     pub user_id: String,
     /// The value of the access token. This is a Base64-encoded macaroon.
     pub value: String,
+    /// Whether or not the access token has been revoked.
+    pub revoked: bool,
     /// The time the access token was created.
     pub created_at: PgTimestamp,
+    /// The time the access token was last modified.
+    pub updated_at: PgTimestamp,
 }
 
 /// A new access token, not yet saved.

@@ -7,7 +7,9 @@ table! {
         id -> BigSerial,
         user_id -> Text,
         value -> Text,
+        revoked -> Bool,
         created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
