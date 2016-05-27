@@ -56,7 +56,7 @@ impl<'a, 'b> Plugin<Request<'a, 'b>> for AuthRequest {
                         user: user,
                     });
 
-                    let connection = try!(get_connection(request));
+                    let connection = get_connection(request)?;
 
                     return auth_params.authenticate(&connection);
                 }

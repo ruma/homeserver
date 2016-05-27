@@ -44,8 +44,8 @@ impl<'a> Server<'a> {
         let mut r0 = Chain::new(r0_router);
 
         debug!("Connecting to PostgreSQL.");
-        let connection_pool = try!(create_connection_pool(r2d2_config, &ruma_config.postgres_url));
-        let connection = try!(connection_pool.get());
+        let connection_pool = create_connection_pool(r2d2_config, &ruma_config.postgres_url)?;
+        let connection = connection_pool.get()?;
 
         if set_up_db {
             debug!("Setting up database.");

@@ -1,8 +1,7 @@
 //! Ruma is a server for Matrix.org's client-server API.
 
-#![feature(custom_attribute, custom_derive, plugin)]
-#![plugin(diesel_codegen)]
-#![plugin(serde_macros)]
+#![feature(custom_attribute, custom_derive, plugin, question_mark)]
+#![plugin(diesel_codegen, serde_macros)]
 
 extern crate argon2rs;
 extern crate base64;

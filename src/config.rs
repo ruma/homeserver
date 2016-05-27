@@ -14,9 +14,9 @@ use error::{APIError, CLIError};
 
 /// Load the user's configuration from a JSON file.
 pub fn load(path: &str) -> Result<Config, CLIError> {
-    let mut file = try!(File::open(path));
+    let mut file = File::open(path)?;
     let mut contents = String::new();
-    try!(file.read_to_string(&mut contents));
+    file.read_to_string(&mut contents)?;
 
     let config: RawConfig = match from_str(&contents) {
         Ok(config) => config,

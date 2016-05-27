@@ -40,7 +40,7 @@ pub fn load_user_with_plaintext_password(
 ) -> Result<User, APIError> {
     match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
         Ok(user) => {
-            if try!(verify_password(user.password_hash.as_bytes(), plaintext_password)) {
+            if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
                 Ok(user)
             } else {
                 Err(APIError::unauthorized())
@@ -57,11 +57,12 @@ pub fn insert_user(
     macaroon_secret_key: &Vec<u8>,
 ) -> Result<(User, AccessToken), APIError> {
     connection.transaction::<(User, AccessToken), APIError, _>(|| {
-        let user: User = try!(
-            insert(new_user).into(users::table).get_result(connection).map_err(APIError::from)
-        );
+        let user: User = insert(new_user)
+            .into(users::table)
+            .get_result(connection)
+            .map_err(APIError::from)?;
 
-        let access_token = try!(create_access_token(connection, &user.id[..], macaroon_secret_key));
+        let access_token = create_access_token(connection, &user.id[..], macaroon_secret_key)?;
 
         Ok((user, access_token))
     }).map_err(APIError::from)

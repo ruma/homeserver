@@ -42,7 +42,7 @@ pub fn create_access_token(
 ) -> Result<AccessToken, APIError> {
     let new_access_token = NewAccessToken {
         user_id: user_id.to_string(),
-        value: try!(create_macaroon(macaroon_secret_key, user_id)),
+        value: create_macaroon(macaroon_secret_key, user_id)?,
     };
 
     insert(&new_access_token)
@@ -69,7 +69,7 @@ fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &str) -> Result<Strin
         )));
 
     let serialized = token.serialize();
-    let encoded = try!(u8en(&serialized));
+    let encoded = u8en(&serialized)?;
 
     String::from_utf8(encoded).map_err(APIError::from)
 }

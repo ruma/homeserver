@@ -38,11 +38,9 @@ impl Login {
 impl Handler for Login {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let user = request.get::<AuthRequest>().expect("UIAuth should ensure a user");
-        let connection = try!(get_connection(request));
-        let config = try!(get_config(request));
-        let access_token = try!(
-            create_access_token(&connection, &user.id, &config.macaroon_secret_key)
-        );
+        let connection = get_connection(request)?;
+        let config = get_config(request)?;
+        let access_token = create_access_token(&connection, &user.id, &config.macaroon_secret_key)?;
 
         let response = LoginResponse {
             access_token: access_token.value,

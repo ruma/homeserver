@@ -31,9 +31,9 @@ impl Key for DB {
 pub fn get_connection(request: &mut Request)
     -> Result<PooledConnection<ConnectionManager<PgConnection>>, APIError>
 {
-    let mutex = try!(request.get::<Write<DB>>().map_err(APIError::from));
-    let pool = try!(mutex.lock().map_err(|error| {
+    let mutex = request.get::<Write<DB>>().map_err(APIError::from)?;
+    let pool = mutex.lock().map_err(|error| {
         APIError::unknown_from_string(format!("{}", error))
-    }));
+    })?;
     pool.get().map_err(APIError::from)
 }

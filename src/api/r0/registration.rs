@@ -94,15 +94,17 @@ impl Handler for Register {
 
         let new_user = NewUser {
             id: registration_request.username.unwrap_or(generate_user_id()),
-            password_hash: try!(hash_password(&registration_request.password)),
+            password_hash: hash_password(&registration_request.password)?,
         };
 
-        let connection = try!(get_connection(request));
-        let config = try!(get_config(request));
+        let connection = get_connection(request)?;
+        let config = get_config(request)?;
 
-        let (user, access_token) = try!(
-            insert_user(&connection, &new_user, &config.macaroon_secret_key)
-        );
+        let (user, access_token) = insert_user(
+            &connection,
+            &new_user,
+            &config.macaroon_secret_key,
+        )?;
 
         let response = RegistrationResponse {
             access_token: access_token.value,
