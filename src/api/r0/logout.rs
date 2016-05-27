@@ -2,7 +2,7 @@ use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 
 use access_token::AccessToken;
-use db::get_connection;
+use db::DB;
 use middleware::AccessTokenAuth;
 
 /// The /logout endpoint.
@@ -21,7 +21,7 @@ impl Logout {
 
 impl Handler for Logout {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let connection = get_connection(request)?;
+        let connection = DB::from_request(request)?;
 
         let access_token = request.extensions.get_mut::<AccessToken>()
             .expect("AccessTokenAuth should ensure an access token");

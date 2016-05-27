@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use access_token::AccessToken;
 use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
-use db::get_connection;
+use db::DB;
 use error::APIError;
 use user::User;
 
@@ -29,7 +29,7 @@ impl UIAuth {
 
 impl BeforeMiddleware for AccessTokenAuth {
     fn before(&self, request: &mut Request) -> IronResult<()> {
-        let connection = get_connection(request)?;
+        let connection = DB::from_request(request)?;
 
         if let Some(query_pairs) = request.url.clone().into_generic_url().query_pairs() {
             if let Some(&(_, ref token)) = query_pairs.iter().find(
@@ -65,7 +65,7 @@ impl BeforeMiddleware for UIAuth {
                         user: user,
                     });
 
-                    let connection = get_connection(request)?;
+                    let connection = DB::from_request(request)?;
 
                     if let Ok(user) =  auth_params.authenticate(&connection) {
                         request.extensions.insert::<User>(user);

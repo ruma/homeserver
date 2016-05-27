@@ -6,7 +6,7 @@ use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
 use config::Config;
 use crypto::hash_password;
-use db::get_connection;
+use db::DB;
 use error::APIError;
 use middleware::JsonRequest;
 use modifier::SerializableResponse;
@@ -97,7 +97,7 @@ impl Handler for Register {
             password_hash: hash_password(&registration_request.password)?,
         };
 
-        let connection = get_connection(request)?;
+        let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
         let (user, access_token) = insert_user(

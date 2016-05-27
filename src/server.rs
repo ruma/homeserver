@@ -12,7 +12,7 @@ use router::Router;
 use api::r0::{Login, Logout, Register, Versions};
 use config::Config;
 use error::CLIError;
-use db::{DB, create_connection_pool};
+use db::DB;
 use middleware::Cors;
 use swagger::mount_swagger;
 
@@ -45,7 +45,7 @@ impl<'a> Server<'a> {
         let mut r0 = Chain::new(r0_router);
 
         debug!("Connecting to PostgreSQL.");
-        let connection_pool = create_connection_pool(r2d2_config, &ruma_config.postgres_url)?;
+        let connection_pool = DB::create_connection_pool(r2d2_config, &ruma_config.postgres_url)?;
         let connection = connection_pool.get()?;
 
         if set_up_db {
