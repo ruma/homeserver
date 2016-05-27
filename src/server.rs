@@ -9,7 +9,7 @@ use r2d2::Config as R2D2Config;
 use r2d2_diesel::Error as R2D2DieselError;
 use router::Router;
 
-use api::r0::{Login, Register, Versions};
+use api::r0::{Login, Logout, Register, Versions};
 use config::Config;
 use error::CLIError;
 use db::{DB, create_connection_pool};
@@ -39,6 +39,7 @@ impl<'a> Server<'a> {
         let mut r0_router = Router::new();
 
         r0_router.post("/login", Login::chain());
+        r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());
 
         let mut r0 = Chain::new(r0_router);

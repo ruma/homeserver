@@ -18,10 +18,11 @@ pub struct Test {
     mount: Mount,
 }
 
+#[derive(Debug)]
 pub struct Response {
     pub body: String,
     pub headers: Headers,
-    pub json: Value,
+    json: Option<Value>,
     pub status: Status,
 }
 
@@ -86,8 +87,8 @@ impl Test {
         let body = response::extract_body_to_string(response);
 
         let json = match from_str(&body) {
-            Ok(json) => json,
-            Err(error) => panic!("Failed to parse response as JSON: {}", error),
+            Ok(json) => Some(json),
+            _ => None,
         };
 
         Response {
@@ -96,5 +97,11 @@ impl Test {
             json: json,
             status: status,
         }
+    }
+}
+
+impl Response {
+    pub fn json(&self) -> &Value {
+        self.json.as_ref().expect("Response did not contain JSON")
     }
 }

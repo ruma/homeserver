@@ -2,9 +2,10 @@
 
 use base64::u8en;
 use chrono::{Duration, UTC};
-use diesel::{LoadDsl, insert};
+use diesel::{ExpressionMethods, FilterDsl, LoadDsl, Queryable, SaveChangesDsl, Table, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use iron::typemap::Key;
 use macaroons::caveat::{Caveat, Predicate};
 use macaroons::token::Token;
 
@@ -13,6 +14,7 @@ use schema::access_tokens;
 
 /// A User access token.
 #[derive(Debug, Queryable)]
+#[changeset_for(access_tokens)]
 pub struct AccessToken {
     /// The access token's ID.
     pub id: i64,
@@ -36,6 +38,31 @@ pub struct NewAccessToken {
     pub user_id: String,
     /// The value of the access token. This is a Base64-encoded macaroon.
     pub value: String,
+}
+
+impl AccessToken {
+    pub fn find_valid_by_token(connection: &PgConnection, token: &str)
+    -> Result<AccessToken, APIError> {
+        access_tokens::table
+            .filter(access_tokens::value.eq(token))
+            .filter(access_tokens::revoked.eq(false))
+            .first(connection)
+            .map(AccessToken::from)
+            .map_err(APIError::from)
+    }
+
+    pub fn revoke(&mut self, connection: &PgConnection) -> Result<(), APIError> {
+        self.revoked = true;
+
+        match self.save_changes::<AccessToken>(connection) {
+            Ok(_) => Ok(()),
+            Err(error) => Err(APIError::from(error)),
+        }
+    }
+}
+
+impl Key for AccessToken {
+    type Value = AccessToken;
 }
 
 /// Create a new access token for the given user.

@@ -1,22 +1,22 @@
 use bodyparser;
-use iron::{BeforeMiddleware, IronError, IronResult, Request};
-use iron::typemap::Key;
-use plugin::{Pluggable, Plugin};
+use iron::{BeforeMiddleware, IronError, IronResult, Plugin, Request};
 use serde_json::Value;
 
+use access_token::AccessToken;
 use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
 use db::get_connection;
 use error::APIError;
 use user::User;
+
+/// Handles access token authentication for all API endpoints that require it.
+#[derive(Debug)]
+pub struct AccessTokenAuth;
 
 /// Handles Matrix's interactive authentication protocol for all API endpoints that require it.
 #[derive(Debug)]
 pub struct UIAuth {
     interactive_auth: InteractiveAuth,
 }
-
-#[derive(Debug)]
-pub struct AuthRequest;
 
 impl UIAuth {
     pub fn new(interactive_auth: InteractiveAuth) -> Self {
@@ -26,23 +26,31 @@ impl UIAuth {
     }
 }
 
-impl BeforeMiddleware for UIAuth {
+impl BeforeMiddleware for AccessTokenAuth {
     fn before(&self, request: &mut Request) -> IronResult<()> {
-        match request.get::<AuthRequest>() {
-            Ok(_) => Ok(()),
-            Err(error) => Err(IronError::new(error.clone(), error)),
+        let connection = get_connection(request)?;
+
+        if let Some(query_pairs) = request.url.clone().into_generic_url().query_pairs() {
+            if let Some(&(_, ref token)) = query_pairs.iter().find(
+                |&&(ref key, _)| key == "token"
+            ) {
+                if let Ok(access_token) = AccessToken::find_valid_by_token(&connection, &token) {
+                    if let Ok(user) = User::find_by_access_token(&connection, &access_token) {
+                        request.extensions.insert::<AccessToken>(access_token);
+                        request.extensions.insert::<User>(user);
+
+                        return Ok(());
+                    }
+                }
+            }
         }
+
+        Err(IronError::new(APIError::unauthorized(), APIError::unauthorized()))
     }
 }
 
-impl Key for AuthRequest {
-    type Value = User;
-}
-
-impl<'a, 'b> Plugin<Request<'a, 'b>> for AuthRequest {
-    type Error = APIError;
-
-    fn eval(request: &mut Request) -> Result<Self::Value, Self::Error> {
+impl BeforeMiddleware for UIAuth {
+    fn before(&self, request: &mut Request) -> IronResult<()> {
         let json = request
             .get::<bodyparser::Json>()
             .expect("bodyparser failed to parse")
@@ -58,12 +66,16 @@ impl<'a, 'b> Plugin<Request<'a, 'b>> for AuthRequest {
 
                     let connection = get_connection(request)?;
 
-                    return auth_params.authenticate(&connection);
+                    if let Ok(user) =  auth_params.authenticate(&connection) {
+                        request.extensions.insert::<User>(user);
+
+                        return Ok(());
+                    }
                 }
             }
         }
 
-        Err(APIError::unauthorized())
+        Err(IronError::new(APIError::unauthorized(), APIError::unauthorized()))
     }
 }
 

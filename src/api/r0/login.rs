@@ -1,11 +1,12 @@
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
+use iron::{Chain, Handler, IronResult, Request, Response, status};
 
 use access_token::create_access_token;
 use authentication::{AuthType, Flow, InteractiveAuth};
 use config::get_config;
 use db::get_connection;
-use middleware::{AuthRequest, JsonRequest, UIAuth};
+use middleware::{JsonRequest, UIAuth};
 use modifier::SerializableResponse;
+use user::User;
 
 #[derive(Debug, Serialize)]
 struct LoginResponse {
@@ -37,7 +38,7 @@ impl Login {
 
 impl Handler for Login {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let user = request.get::<AuthRequest>().expect("UIAuth should ensure a user");
+        let user = request.extensions.get::<User>().expect("UIAuth should ensure a user").clone();
         let connection = get_connection(request)?;
         let config = get_config(request)?;
         let access_token = create_access_token(&connection, &user.id, &config.macaroon_secret_key)?;
@@ -70,8 +71,8 @@ mod tests {
             r#"{"auth": {"type": "m.login.password", "user": "carl", "password": "secret"}}"#,
         );
 
-        assert!(response.json.find("access_token").is_some());
-        assert_eq!(response.json.find("home_server").unwrap().as_string().unwrap(), "ruma.test");
-        assert_eq!(response.json.find("user_id").unwrap().as_string().unwrap(), "carl");
+        assert!(response.json().find("access_token").is_some());
+        assert_eq!(response.json().find("home_server").unwrap().as_string().unwrap(), "ruma.test");
+        assert_eq!(response.json().find("user_id").unwrap().as_string().unwrap(), "carl");
     }
 }

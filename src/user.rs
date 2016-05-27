@@ -3,6 +3,7 @@
 use diesel::{Connection, ExpressionMethods, FilterDsl, LoadDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use iron::typemap::Key;
 use rand::{Rng, thread_rng};
 
 use access_token::{AccessToken, create_access_token};
@@ -31,6 +32,21 @@ pub struct NewUser {
     pub id: String,
     /// The user's hashed password.
     pub password_hash: String,
+}
+
+impl User {
+    pub fn find_by_access_token(connection: &PgConnection, token: &AccessToken)
+    -> Result<User, APIError> {
+        users::table
+            .filter(users::id.eq(&token.user_id))
+            .first(connection)
+            .map(User::from)
+            .map_err(APIError::from)
+    }
+}
+
+impl Key for User {
+    type Value = User;
 }
 
 pub fn load_user_with_plaintext_password(

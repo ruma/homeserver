@@ -129,9 +129,9 @@ mod tests {
             r#"{"password": "secret"}"#,
         );
 
-        assert!(response.json.find("access_token").is_some());
-        assert_eq!(response.json.find("home_server").unwrap().as_string().unwrap(), "ruma.test");
-        assert!(response.json.find("user_id").is_some());
+        assert!(response.json().find("access_token").is_some());
+        assert_eq!(response.json().find("home_server").unwrap().as_string().unwrap(), "ruma.test");
+        assert!(response.json().find("user_id").is_some());
     }
 
     #[test]
@@ -143,9 +143,9 @@ mod tests {
             r#"{"bind_email": true, "kind": "user", "username":"carl", "password": "secret"}"#,
         );
 
-        assert!(response.json.find("access_token").is_some());
-        assert_eq!(response.json.find("home_server").unwrap().as_string().unwrap(), "ruma.test");
-        assert_eq!(response.json.find("user_id").unwrap().as_string().unwrap(), "carl");
+        assert!(response.json().find("access_token").is_some());
+        assert_eq!(response.json().find("home_server").unwrap().as_string().unwrap(), "ruma.test");
+        assert_eq!(response.json().find("user_id").unwrap().as_string().unwrap(), "carl");
     }
 
     #[test]
@@ -158,7 +158,7 @@ mod tests {
         );
 
         assert_eq!(
-            response.json.find("errcode").unwrap().as_string().unwrap(),
+            response.json().find("errcode").unwrap().as_string().unwrap(),
             "M_GUEST_ACCESS_FORBIDDEN"
         );
     }
