@@ -6,7 +6,7 @@ use iron::modifier::Modifier;
 use serde::{Serialize, Serializer};
 
 use error::{APIError, APIErrorCode};
-use user::{User, load_user_with_plaintext_password};
+use user::User;
 
 /// A set of authorization flows the user can follow to authenticate a request.
 #[derive(Debug, Serialize)]
@@ -84,6 +84,6 @@ impl AuthParams {
     pub fn authenticate(&self, connection: &PgConnection) -> Result<User, APIError> {
         let &AuthParams::Password(ref credentials) = self;
 
-        load_user_with_plaintext_password(connection, &credentials.user, &credentials.password)
+        User::find_by_uid_and_password(connection, &credentials.user, &credentials.password)
     }
 }

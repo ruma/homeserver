@@ -10,7 +10,7 @@ use db::DB;
 use error::APIError;
 use middleware::JsonRequest;
 use modifier::SerializableResponse;
-use user::{NewUser, generate_user_id, insert_user};
+use user::{NewUser, User};
 
 #[derive(Clone, Debug, Deserialize)]
 struct RegistrationRequest {
@@ -93,14 +93,14 @@ impl Handler for Register {
         }
 
         let new_user = NewUser {
-            id: registration_request.username.unwrap_or(generate_user_id()),
+            id: registration_request.username.unwrap_or(User::generate_uid()),
             password_hash: hash_password(&registration_request.password)?,
         };
 
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let (user, access_token) = insert_user(
+        let (user, access_token) = User::create(
             &connection,
             &new_user,
             &config.macaroon_secret_key,

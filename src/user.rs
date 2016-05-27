@@ -35,6 +35,24 @@ pub struct NewUser {
 }
 
 impl User {
+    /// Creates a new user in the database.
+    pub fn create(
+        connection: &PgConnection,
+        new_user: &NewUser,
+        macaroon_secret_key: &Vec<u8>,
+    ) -> Result<(User, AccessToken), APIError> {
+        connection.transaction::<(User, AccessToken), APIError, _>(|| {
+            let user: User = insert(new_user)
+                .into(users::table)
+                .get_result(connection)
+                .map_err(APIError::from)?;
+
+            let access_token = AccessToken::create(connection, &user.id[..], macaroon_secret_key)?;
+
+            Ok((user, access_token))
+        }).map_err(APIError::from)
+    }
+
     /// Look up a user using the given `AccessToken`.
     pub fn find_by_access_token(connection: &PgConnection, token: &AccessToken)
     -> Result<User, APIError> {
@@ -44,49 +62,31 @@ impl User {
             .map(User::from)
             .map_err(APIError::from)
     }
+
+    /// Look up a user using the given user ID and plaintext password.
+    pub fn find_by_uid_and_password(
+        connection: &PgConnection,
+        id: &str,
+        plaintext_password: &str,
+    ) -> Result<User, APIError> {
+        match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
+            Ok(user) => {
+                if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
+                    Ok(user)
+                } else {
+                    Err(APIError::unauthorized())
+                }
+            }
+            Err(error) => Err(APIError::from(error)),
+        }
+    }
+
+    /// Generate a random user ID.
+    pub fn generate_uid() -> String {
+        thread_rng().gen_ascii_chars().take(12).collect()
+    }
 }
 
 impl Key for User {
     type Value = User;
-}
-
-/// Look up a user using the given plaintext user ID and password.
-pub fn load_user_with_plaintext_password(
-    connection: &PgConnection,
-    id: &str,
-    plaintext_password: &str,
-) -> Result<User, APIError> {
-    match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
-        Ok(user) => {
-            if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
-                Ok(user)
-            } else {
-                Err(APIError::unauthorized())
-            }
-        }
-        Err(error) => Err(APIError::from(error)),
-    }
-}
-
-/// Insert a new user in the database.
-pub fn insert_user(
-    connection: &PgConnection,
-    new_user: &NewUser,
-    macaroon_secret_key: &Vec<u8>,
-) -> Result<(User, AccessToken), APIError> {
-    connection.transaction::<(User, AccessToken), APIError, _>(|| {
-        let user: User = insert(new_user)
-            .into(users::table)
-            .get_result(connection)
-            .map_err(APIError::from)?;
-
-        let access_token = AccessToken::create(connection, &user.id[..], macaroon_secret_key)?;
-
-        Ok((user, access_token))
-    }).map_err(APIError::from)
-}
-
-/// Generate a random user ID.
-pub fn generate_user_id() -> String {
-    thread_rng().gen_ascii_chars().take(12).collect()
 }
