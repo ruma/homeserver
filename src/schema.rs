@@ -2,6 +2,8 @@
 //!
 //! Each child module represents a table in the database.
 
+#![allow(missing_docs)]
+
 table! {
     access_tokens {
         id -> BigSerial,

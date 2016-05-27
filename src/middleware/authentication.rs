@@ -19,6 +19,7 @@ pub struct UIAuth {
 }
 
 impl UIAuth {
+    /// Creates a new `UIAuth` from the given `InteractiveAuth`.
     pub fn new(interactive_auth: InteractiveAuth) -> Self {
         UIAuth {
             interactive_auth: interactive_auth,

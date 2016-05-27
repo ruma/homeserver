@@ -15,18 +15,11 @@ pub struct InteractiveAuth {
 }
 
 impl InteractiveAuth {
+    /// Creates a new `InteractiveAuth` from the given flows.
     pub fn new(flows: Vec<Flow>) -> Self {
         InteractiveAuth {
             flows: flows,
         }
-    }
-
-    pub fn validate(&self, _params: &AuthParams) -> bool {
-        true
-    }
-
-    pub fn with_auth_params(&self, _params: &AuthParams) -> &InteractiveAuth {
-        self
     }
 }
 
@@ -45,6 +38,7 @@ pub struct Flow {
 }
 
 impl Flow {
+    /// Creates a new `Flow` from the given auth types.
     pub fn new(auth_types: Vec<AuthType>) -> Self {
         Flow {
             auth_types: auth_types,
@@ -72,6 +66,7 @@ impl Serialize for AuthType {
 /// Authentication parameters submitted by the user in a request.
 #[derive(Clone, Debug)]
 pub enum AuthParams {
+    /// m.login.password
     Password(PasswordAuthParams)
 }
 
@@ -85,6 +80,7 @@ pub struct PasswordAuthParams {
 }
 
 impl AuthParams {
+    /// Attempts to authenticate as a user with the supplied credentials.
     pub fn authenticate(&self, connection: &PgConnection) -> Result<User, APIError> {
         let &AuthParams::Password(ref credentials) = self;
 

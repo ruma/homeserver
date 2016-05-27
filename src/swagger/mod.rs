@@ -7,9 +7,11 @@ use mount::Mount;
 
 use middleware::Cors;
 
+/// Stub for the Swagger endpoint. Enable with the Cargo feature "swagger".
 #[cfg(not(feature = "swagger"))]
 pub fn mount_swagger(_mount: &mut Mount) {}
 
+/// Mounts the Swagger endpoint onto the given `Mount`.
 #[cfg(feature = "swagger")]
 pub fn mount_swagger(mount: &mut Mount) {
     struct Swagger;

@@ -157,17 +157,27 @@ impl Modifier<Response> for APIError {
 /// The error code for a client-facing error.
 #[derive(Clone, Debug)]
 pub enum APIErrorCode {
+    /// The request contained valid JSON, but it was malformed in some way,
+    /// e.g. missing required keys, invalid values for keys.
     BadJson,
+    /// Forbidden access, e.g. joining a room without permission, failed login.
     Forbidden,
+    /// Guests are not allowed to perform the requested operation.
     GuestAccessForbidden,
+    /// Too many requests have been sent in a short period of time. Wait a while then try again.
     LimitExceeded,
+    /// No resource was found for this request.
     NotFound,
+    /// Request did not contain valid JSON.
     NotJson,
+    /// Errors not fitting into another category.
     Unknown,
+    /// The access token specified was not recognised.
     UnknownToken,
 }
 
 impl APIErrorCode {
+    /// The HTTP status code that should be used to represent the `APIErrorCode`.
     pub fn status_code(&self) -> Status {
         match *self {
             APIErrorCode::BadJson => Status::UnprocessableEntity,

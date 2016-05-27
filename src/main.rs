@@ -2,6 +2,7 @@
 
 #![feature(custom_attribute, custom_derive, plugin, question_mark)]
 #![plugin(diesel_codegen, serde_macros)]
+#![deny(missing_docs)]
 
 extern crate argon2rs;
 extern crate base64;

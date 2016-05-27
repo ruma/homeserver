@@ -41,6 +41,9 @@ pub struct NewAccessToken {
 }
 
 impl AccessToken {
+    /// Creates an `AccessToken` from an access token string value.
+    ///
+    /// The access token cannot be revoked.
     pub fn find_valid_by_token(connection: &PgConnection, token: &str)
     -> Result<AccessToken, APIError> {
         access_tokens::table
@@ -51,6 +54,7 @@ impl AccessToken {
             .map_err(APIError::from)
     }
 
+    /// Revoke the access token so it cannot be used again.
     pub fn revoke(&mut self, connection: &PgConnection) -> Result<(), APIError> {
         self.revoked = true;
 

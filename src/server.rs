@@ -96,6 +96,7 @@ impl<'a> Server<'a> {
         iron.http(&address[..])
     }
 
+    /// Moves out the server's `Mount`. Useful for testing.
     pub fn into_mount(self) -> Mount {
         self.mount
     }

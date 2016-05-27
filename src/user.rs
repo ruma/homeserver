@@ -35,6 +35,7 @@ pub struct NewUser {
 }
 
 impl User {
+    /// Look up a user using the given `AccessToken`.
     pub fn find_by_access_token(connection: &PgConnection, token: &AccessToken)
     -> Result<User, APIError> {
         users::table
@@ -49,6 +50,7 @@ impl Key for User {
     type Value = User;
 }
 
+/// Look up a user using the given plaintext user ID and password.
 pub fn load_user_with_plaintext_password(
     connection: &PgConnection,
     id: &str,
