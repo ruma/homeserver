@@ -16,6 +16,13 @@ table! {
 }
 
 table! {
+    rooms {
+        id -> Text,
+        user_id -> Text,
+    }
+}
+
+table! {
     users {
         id -> Text,
         password_hash -> Text,
