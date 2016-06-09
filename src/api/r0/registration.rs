@@ -75,7 +75,7 @@ impl Handler for Register {
         let registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
             Ok(Some(registration_request)) => registration_request,
             Ok(None) | Err(_) => {
-                let error = APIError::not_json();
+                let error = APIError::bad_json();
 
                 return Err(IronError::new(error.clone(), error));
             }

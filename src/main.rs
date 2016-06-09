@@ -45,6 +45,7 @@ pub mod error;
 pub mod middleware;
 pub mod modifier;
 pub mod room;
+pub mod room_alias;
 pub mod schema;
 pub mod server;
 pub mod swagger;
