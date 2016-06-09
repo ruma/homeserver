@@ -2,6 +2,7 @@
 
 use diesel::{LoadDsl, insert};
 use diesel::pg::PgConnection;
+use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
 
 use error::APIError;
@@ -24,6 +25,8 @@ pub struct Room {
     pub id: String,
     /// The ID of the user who created the room.
     pub user_id: String,
+    /// The time the room was created.
+    pub created_at: PgTimestamp,
 }
 
 impl Room {
