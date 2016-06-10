@@ -1,15 +1,16 @@
 # Ruma
 
-**Ruma** is a server for [Matrix](https://matrix.org/)'s client-server API written in [Rust](https://www.rust-lang.org/).
+**Ruma** is a [Matrix](https://matrix.org/) homeserver written in [Rust](https://www.rust-lang.org/).
 
 If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://vector.im/beta/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
 
 ## Status
 
-The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix identity server, a Matrix client library, and some Matrix application services.
-This repository in particular aims to implement the client-server portion of the Matrix homeserver.
-The homeserver federation API lives at [ruma/ruma-federation](https://github.com/ruma/ruma-federation), but will not be actively developed until the federation API specification has stabilized and the client-server API is in a practically useful state.
-Additional components shared by multiple applications can be found in the [Ruma organization on GitHub](https://github.com/ruma).
+The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix identity server, a Matrix client library, and Matrix application services.
+This repository in particular aims to implement the client API of a Matrix homeserver.
+The homeserver federation API lives at [ruma/ruma-federation](https://github.com/ruma/ruma-federation), but will not be actively developed until the federation API specification has stabilized and the client API is in a practically useful state.
+This separation of the two homeserver APIs allows users to run a private homeserver without federation if they choose, and to scale the infrastructure for their client and federation APIs separately if they choose to participate in a larger Matrix network.
+Additional Matrix libraries used by Ruma can be found in the [Ruma organization on GitHub](https://github.com/ruma).
 
 Ruma is currently pre-alpha and cannot realistically be used from a standard Matrix client, but it's getting closer every week!
 
@@ -18,7 +19,7 @@ For a detailed view of which Matrix APIs are supported by Ruma so far, see the [
 ## Development
 
 Ruma currently requires the nightly version of Rust, primarily because it makes heavy use of the code generation features of [Diesel](https://github.com/sgrif/diesel) and [Serde](https://github.com/serde-rs/serde), which use compiler plugins, an unstable Rust feature.
-This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/) and the [procedural macros RC](https://github.com/rust-lang/rfcs/pull/1566)), but is probably a very long way off from making it to stable Rust.
+This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/) and the [procedural macros RFC](https://github.com/rust-lang/rfcs/pull/1566)), but is probably a very long way off from making it to stable Rust.
 
 To install a nightly version of Rust, use [rustup](https://www.rustup.rs/) or head over to the [Rust Downloads](https://www.rust-lang.org/downloads.html) page.
 
@@ -69,7 +70,7 @@ The complete list of attributes in the configuration is as follows:
 
 ```
 ruma 0.1.0
-A Matrix client-server API
+A Matrix homeserver client API
 
 USAGE:
     ruma [FLAGS] [SUBCOMMAND]
@@ -91,7 +92,7 @@ You are responsible for providing Ruma with a valid PostgreSQL server URL and ro
 ## Swagger
 
 Ruma includes an HTTP endpoint to serve [Swagger](http://swagger.io/) data at http://example.com/ruma/swagger.json (substituting the host and port of your Ruma server for example.com, of course.)
-Point a copy of [Swagger UI](https://github.com/swagger-api/swagger-ui) at this URL to see complete documentation for the Matrix client-server API.
+Point a copy of [Swagger UI](https://github.com/swagger-api/swagger-ui) at this URL to see complete documentation for the Matrix client API.
 Note that Ruma does not actually implement all these API endpoints yet.
 
 If you don't need this functionality, you can create a smaller `ruma` binary by building Ruma by running:

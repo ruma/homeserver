@@ -1,4 +1,4 @@
-//! Ruma is a server for Matrix.org's client-server API.
+//! Ruma is a Matrix homeserver client API.
 
 #![feature(custom_attribute, custom_derive, plugin, question_mark)]
 #![plugin(diesel_codegen, serde_macros)]
@@ -57,7 +57,7 @@ fn main() {
 
     let matches = App::new("ruma")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A Matrix client-server API")
+        .about("A Matrix homeserver client API")
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
