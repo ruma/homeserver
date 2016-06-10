@@ -2,6 +2,8 @@
 
 **Ruma** is a server for [Matrix](https://matrix.org/)'s client-server API written in [Rust](https://www.rust-lang.org/).
 
+If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://vector.im/beta/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
+
 ## Status
 
 The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix identity server, a Matrix client library, and some Matrix application services.
@@ -10,6 +12,8 @@ The homeserver federation API lives at [ruma/ruma-federation](https://github.com
 Additional components shared by multiple applications can be found in the [Ruma organization on GitHub](https://github.com/ruma).
 
 Ruma is currently pre-alpha and cannot realistically be used from a standard Matrix client, but it's getting closer every week!
+
+For a detailed view of which Matrix APIs are supported by Ruma so far, see the [STATUS](STATUS.md) document.
 
 ## Development
 
@@ -100,8 +104,7 @@ The Swagger endpoint is compiled conditionally when the "swagger" Cargo feature 
 
 ## Contributing
 
-Ruma encourages participation and contributions.
-If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://vector.im/beta/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
+See the [CONTRIBUTING](CONTRIBUTING.md) document.
 
 ## License
 
