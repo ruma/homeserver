@@ -15,6 +15,7 @@ use user::User;
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
     pub room_alias_name: Option<String>,
+    pub visibility: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -24,6 +25,20 @@ struct CreateRoomResponse {
 
 /// The /createRoom endpoint.
 pub struct CreateRoom;
+
+impl CreateRoomRequest {
+    pub fn validate(self) -> Result<Self, IronError> {
+        if let Some(ref visibility) = self.visibility {
+            if visibility != "public" && visibility != "private" {
+                let error = APIError::bad_json();
+
+                return Err(IronError::new(error.clone(), error));
+            }
+        }
+
+        Ok(self)
+    }
+}
 
 impl CreateRoom {
     /// Create a `CreateRoom` with all necessary middleware.
@@ -42,7 +57,7 @@ impl Handler for CreateRoom {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
-            Ok(Some(create_room_request)) => create_room_request,
+            Ok(Some(create_room_request)) => create_room_request.validate()?,
             Ok(None) | Err(_) => {
                 let error = APIError::bad_json();
 
@@ -56,10 +71,11 @@ impl Handler for CreateRoom {
         let new_room = NewRoom {
             id: Room::generate_room_id(),
             user_id: user.id,
+            public: create_room_request.visibility.map_or(false, |v| v == "public"),
         };
 
         let creation_options = CreationOptions {
-            room_alias_name: create_room_request.room_alias_name,
+            alias: create_room_request.room_alias_name,
         };
 
         let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
@@ -120,5 +136,77 @@ mod tests {
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
         assert!(response.json().find("room_id").unwrap().as_string().is_some());
+    }
+
+    #[test]
+    fn with_public_visibility() {
+        let test = Test::new();
+
+        let registration_response = test.post(
+            "/_matrix/client/r0/register",
+            r#"{"username": "carl", "password": "secret"}"#,
+        );
+
+        let access_token = registration_response
+            .json()
+            .find("access_token")
+            .unwrap()
+            .as_string()
+            .unwrap();
+
+        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+
+        let response = test.post(&create_room_path, r#"{"visibility": "public"}"#);
+
+        assert!(response.json().find("room_id").unwrap().as_string().is_some());
+    }
+
+    #[test]
+    fn with_private_visibility() {
+        let test = Test::new();
+
+        let registration_response = test.post(
+            "/_matrix/client/r0/register",
+            r#"{"username": "carl", "password": "secret"}"#,
+        );
+
+        let access_token = registration_response
+            .json()
+            .find("access_token")
+            .unwrap()
+            .as_string()
+            .unwrap();
+
+        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+
+        let response = test.post(&create_room_path, r#"{"visibility": "private"}"#);
+
+        assert!(response.json().find("room_id").unwrap().as_string().is_some());
+    }
+
+    #[test]
+    fn with_invalid_visibility() {
+        let test = Test::new();
+
+        let registration_response = test.post(
+            "/_matrix/client/r0/register",
+            r#"{"username": "carl", "password": "secret"}"#,
+        );
+
+        let access_token = registration_response
+            .json()
+            .find("access_token")
+            .unwrap()
+            .as_string()
+            .unwrap();
+
+        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+
+        let response = test.post(&create_room_path, r#"{"visibility": "bogus"}"#);
+
+        assert_eq!(
+            response.json().find("errcode").unwrap().as_string().unwrap(),
+            "M_BAD_JSON"
+        );
     }
 }

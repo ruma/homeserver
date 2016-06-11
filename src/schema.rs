@@ -29,6 +29,7 @@ table! {
     rooms {
         id -> Text,
         user_id -> Text,
+        public -> Bool,
         created_at -> Timestamp,
     }
 }

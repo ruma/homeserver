@@ -12,7 +12,7 @@ use schema::rooms;
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {
     /// An initial alias for the room.
-    pub room_alias_name: Option<String>,
+    pub alias: Option<String>,
 }
 
 /// A new Matrix room, not yet saved.
@@ -23,6 +23,8 @@ pub struct NewRoom {
     pub id: String,
     /// The ID of the user creating the room.
     pub user_id: String,
+    /// Whether or not the room is visible in the directory.
+    pub public: bool,
 }
 
 /// A Matrix room.
@@ -32,6 +34,8 @@ pub struct Room {
     pub id: String,
     /// The ID of the user who created the room.
     pub user_id: String,
+    /// Whether or not the room is visible in the directory.
+    pub public: bool,
     /// The time the room was created.
     pub created_at: PgTimestamp,
 }
@@ -50,7 +54,7 @@ impl Room {
                 .get_result(connection)
                 .map_err(APIError::from)?;
 
-            if let Some(ref alias) = creation_options.room_alias_name {
+            if let Some(ref alias) = creation_options.alias {
                 let new_room_alias = NewRoomAlias {
                     alias: alias.to_string(),
                     room_id: room.id.clone(),
