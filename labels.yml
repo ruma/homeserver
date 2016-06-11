@@ -1,6 +1,6 @@
+# This file is used to manage the labels on GitHub issues using
+# https://github.com/jimmycuadra/ghlabel.
 - name: component/api
-  color: bfd4f2
-- name: component/auth
   color: bfd4f2
 - name: component/config
   color: bfd4f2
@@ -10,17 +10,69 @@
   color: bfd4f2
 - name: component/docs
   color: bfd4f2
+- name: component/tests
+  color: bfd4f2
 - name: effort/easy
   color: bfe5bf
 - name: effort/normal
   color: bfe5bf
 - name: effort/hard
   color: bfe5bf
+- name: spec/3pid
+  color: cccccc
+- name: spec/admin
+  color: cccccc
+- name: spec/auth
+  color: cccccc
+- name: spec/client config
+  color: cccccc
+- name: spec/context
+  color: cccccc
+- name: spec/directory
+  color: cccccc
+- name: spec/e2e
+  color: cccccc
+- name: spec/events
+  color: cccccc
+- name: spec/filters
+  color: cccccc
+- name: spec/guests
+  color: cccccc
+- name: spec/history
+  color: cccccc
+- name: spec/media
+  color: cccccc
+- name: spec/pagination
+  color: cccccc
+- name: spec/presence
+  color: cccccc
+- name: spec/previews
+  color: cccccc
+- name: spec/profiles
+  color: cccccc
+- name: spec/push notifications
+  color: cccccc
+- name: spec/rate limits
+  color: cccccc
+- name: spec/receipts
+  color: cccccc
+- name: spec/rooms
+  color: cccccc
+- name: spec/search
+  color: cccccc
+- name: spec/tags
+  color: cccccc
+- name: spec/typing
+  color: cccccc
+- name: spec/voip
+  color: cccccc
 - name: status/accepted
   color: fef2c0
 - name: status/blocked
   color: fef2c0
 - name: status/needs more info
+  color: fef2c0
+- name: status/needs review
   color: fef2c0
 - name: status/rejected
   color: fef2c0
