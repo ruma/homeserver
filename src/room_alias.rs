@@ -19,6 +19,7 @@ pub struct NewRoomAlias {
     pub servers: Vec<String>,
 }
 
+/// A human-readable alias for a room ID.
 #[derive(Debug, Queryable)]
 pub struct RoomAlias {
     /// The human-readable alias.
