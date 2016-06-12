@@ -27,9 +27,12 @@ r2d2 = "0.7.0"
 r2d2-diesel = "0.6.0"
 rand = "0.3.14"
 router = "0.1.1"
+rustc-serialize = "0.3"
 serde = "0.7.10"
 serde_json = "0.7.1"
 serde_macros = "0.7.10"
+serde_yaml = "0.2"
+toml = "0.1"
 unicase = "1.4.0"
 
 [dependencies.argon2rs]
