@@ -2,20 +2,23 @@
 
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 use std::sync::Arc;
 
 use base64::u8de;
 use iron::{Plugin, Request};
 use iron::typemap::Key;
 use persistent::Read as PersistentRead;
-use serde_json::from_str;
+use serde_json;
+use serde_yaml;
+use toml;
 
 use error::{APIError, CLIError};
 
 /// The user's configuration as loaded from the configuration file.
 ///
 /// Refer to `Config` for the description of the fields.
-#[derive(Deserialize)]
+#[derive(Deserialize, RustcDecodable)]
 struct RawConfig {
     bind_address: Option<String>,
     bind_port: Option<String>,
@@ -44,16 +47,19 @@ pub struct Config {
 }
 
 impl Config {
-    /// Load the user's configuration from a JSON file.
-    pub fn from_file(path: &str) -> Result<Config, CLIError> {
-        let mut file = File::open(path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+    /// Load the user's configuration file.
+    pub fn from_file() -> Result<Config, CLIError> {
+        let config: RawConfig;
 
-        let config: RawConfig = match from_str(&contents) {
-            Ok(config) => config,
-            Err(error) => return Err(From::from(error)),
-        };
+        if Self::json_exists() {
+            config = Self::load_json()?;
+        } else if Self::toml_exists() {
+            config = Self::load_toml()?;
+        } else if Self::yaml_exists() {
+            config = Self::load_yaml()?;
+        } else {
+            return Err(CLIError::new("No configuration file was found."));
+        }
 
         let macaroon_secret_key = match u8de(config.macaroon_secret_key.as_bytes()) {
             Ok(bytes) => match bytes.len() {
@@ -72,6 +78,77 @@ impl Config {
             macaroon_secret_key: macaroon_secret_key,
             postgres_url: config.postgres_url,
         })
+    }
+
+    /// Load the `RawConfig` from a JSON configuration file.
+    fn load_json() -> Result<RawConfig, CLIError> {
+        let contents = Self::read_file_contents("ruma.json");
+        match serde_json::from_str(&contents) {
+            Ok(config) => return Ok(config),
+            Err(error) => return Err(CLIError::from(error)),
+        };
+    }
+
+    /// Load the `RawConfig` from a TOML configuration file.
+    fn load_toml() -> Result<RawConfig, CLIError> {
+        let contents = Self::read_file_contents("ruma.toml");
+        let mut parser = toml::Parser::new(&contents);
+        let data  = parser.parse();
+
+        if data.is_none() {
+            for err in &parser.errors {
+                let (loline, locol) = parser.to_linecol(err.lo);
+                let (hiline, hicol) = parser.to_linecol(err.hi);
+                println!("ruma.toml: {}:{}-{}:{} error: {}", loline, locol, hiline, hicol, err.desc);
+            }
+
+            return Err(CLIError::new("Unable to parse ruma.toml."));
+        }
+
+        let config = toml::Value::Table(data.unwrap());
+        match toml::decode(config) {
+            Some(t) => return Ok(t),
+            None => return Err(CLIError::new("Error while decoding ruma.toml.")),
+        }
+    }
+
+    /// Load the `RawConfig` from a YAML configuration file.
+    fn load_yaml() -> Result<RawConfig, CLIError> {
+        let contents;
+
+        if Path::new("ruma.yaml").is_file() {
+            contents = Self::read_file_contents("ruma.yaml");
+        } else {
+            contents = Self::read_file_contents("ruma.yml");
+        }
+
+        match serde_yaml::from_str(&contents) {
+            Ok(config) => return Ok(config),
+            Err(error) => return Err(CLIError::from(error)),
+        };
+    }
+
+    /// Read the contents of a file.
+    fn read_file_contents(path: &str) -> String {
+        let mut file = File::open(path).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        contents
+    }
+
+    /// Check if there is a configuration file in JSON.
+    fn json_exists() -> bool {
+        Path::new("ruma.json").is_file()
+    }
+
+    /// Check if there is a configuration file in TOML.
+    fn toml_exists() -> bool {
+        Path::new("ruma.toml").is_file()
+    }
+
+    /// Check if there is a configuration file in YAML.
+    fn yaml_exists() -> bool {
+        Path::new("ruma.yml").is_file() || Path::new("ruma.yaml").is_file()
     }
 
     /// Extract the `Config` stored in the request.

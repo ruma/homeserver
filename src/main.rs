@@ -22,8 +22,11 @@ extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rand;
 extern crate router;
+extern crate rustc_serialize;
 extern crate serde;
 extern crate serde_json;
+extern crate serde_yaml;
+extern crate toml;
 extern crate unicase;
 
 use clap::{App, AppSettings, SubCommand};
@@ -72,7 +75,7 @@ fn main() {
 
     match matches.subcommand() {
         ("run", Some(_)) => {
-            let config = match Config::from_file("ruma.json") {
+            let config = match Config::from_file() {
                 Ok(config) => config,
                 Err(error) => {
                     println!("Failed to load configuration file: {}", error);
