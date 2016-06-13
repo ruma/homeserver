@@ -40,12 +40,15 @@ Once Docker is installed, run `make` to run the test suite.
 
 ## Configuration
 
-Ruma requires a configuration file named `ruma.json` in the directory `ruma` is executed from.
-The file should contain a JSON object that looks something like this:
+Ruma requires a configuration file named `ruma.json`, `ruma.toml`, or `ruma.yaml`/`ruma.yml` written in JSON, TOML, or YAML, respectively.
+This file should be in the working directory `ruma` is executed from.
+Ruma will attempt to load the configuration file in that same order, stopping at the first one it finds.
+A configuration file would look something like this, in the JSON format:
 
 ``` json
 {
   "domain": "example.com",
+  "macaroon_secret_key": "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8="
   "postgres_url": "postgres://username:password@example.com:5432/ruma"
 }
 ```
