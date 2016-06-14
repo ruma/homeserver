@@ -67,13 +67,7 @@ mod tests {
     #[test]
     fn change_password() {
         let test = Test::new();
-
-        let response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
-        );
-
-        let access_token = response.json().find("access_token").unwrap().as_string().unwrap();
+        let access_token = test.create_access_token();
 
         assert!(
             test.post(

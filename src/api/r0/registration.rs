@@ -124,8 +124,7 @@ mod tests {
     fn minimum_input_parameters() {
         let test = Test::new();
 
-        let response = test.post(
-            "/_matrix/client/r0/register",
+        let response = test.register_user(
             r#"{"password": "secret"}"#,
         );
 
@@ -138,9 +137,8 @@ mod tests {
     fn all_input_parameters() {
         let test = Test::new();
 
-        let response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"bind_email": true, "kind": "user", "username":"carl", "password": "secret"}"#,
+        let response = test.register_user(
+            r#"{"bind_email": true, "kind": "user", "username":"carl", "password": "secret"}"#
         );
 
         assert!(response.json().find("access_token").is_some());
@@ -152,9 +150,8 @@ mod tests {
     fn guest_access_not_supported() {
         let test = Test::new();
 
-        let response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"bind_email": true, "kind": "guest", "username":"carl", "password": "secret"}"#,
+        let response = test.register_user(
+            r#"{"bind_email": true, "kind": "guest", "username":"carl", "password": "secret"}"#
         );
 
         assert_eq!(
