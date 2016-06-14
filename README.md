@@ -48,7 +48,7 @@ A configuration file would look something like this, in the JSON format:
 ``` json
 {
   "domain": "example.com",
-  "macaroon_secret_key": "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8="
+  "macaroon_secret_key": "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8=",
   "postgres_url": "postgres://username:password@example.com:5432/ruma"
 }
 ```
