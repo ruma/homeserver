@@ -95,18 +95,7 @@ mod tests {
     #[test]
     fn no_parameters() {
         let test = Test::new();
-
-        let registration_response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
-        );
-
-        let access_token = registration_response
-            .json()
-            .find("access_token")
-            .unwrap()
-            .as_string()
-            .unwrap();
+        let access_token = test.create_access_token();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
 
@@ -118,18 +107,7 @@ mod tests {
     #[test]
     fn with_room_alias() {
         let test = Test::new();
-
-        let registration_response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
-        );
-
-        let access_token = registration_response
-            .json()
-            .find("access_token")
-            .unwrap()
-            .as_string()
-            .unwrap();
+        let access_token = test.create_access_token();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
 
@@ -141,18 +119,7 @@ mod tests {
     #[test]
     fn with_public_visibility() {
         let test = Test::new();
-
-        let registration_response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
-        );
-
-        let access_token = registration_response
-            .json()
-            .find("access_token")
-            .unwrap()
-            .as_string()
-            .unwrap();
+        let access_token = test.create_access_token();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
 
@@ -164,18 +131,7 @@ mod tests {
     #[test]
     fn with_private_visibility() {
         let test = Test::new();
-
-        let registration_response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
-        );
-
-        let access_token = registration_response
-            .json()
-            .find("access_token")
-            .unwrap()
-            .as_string()
-            .unwrap();
+        let access_token = test.create_access_token();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
 
@@ -187,18 +143,7 @@ mod tests {
     #[test]
     fn with_invalid_visibility() {
         let test = Test::new();
-
-        let registration_response = test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
-        );
-
-        let access_token = registration_response
-            .json()
-            .find("access_token")
-            .unwrap()
-            .as_string()
-            .unwrap();
+        let access_token = test.create_access_token();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
 

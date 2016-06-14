@@ -98,6 +98,20 @@ impl Test {
             status: status,
         }
     }
+
+    pub fn register_user(&self, body: &str) -> Response {
+        self.post("/_matrix/client/r0/register", body)
+    }
+
+    pub fn create_access_token(&self) -> String {
+        self.register_user(r#"{"username": "carl", "password": "secret"}"#)
+            .json()
+            .find("access_token")
+            .unwrap()
+            .as_string()
+            .unwrap()
+            .to_string()
+    }
 }
 
 impl Response {

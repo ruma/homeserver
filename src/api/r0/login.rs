@@ -61,9 +61,8 @@ mod tests {
     fn valid_credentials() {
         let test = Test::new();
 
-        assert!(test.post(
-            "/_matrix/client/r0/register",
-            r#"{"username": "carl", "password": "secret"}"#,
+        assert!(test.register_user(
+            r#"{"username": "carl", "password": "secret"}"#
         ).status.is_success());
 
         let response = test.post(
