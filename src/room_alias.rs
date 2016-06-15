@@ -1,8 +1,9 @@
 //! Human-readable aliases for room IDs.
 
-use diesel::{LoadDsl, insert};
+use diesel::{ExpressionMethods, FilterDsl, LoadDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::result::Error as DieselError;
 
 use error::APIError;
 use schema::room_aliases;
@@ -42,5 +43,17 @@ impl RoomAlias {
             .into(room_aliases::table)
             .get_result(connection)
             .map_err(APIError::from)
+    }
+
+    /// Return room ID for given room alias.
+    pub fn find_by_alias(connection: &PgConnection, alias: &str)
+    -> Result<RoomAlias, APIError> {
+        room_aliases::table
+            .filter(room_aliases::alias.eq(alias))
+            .first(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => APIError::not_found(),
+                _ => APIError::from(err),
+            })
     }
 }
