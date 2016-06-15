@@ -40,6 +40,14 @@ impl APIError {
         }
     }
 
+    /// Create an error for requests that do not map to a resource.
+    pub fn not_found() -> APIError {
+        APIError {
+            errcode: APIErrorCode::NotFound,
+            error: "No resource was found for this request.".to_string(),
+        }
+    }
+
     /// Create an error for requests without JSON bodies.
     pub fn not_json() -> APIError {
         APIError {
