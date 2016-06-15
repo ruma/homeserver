@@ -43,7 +43,8 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        let login_path = format!("/_matrix/client/r0/logout?token={}", access_token);
+        let login_path = format!("/_matrix/client/r0/logout?access_token={}",
+                                 access_token);
 
         assert!(test.post(&login_path, "{}").status.is_success());
         assert_eq!(test.post(&login_path, "{}").status, Status::Forbidden);

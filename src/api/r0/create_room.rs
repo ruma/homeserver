@@ -97,7 +97,8 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
+                                       access_token);
 
         let response = test.post(&create_room_path, "{}");
 
@@ -109,7 +110,8 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
+                                       access_token);
 
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
@@ -121,7 +123,8 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
+                                       access_token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "public"}"#);
 
@@ -133,7 +136,8 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
+                                       access_token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "private"}"#);
 
@@ -145,7 +149,8 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?token={}", access_token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
+                                       access_token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "bogus"}"#);
 
