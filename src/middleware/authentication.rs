@@ -33,7 +33,7 @@ impl BeforeMiddleware for AccessTokenAuth {
 
         if let Some(query_pairs) = request.url.clone().into_generic_url().query_pairs() {
             if let Some(&(_, ref token)) = query_pairs.iter().find(
-                |&&(ref key, _)| key == "token"
+                |&&(ref key, _)| key == "access_token"
             ) {
                 if let Ok(access_token) = AccessToken::find_valid_by_token(&connection, &token) {
                     if let Ok(user) = User::find_by_access_token(&connection, &access_token) {

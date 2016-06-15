@@ -71,7 +71,7 @@ mod tests {
 
         assert!(
             test.post(
-                &format!("/_matrix/client/r0/account/password?token={}", access_token),
+                &format!("/_matrix/client/r0/account/password?access_token={}", access_token),
                 r#"{"new_password": "hidden"}"#
             ).status.is_success()
         );
