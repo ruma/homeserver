@@ -1,3 +1,8 @@
+before_install:
+  - "sudo add-apt-repository ppa:cjwatson/launchpad"
+  - "sudo apt-get update"
+  - "sudo apt-get install libsodium"
+cache: "cargo"
 git:
   depth: 1
 install:
