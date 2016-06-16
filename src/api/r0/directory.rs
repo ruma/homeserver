@@ -6,7 +6,7 @@ use router::Router;
 
 use db::DB;
 use error::APIError;
-use middleware::{AccessTokenAuth, JsonRequest};
+use middleware::AccessTokenAuth;
 use modifier::SerializableResponse;
 use room_alias::RoomAlias;
 
@@ -22,7 +22,11 @@ pub struct GetDirectoryRoom;
 impl GetDirectoryRoom {
     /// Create a `DirectoryRoom`.
     pub fn chain() -> Chain {
-        Chain::new(GetDirectoryRoom)
+        let mut chain = Chain::new(GetDirectoryRoom);
+
+        chain.link_before(AccessTokenAuth);
+
+        chain
     }
 }
 
