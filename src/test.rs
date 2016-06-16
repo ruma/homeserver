@@ -1,7 +1,9 @@
 use env_logger;
 use diesel::Connection;
 use diesel::pg::PgConnection;
+use iron;
 use iron::headers::{ContentType, Headers};
+use iron::method::Method;
 use iron::status::Status;
 use iron_test::{request, response};
 use mount::Mount;
@@ -67,36 +69,31 @@ impl Test {
         }
     }
 
+    pub fn get(&self, path: &str) -> Response {
+        self.request(Method::Get, path, "")
+    }
+
     pub fn post(&self, path: &str, body: &str) -> Response {
+        self.request(Method::Post, path, body)
+    }
+
+    pub fn request(&self, method: Method, path: &str, body: &str) -> Response {
         let mut headers = Headers::new();
 
         headers.set(ContentType::json());
 
-        let response = match request::post(
+        let response = match request::request(
+            method,
             &format!("http://ruma.test{}", path)[..],
-            headers,
             body,
+            headers,
             &self.mount,
         ) {
             Ok(response) => response,
             Err(error)  => error.response,
         };
 
-        let headers = response.headers.clone();
-        let status = response.status.expect("Response had no status").clone();
-        let body = response::extract_body_to_string(response);
-
-        let json = match from_str(&body) {
-            Ok(json) => Some(json),
-            _ => None,
-        };
-
-        Response {
-            body: body,
-            headers: headers,
-            json: json,
-            status: status,
-        }
+        Response::from_iron_response(response)
     }
 
     pub fn register_user(&self, body: &str) -> Response {
@@ -115,6 +112,24 @@ impl Test {
 }
 
 impl Response {
+    pub fn from_iron_response(response: iron::response::Response) -> Response {
+        let headers = response.headers.clone();
+        let status = response.status.expect("Response had no status").clone();
+        let body = response::extract_body_to_string(response);
+
+        let json = match from_str(&body) {
+            Ok(json) => Some(json),
+            _ => None,
+        };
+
+        Response {
+            body: body,
+            headers: headers,
+            json: json,
+            status: status,
+        }
+    }
+
     pub fn json(&self) -> &Value {
         self.json.as_ref().expect("Response did not contain JSON")
     }

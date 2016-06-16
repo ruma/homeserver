@@ -162,7 +162,7 @@ Legend:
     <td>DELETE /directory/room/:room_alias</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/21">#21</a></td>
     <td>GET /directory/room/:room_alias</td>
   </tr>
