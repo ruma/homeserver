@@ -6,7 +6,6 @@ use router::Router;
 
 use db::DB;
 use error::APIError;
-use middleware::AccessTokenAuth;
 use modifier::SerializableResponse;
 use room_alias::RoomAlias;
 
@@ -22,11 +21,7 @@ pub struct GetDirectoryRoom;
 impl GetDirectoryRoom {
     /// Create a `DirectoryRoom`.
     pub fn chain() -> Chain {
-        let mut chain = Chain::new(GetDirectoryRoom);
-
-        chain.link_before(AccessTokenAuth);
-
-        chain
+        Chain::new(GetDirectoryRoom)
     }
 }
 
@@ -64,10 +59,7 @@ mod tests {
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().find("room_id").unwrap().as_string();
 
-        let get_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
-        );
-        let response = test.get(&get_room_alias_path);
+        let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
         assert_eq!(response.json().find("room_id").unwrap().as_string(), room_id);
         assert!(response.json().find("servers").unwrap().is_array());
@@ -82,10 +74,7 @@ mod tests {
                                        access_token);
         let _ = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
-        let get_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/no_room?access_token={}", access_token
-        );
-        let response = test.get(&get_room_alias_path);
+        let response = test.get("/_matrix/client/r0/directory/room/no_room");
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
