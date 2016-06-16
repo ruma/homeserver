@@ -8,9 +8,9 @@ function cleanup() {
 }
 
 cargo test --no-run
-docker run -d -e POSTGRES_PASSWORD=test --name ruma_test_postgres -p 5432:5432 postgres > /dev/null
+docker run -d -e POSTGRES_PASSWORD=test --name ruma_test_postgres -p 5433:5432 postgres > /dev/null
 trap cleanup EXIT INT
-until diesel database setup --database-url postgres://postgres:test@127.0.0.1:5432/postgres >/dev/null; do
+until diesel database setup --database-url postgres://postgres:test@127.0.0.1:5433/postgres >/dev/null; do
   sleep 1
 done
 set +e

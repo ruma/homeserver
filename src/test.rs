@@ -14,7 +14,7 @@ use serde_json::{Value, from_str};
 use config::Config;
 use server::Server;
 
-const POSTGRES_URL: &'static str = "postgres://postgres:test@127.0.0.1:5432/postgres";
+const POSTGRES_URL: &'static str = "postgres://postgres:test@127.0.0.1:5433/postgres";
 
 pub struct Test {
     mount: Mount,
