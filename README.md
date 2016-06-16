@@ -1,5 +1,7 @@
 # Ruma
 
+[![Build Status](https://travis-ci.org/ruma/ruma.svg?branch=master)](https://travis-ci.org/ruma/ruma)
+
 **Ruma** is a [Matrix](https://matrix.org/) homeserver written in [Rust](https://www.rust-lang.org/).
 
 If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://vector.im/beta/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)

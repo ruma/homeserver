@@ -1,0 +1,16 @@
+git:
+  depth: 1
+install:
+  - "cargo install diesel_cli"
+language: "rust"
+notifications:
+  email: false
+  irc: "chat.freenode.net#ruma"
+rust:
+  - "nightly"
+script:
+  - "cargo build"
+  - "make"
+services:
+  - "docker"
+sudo: "required"
