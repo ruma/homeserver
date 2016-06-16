@@ -3,6 +3,8 @@ before_install:
   - "sudo apt-get update"
   - "sudo apt-get -y install libsodium-dev"
 cache: "cargo"
+env:
+  - "PATH=/home/travis/.cargo/bin:$PATH"
 git:
   depth: 1
 install:
@@ -10,7 +12,10 @@ install:
 language: "rust"
 notifications:
   email: false
-  irc: "chat.freenode.net#ruma"
+  irc:
+    channels:
+      - "chat.freenode.net#ruma"
+    use_notice: true
 rust:
   - "nightly"
 script:
