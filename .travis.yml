@@ -6,7 +6,7 @@ cache: "cargo"
 git:
   depth: 1
 install:
-  - "which cargo || cargo install diesel_cli"
+  - "which diesel || cargo install diesel_cli"
 language: "rust"
 notifications:
   email: false
