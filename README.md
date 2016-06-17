@@ -20,25 +20,32 @@ For a detailed view of which Matrix APIs are supported by Ruma so far, see the [
 
 ## Development
 
+Ruma includes a development setup using [Docker](https://www.docker.com/).
+To install Docker, see the installation instructions for [OS X](https://docs.docker.com/mac/), [Linux](https://docs.docker.com/linux/), or [Windows](https://docs.docker.com/windows/).
+(Note that both Docker and Docker Compose are needed, but the standard ways of installing include both.)
+
+Cargo is the main entrypoint for development.
+Use the `script/cargo` shell script as you would normally use plain `cargo`.
+This will run the Cargo command inside a Docker container that has  Rust and other dependencies already installed.
+It will automatically start a PostgreSQL database inside a container as well.
+The first time you run a command with `script/cargo`, it will take some time to download the Docker images.
+
+To build Ruma, run `script/cargo build`.
+The application will be written to `target/debug/ruma`.
+You can also build and run Ruma in one step with `script/cargo run`.
+(When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `script/cargo run -- run`.)
+
 Ruma currently requires the nightly version of Rust, primarily because it makes heavy use of the code generation features of [Diesel](https://github.com/sgrif/diesel) and [Serde](https://github.com/serde-rs/serde), which use compiler plugins, an unstable Rust feature.
 This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/) and the [procedural macros RFC](https://github.com/rust-lang/rfcs/pull/1566)), but is probably a very long way off from making it to stable Rust.
 
-To install a nightly version of Rust, use [rustup](https://www.rustup.rs/) or head over to the [Rust Downloads](https://www.rust-lang.org/downloads.html) page.
-
-To build Ruma, run `cargo build`. The application will be written to `target/debug/ruma`.
-You can also build and run Ruma in one step with `cargo run`.
-(When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `cargo run -- run`.)
-
-To generate API documentation, run `cargo doc`.
+To generate API documentation, run `script/cargo doc`.
 Then open `target/doc/ruma/index.html` in your browser.
 Note that this documentation is for Ruma's internal Rust code, not the public-facing Matrix API.
 
 ## Testing
 
 Ruma includes an integration test suite.
-The test suite relies on Docker for ephemeral PostgreSQL databases.
-To install Docker, see the installation instructions for [OS X](https://docs.docker.com/mac/), [Linux](https://docs.docker.com/linux/), or [Windows](https://docs.docker.com/windows/).
-Once Docker is installed, run `make` to run the test suite.
+Once Docker is installed, run `script/cargo test` to run the test suite.
 
 ## Configuration
 

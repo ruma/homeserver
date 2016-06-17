@@ -1,5 +1,8 @@
+use std::sync::{ONCE_INIT, Once};
+
 use env_logger;
 use diesel::Connection;
+use diesel::migrations::{run_pending_migrations, setup_database};
 use diesel::pg::PgConnection;
 use iron;
 use iron::headers::{ContentType, Headers};
@@ -14,7 +17,9 @@ use serde_json::{Value, from_str};
 use config::Config;
 use server::Server;
 
-const POSTGRES_URL: &'static str = "postgres://postgres:test@127.0.0.1:5433/postgres";
+static START: Once = ONCE_INIT;
+const DATABASE_URL: &'static str = "postgres://postgres:test@postgres:5432/ruma_test";
+const POSTGRES_URL: &'static str = "postgres://postgres:test@postgres:5432";
 
 pub struct Test {
     mount: Mount,
@@ -46,12 +51,41 @@ impl Test {
             _ => {}
         }
 
+        START.call_once(|| {
+            if PgConnection::establish(DATABASE_URL).is_ok() {
+                let connection = PgConnection::establish(POSTGRES_URL).expect(
+                    "Failed to connect to Postgres to drop the existing ruma_test table."
+                );
+
+                connection.silence_notices(|| {
+                    connection.execute("DROP DATABASE IF EXISTS ruma_test").expect(
+                        "Failed to drop the existing ruma_test table."
+                    );
+                });
+            }
+
+            let pg_connection = PgConnection::establish(POSTGRES_URL).expect(
+                "Failed to connect to Postgres."
+            );
+
+            pg_connection.execute("CREATE DATABASE ruma_test").expect(
+                "Failed to create the ruma_test table."
+            );
+
+            let db_connection = PgConnection::establish(DATABASE_URL).expect(
+                "Failed to connect to Postgres database."
+            );
+
+            setup_database(&db_connection).expect("Failed to create migrations table.");
+            run_pending_migrations(&db_connection).expect("Failed to run migrations.");
+        });
+
         let config = Config {
             bind_address: "127.0.0.1".to_string(),
             bind_port: "0".to_string(),
             domain: "ruma.test".to_string(),
             macaroon_secret_key: "YymznQHmKdN9B4f7iBalJB1tWEDy9LdaFSQJEtB3R5w=".into(),
-            postgres_url: POSTGRES_URL.to_string(),
+            postgres_url: DATABASE_URL.to_string(),
         };
 
         let r2d2_config = R2D2Config::builder()

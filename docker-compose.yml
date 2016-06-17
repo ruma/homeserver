@@ -1,0 +1,17 @@
+version: "2"
+services:
+  rust:
+    image: "rumaio/ruma-dev"
+    links:
+      - "postgres"
+    volumes:
+      - ".:/source"
+      - "cargo_git:/root/.cargo/git"
+      - "cargo_registry:/root/.cargo/registry"
+  postgres:
+    image: "postgres"
+    environment:
+      - "POSTGRES_PASSWORD=test"
+volumes:
+  cargo_git: {}
+  cargo_registry: {}
