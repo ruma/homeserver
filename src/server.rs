@@ -13,6 +13,7 @@ use api::r0::{
     AccountPassword,
     CreateRoom,
     GetDirectoryRoom,
+    DeleteDirectoryRoom,
     Login,
     Logout,
     Register,
@@ -49,6 +50,7 @@ impl<'a> Server<'a> {
         r0_router.post("/account/password", AccountPassword::chain());
         r0_router.post("/createRoom", CreateRoom::chain());
         r0_router.get("/directory/room/:room_alias", GetDirectoryRoom::chain());
+        r0_router.delete("/directory/room/:room_alias", DeleteDirectoryRoom::chain());
         r0_router.post("/login", Login::chain());
         r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());
