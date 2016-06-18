@@ -1,6 +1,6 @@
 //! Human-readable aliases for room IDs.
 
-use diesel::{ExpressionMethods, FilterDsl, LoadDsl, insert};
+use diesel::{ExpressionMethods, FilterDsl, LoadDsl, ExecuteDsl, insert, delete};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
@@ -51,6 +51,19 @@ impl RoomAlias {
         room_aliases::table
             .filter(room_aliases::alias.eq(alias))
             .first(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => APIError::not_found(),
+                _ => APIError::from(err),
+            })
+    }
+
+    /// Deletes a room alias in the database.
+    pub fn delete(connection: &PgConnection, room_alias: &str)
+                  -> Result<usize, APIError> {
+        let thing = room_aliases::table.filter(room_aliases::alias.eq(room_alias));
+
+        delete(thing)
+            .execute(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => APIError::not_found(),
                 _ => APIError::from(err),

@@ -6,6 +6,7 @@ pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::registration::Register;
 pub use self::directory::GetDirectoryRoom;
+pub use self::directory::DeleteDirectoryRoom;
 pub use self::versions::Versions;
 
 mod account;
