@@ -157,7 +157,7 @@ Legend:
     <td>PUT /directory/room/:room_alias</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/20">#20</a></td>
     <td>DELETE /directory/room/:room_alias</td>
   </tr>

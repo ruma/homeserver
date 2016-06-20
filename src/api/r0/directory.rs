@@ -6,6 +6,7 @@ use router::Router;
 
 use db::DB;
 use error::APIError;
+use middleware::AccessTokenAuth;
 use modifier::SerializableResponse;
 use room_alias::RoomAlias;
 
@@ -22,16 +23,20 @@ pub struct GetDirectoryRoom;
 pub struct DeleteDirectoryRoom;
 
 impl GetDirectoryRoom {
-    /// Create a `DirectoryRoom`.
+    /// Create a `GetDirectoryRoom`.
     pub fn chain() -> Chain {
         Chain::new(GetDirectoryRoom)
     }
 }
 
 impl DeleteDirectoryRoom {
-    /// Delete a `DirectoryRoom` mapping.
+    /// Create a `DeleteDirectoryRoom` with necessary middleware.
     pub fn chain() -> Chain {
-        Chain::new(DeleteDirectoryRoom)
+        let mut chain = Chain::new(DeleteDirectoryRoom);
+
+        chain.link_before(AccessTokenAuth);
+
+        chain
     }
 }
 
@@ -116,19 +121,14 @@ mod tests {
         // Create a room
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        access_token);
-        let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_string();
+        test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
-        let response = test.get("/_matrix/client/r0/directory/room/my_room");
+        // Delete the room alias
+        let delete_room_path = format!("/_matrix/client/r0/directory/room/my_room?access_token={}",
+                                       access_token);
+        let response = test.delete(&delete_room_path);
 
-        assert_eq!(response.json().find("room_id").unwrap().as_string(), room_id);
-        assert!(response.json().find("servers").unwrap().is_array());
-
-        // Delete the room
-        test.delete("/_matrix/client/r0/directory/room/my_room", "");
-
-        assert_eq!(response.json().find("room_id").unwrap().as_string(), room_id);
-        assert!(response.json().find("servers").unwrap().is_array());
+        assert_eq!(response.status, Status::Ok);
 
         // Make sure the room no longer exists
         let response = test.get("/_matrix/client/r0/directory/room/my_room");

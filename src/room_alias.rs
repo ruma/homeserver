@@ -64,9 +64,6 @@ impl RoomAlias {
 
         delete(thing)
             .execute(connection)
-            .map_err(|err| match err {
-                DieselError::NotFound => APIError::not_found(),
-                _ => APIError::from(err),
-            })
+            .map_err(APIError::from)
     }
 }
