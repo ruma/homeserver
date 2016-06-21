@@ -111,8 +111,8 @@ impl Test {
         self.request(Method::Post, path, body)
     }
 
-    pub fn delete(&self, path: &str, body: &str) -> Response {
-        self.request(Method::Delete, path, body)
+    pub fn delete(&self, path: &str) -> Response {
+        self.request(Method::Delete, path, "")
     }
 
     pub fn request(&self, method: Method, path: &str, body: &str) -> Response {
