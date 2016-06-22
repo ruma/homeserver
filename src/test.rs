@@ -115,6 +115,10 @@ impl Test {
         self.request(Method::Delete, path, "")
     }
 
+    pub fn put(&self, path: &str, body: &str) -> Response {
+        self.request(Method::Put, path, body)
+    }
+
     pub fn request(&self, method: Method, path: &str, body: &str) -> Response {
         let mut headers = Headers::new();
 

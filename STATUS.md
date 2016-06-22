@@ -152,7 +152,7 @@ Legend:
     <th align="left" colspan="3">Room aliases</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/19">#19</a></td>
     <td>PUT /directory/room/:room_alias</td>
   </tr>
