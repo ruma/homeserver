@@ -16,6 +16,21 @@ table! {
 }
 
 table! {
+    events {
+        id -> Text,
+        ordering -> BigSerial,
+        room_id -> Text,
+        user_id -> Text,
+        event_type -> Text,
+        state_key -> Nullable<Text>,
+        content -> Text,
+        extra_content -> Nullable<Text>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+table! {
     room_aliases (alias) {
         alias -> Text,
         room_id -> Text,
