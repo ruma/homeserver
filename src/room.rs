@@ -8,6 +8,7 @@ use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
+use ruma_events::room::name::{NameEvent, NameEventContent};
 
 use error::APIError;
 use event::{NewEvent, generate_event_id};
@@ -18,6 +19,8 @@ use schema::{events, rooms};
 pub struct CreationOptions {
     /// An initial alias for the room.
     pub alias: Option<String>,
+    /// An initial name for the room.
+    pub name: Option<String>,
 }
 
 /// A new Matrix room, not yet saved.
@@ -88,6 +91,27 @@ impl Room {
                 .into(events::table)
                 .execute(connection)
                 .map_err(APIError::from)?;
+
+            if let Some(ref name) = creation_options.name {
+                let new_name_event: NewEvent = NameEvent {
+                    content: NameEventContent {
+                        name: name.to_string(),
+                    },
+                    event_id: generate_event_id(),
+                    event_type: EventType::RoomName,
+                    extra_content: (),
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: new_room.user_id.clone(),
+                }.try_into()?;
+
+                insert(&new_name_event)
+                    .into(events::table)
+                    .execute(connection)
+                    .map_err(APIError::from)?;
+            }
 
             Ok(room)
         }).map_err(APIError::from)
