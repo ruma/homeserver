@@ -1,6 +1,6 @@
 //! Ruma is a Matrix homeserver client API.
 
-#![feature(custom_attribute, custom_derive, plugin, question_mark)]
+#![feature(custom_attribute, custom_derive, plugin, question_mark, try_from)]
 #![plugin(diesel_codegen, serde_macros)]
 #![deny(missing_docs)]
 
@@ -22,6 +22,7 @@ extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rand;
 extern crate router;
+extern crate ruma_events;
 extern crate rustc_serialize;
 extern crate serde;
 extern crate serde_json;
@@ -45,6 +46,7 @@ pub mod config;
 pub mod crypto;
 pub mod db;
 pub mod error;
+pub mod event;
 pub mod middleware;
 pub mod modifier;
 pub mod room;

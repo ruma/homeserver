@@ -1,13 +1,18 @@
 //! Matrix rooms.
 
-use diesel::{Connection, LoadDsl, insert};
+use std::convert::TryInto;
+
+use diesel::{Connection, ExecuteDsl, LoadDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
+use ruma_events::EventType;
+use ruma_events::room::create::{CreateEvent, CreateEventContent};
 
 use error::APIError;
+use event::{NewEvent, generate_event_id};
 use room_alias::{NewRoomAlias, RoomAlias};
-use schema::rooms;
+use schema::{events, rooms};
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {
@@ -63,6 +68,26 @@ impl Room {
 
                 RoomAlias::create(connection, &new_room_alias)?;
             }
+
+            let new_create_event: NewEvent = CreateEvent {
+                content: CreateEventContent {
+                    creator: new_room.user_id.clone(),
+                    federate: true,
+                },
+                event_id: generate_event_id(),
+                event_type: EventType::RoomCreate,
+                extra_content: (),
+                prev_content: None,
+                room_id: room.id.clone(),
+                state_key: "".to_string(),
+                unsigned: None,
+                user_id: new_room.user_id.clone(),
+            }.try_into()?;
+
+            insert(&new_create_event)
+                .into(events::table)
+                .execute(connection)
+                .map_err(APIError::from)?;
 
             Ok(room)
         }).map_err(APIError::from)

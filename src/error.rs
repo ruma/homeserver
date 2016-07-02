@@ -14,7 +14,7 @@ use iron::status::Status;
 use persistent::PersistentError;
 use r2d2::GetTimeout;
 use serde::ser::{Serialize, Serializer};
-use serde_json;
+use serde_json::{Error as SerdeJsonError, to_string};
 
 /// A client-facing error.
 #[derive(Clone, Debug, Serialize)]
@@ -149,6 +149,12 @@ impl From<FromUtf8Error> for APIError {
     }
 }
 
+impl From<SerdeJsonError> for APIError {
+    fn from(error: SerdeJsonError) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
 impl From<APIError> for IronError {
     fn from(error: APIError) -> IronError {
         IronError::new(error.clone(), error)
@@ -158,7 +164,7 @@ impl From<APIError> for IronError {
 impl Modifier<Response> for APIError {
     fn modify(self, response: &mut Response) {
         response.status = Some(self.errcode.status_code());
-        response.body = Some(Box::new(serde_json::to_string(&self).expect("APIError should always serialize")));
+        response.body = Some(Box::new(to_string(&self).expect("APIError should always serialize")));
     }
 }
 
