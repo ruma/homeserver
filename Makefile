@@ -1,10 +1,16 @@
 .PHONY: build
 build:
-	@script/cargo build -v
+	@script/cargo build
 
 .PHONY: test
 test:
-	@script/cargo test -v
+	@script/cargo test
+
+.PHONY: doc
+doc:
+	@script/cargo doc
 
 .PHONY: ci
-ci: build test
+ci:
+	@script/cargo build -v
+	@script/cargo test -v
