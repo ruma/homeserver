@@ -12,11 +12,11 @@ use router::Router;
 use api::r0::{
     AccountPassword,
     CreateRoom,
-    GetDirectoryRoom,
-    DeleteDirectoryRoom,
+    DeleteRoomAlias,
+    GetRoomAlias,
     Login,
     Logout,
-    PutDirectoryRoom,
+    PutRoomAlias,
     Register,
     Versions,
 };
@@ -50,9 +50,9 @@ impl<'a> Server<'a> {
 
         r0_router.post("/account/password", AccountPassword::chain());
         r0_router.post("/createRoom", CreateRoom::chain());
-        r0_router.get("/directory/room/:room_alias", GetDirectoryRoom::chain());
-        r0_router.delete("/directory/room/:room_alias", DeleteDirectoryRoom::chain());
-        r0_router.put("/directory/room/:room_alias", PutDirectoryRoom::chain());
+        r0_router.get("/directory/room/:room_alias", GetRoomAlias::chain());
+        r0_router.delete("/directory/room/:room_alias", DeleteRoomAlias::chain());
+        r0_router.put("/directory/room/:room_alias", PutRoomAlias::chain());
         r0_router.post("/login", Login::chain());
         r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());

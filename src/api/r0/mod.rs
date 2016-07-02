@@ -5,7 +5,7 @@ pub use self::create_room::CreateRoom;
 pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::registration::Register;
-pub use self::directory::{GetDirectoryRoom, DeleteDirectoryRoom, PutDirectoryRoom};
+pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
 pub use self::versions::Versions;
 
 mod account;

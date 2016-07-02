@@ -13,36 +13,36 @@ use modifier::SerializableResponse;
 use room_alias::{RoomAlias, NewRoomAlias};
 
 #[derive(Debug, Serialize)]
-struct GetDirectoryRoomResponse {
+struct GetRoomAliasResponse {
     room_id: String,
     servers: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-struct PutDirectoryRoomRequest {
+struct PutRoomAliasRequest {
     pub room_id: String,
 }
 
-/// The /directory/room/{roomAlias} endpoint when using the GET method.
-pub struct GetDirectoryRoom;
+/// The GET /directory/room/:room_alias endpoint.
+pub struct GetRoomAlias;
 
-/// The /directory/room/{roomAlias} endpoint for the DELETE method.
-pub struct DeleteDirectoryRoom;
+/// The DELETE /directory/room/:room_alias endpoint.
+pub struct DeleteRoomAlias;
 
-/// The /directory/room/{roomAlias} endpoint when using the PUT method.
-pub struct PutDirectoryRoom;
+/// The PUT /directory/room/:room_alias endpoint.
+pub struct PutRoomAlias;
 
-impl GetDirectoryRoom {
-    /// Create a `GetDirectoryRoom`.
+impl GetRoomAlias {
+    /// Create a `GetRoomAlias`.
     pub fn chain() -> Chain {
-        Chain::new(GetDirectoryRoom)
+        Chain::new(GetRoomAlias)
     }
 }
 
-impl DeleteDirectoryRoom {
-    /// Create a `DeleteDirectoryRoom` with necessary middleware.
+impl DeleteRoomAlias {
+    /// Create a `DeleteRoomAlias` with necessary middleware.
     pub fn chain() -> Chain {
-        let mut chain = Chain::new(DeleteDirectoryRoom);
+        let mut chain = Chain::new(DeleteRoomAlias);
 
         chain.link_before(AccessTokenAuth);
 
@@ -50,10 +50,10 @@ impl DeleteDirectoryRoom {
     }
 }
 
-impl PutDirectoryRoom {
-    /// Create a `PutDirectoryRoom` with necessary middleware.
+impl PutRoomAlias {
+    /// Create a `PutRoomAlias` with necessary middleware.
     pub fn chain() -> Chain {
-        let mut chain = Chain::new(PutDirectoryRoom);
+        let mut chain = Chain::new(PutRoomAlias);
 
         chain.link_before(JsonRequest);
         chain.link_before(AccessTokenAuth);
@@ -62,7 +62,7 @@ impl PutDirectoryRoom {
     }
 }
 
-impl Handler for GetDirectoryRoom {
+impl Handler for GetRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
@@ -72,7 +72,7 @@ impl Handler for GetDirectoryRoom {
 
         let room_alias = RoomAlias::find_by_alias(&connection, room_alias_name)?;
 
-        let response = GetDirectoryRoomResponse {
+        let response = GetRoomAliasResponse {
             room_id: room_alias.room_id,
             servers: room_alias.servers,
         };
@@ -81,7 +81,7 @@ impl Handler for GetDirectoryRoom {
     }
 }
 
-impl Handler for DeleteDirectoryRoom {
+impl Handler for DeleteRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
@@ -91,18 +91,17 @@ impl Handler for DeleteDirectoryRoom {
 
         RoomAlias::delete(&connection, room_alias_name)?;
 
-        // Respond with an empty JSON object
         Ok(Response::with((Status::Ok, "{}")))
     }
 }
 
-impl Handler for PutDirectoryRoom {
+impl Handler for PutRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
         let room_alias_name = params.find("room_alias").ok_or(APIError::not_found())?;
 
-        let parsed_request = request.get::<bodyparser::Struct<PutDirectoryRoomRequest>>();
+        let parsed_request = request.get::<bodyparser::Struct<PutRoomAliasRequest>>();
         let room_id = if let Ok(Some(api_request)) = parsed_request {
             api_request.room_id
         } else {
