@@ -20,6 +20,8 @@ use schema::{events, rooms};
 pub struct CreationOptions {
     /// An initial alias for the room.
     pub alias: Option<String>,
+    /// Whehter or not the room should be federated.
+    pub federate: bool,
     /// An initial name for the room.
     pub name: Option<String>,
     /// An initial topic for the room.
@@ -78,7 +80,7 @@ impl Room {
             let new_create_event: NewEvent = CreateEvent {
                 content: CreateEventContent {
                     creator: new_room.user_id.clone(),
-                    federate: true,
+                    federate: creation_options.federate,
                 },
                 event_id: generate_event_id(),
                 event_type: EventType::RoomCreate,

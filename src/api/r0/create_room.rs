@@ -14,10 +14,16 @@ use user::User;
 
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
+    pub creation_content: Option<CreationContent>,
     pub name: Option<String>,
     pub room_alias_name: Option<String>,
     pub topic: Option<String>,
     pub visibility: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct CreationContent {
+    pub federate: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -76,8 +82,14 @@ impl Handler for CreateRoom {
             public: create_room_request.visibility.map_or(false, |v| v == "public"),
         };
 
+        let federate = match create_room_request.creation_content {
+            Some(creation_content) => creation_content.federate.unwrap_or(true),
+            None => true,
+        };
+
         let creation_options = CreationOptions {
             alias: create_room_request.room_alias_name,
+            federate: federate,
             name: create_room_request.name,
             topic: create_room_request.topic,
         };
