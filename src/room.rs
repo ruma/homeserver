@@ -9,6 +9,7 @@ use rand::{Rng, thread_rng};
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
 use ruma_events::room::name::{NameEvent, NameEventContent};
+use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 
 use error::APIError;
 use event::{NewEvent, generate_event_id};
@@ -21,6 +22,8 @@ pub struct CreationOptions {
     pub alias: Option<String>,
     /// An initial name for the room.
     pub name: Option<String>,
+    /// An initial topic for the room.
+    pub topic: Option<String>,
 }
 
 /// A new Matrix room, not yet saved.
@@ -108,6 +111,27 @@ impl Room {
                 }.try_into()?;
 
                 insert(&new_name_event)
+                    .into(events::table)
+                    .execute(connection)
+                    .map_err(APIError::from)?;
+            }
+
+            if let Some(ref topic) = creation_options.topic {
+                let new_topic_event: NewEvent = TopicEvent {
+                    content: TopicEventContent {
+                        topic: topic.to_string(),
+                    },
+                    event_id: generate_event_id(),
+                    event_type: EventType::RoomTopic,
+                    extra_content: (),
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: new_room.user_id.clone(),
+                }.try_into()?;
+
+                insert(&new_topic_event)
                     .into(events::table)
                     .execute(connection)
                     .map_err(APIError::from)?;

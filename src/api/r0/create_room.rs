@@ -16,6 +16,7 @@ use user::User;
 struct CreateRoomRequest {
     pub name: Option<String>,
     pub room_alias_name: Option<String>,
+    pub topic: Option<String>,
     pub visibility: Option<String>,
 }
 
@@ -78,6 +79,7 @@ impl Handler for CreateRoom {
         let creation_options = CreationOptions {
             alias: create_room_request.room_alias_name,
             name: create_room_request.name,
+            topic: create_room_request.topic,
         };
 
         let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
