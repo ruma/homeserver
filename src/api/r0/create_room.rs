@@ -24,6 +24,7 @@ struct CreateRoomRequest {
 
 #[derive(Clone, Debug, Deserialize)]
 struct CreationContent {
+    #[serde(rename="m.federate")]
     pub federate: Option<bool>,
 }
 
