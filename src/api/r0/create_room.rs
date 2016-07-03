@@ -9,13 +9,14 @@ use db::DB;
 use error::APIError;
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
-use room::{CreationOptions, NewRoom, Room};
+use room::{CreationOptions, NewRoom, Room, RoomPreset};
 use user::User;
 
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
     pub creation_content: Option<CreationContent>,
     pub name: Option<String>,
+    pub preset: Option<RoomPreset>,
     pub room_alias_name: Option<String>,
     pub topic: Option<String>,
     pub visibility: Option<String>,
@@ -91,6 +92,7 @@ impl Handler for CreateRoom {
             alias: create_room_request.room_alias_name,
             federate: federate,
             name: create_room_request.name,
+            preset: create_room_request.preset,
             topic: create_room_request.topic,
         };
 

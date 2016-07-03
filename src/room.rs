@@ -8,6 +8,16 @@ use diesel::pg::data_types::PgTimestamp;
 use rand::{Rng, thread_rng};
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
+use ruma_events::room::history_visibility::{
+    HistoryVisibility,
+    HistoryVisibilityEvent,
+    HistoryVisibilityEventContent,
+};
+use ruma_events::room::join_rules::{
+    JoinRule,
+    JoinRulesEvent,
+    JoinRulesEventContent,
+};
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 
@@ -24,6 +34,8 @@ pub struct CreationOptions {
     pub federate: bool,
     /// An initial name for the room.
     pub name: Option<String>,
+    /// A convenience parameter for setting a few default state events.
+    pub preset: Option<RoomPreset>,
     /// An initial topic for the room.
     pub topic: Option<String>,
 }
@@ -51,6 +63,17 @@ pub struct Room {
     pub public: bool,
     /// The time the room was created.
     pub created_at: PgTimestamp,
+}
+
+/// A convenience parameter for setting a few default state events.
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub enum RoomPreset {
+    /// `join_rules` is set to `invite` and `history_visibility` is set to `shared`.
+    PrivateChat,
+    /// `join_rules` is set to `public` and `history_visibility` is set to `shared`.
+    PublicChat,
+    /// Same as `PrivateChat`, but all initial invitees get the same power level as the creator.
+    TrustedPrivateChat,
 }
 
 impl Room {
@@ -130,6 +153,78 @@ impl Room {
                 }.try_into()?;
 
                 new_events.push(new_topic_event);
+            }
+
+            if let Some(preset) = creation_options.preset {
+                let new_history_visibility_event: NewEvent = HistoryVisibilityEvent {
+                    content: HistoryVisibilityEventContent {
+                        history_visibility: HistoryVisibility::Shared,
+                    },
+                    event_id: generate_event_id(),
+                    event_type: EventType::RoomHistoryVisibility,
+                    extra_content: (),
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: new_room.user_id.clone(),
+                }.try_into()?;
+
+                new_events.push(new_history_visibility_event);
+
+                match preset {
+                    RoomPreset::PrivateChat => {
+                        let new_join_rules_event: NewEvent = JoinRulesEvent {
+                            content: JoinRulesEventContent {
+                                join_rule: JoinRule::Invite,
+                            },
+                            event_id: generate_event_id(),
+                            event_type: EventType::RoomJoinRules,
+                            extra_content: (),
+                            prev_content: None,
+                            room_id: room.id.clone(),
+                            state_key: "".to_string(),
+                            unsigned: None,
+                            user_id: new_room.user_id.clone(),
+                        }.try_into()?;
+
+                        new_events.push(new_join_rules_event);
+                    }
+                    RoomPreset::PublicChat => {
+                        let new_join_rules_event: NewEvent = JoinRulesEvent {
+                            content: JoinRulesEventContent {
+                                join_rule: JoinRule::Public,
+                            },
+                            event_id: generate_event_id(),
+                            event_type: EventType::RoomJoinRules,
+                            extra_content: (),
+                            prev_content: None,
+                            room_id: room.id.clone(),
+                            state_key: "".to_string(),
+                            unsigned: None,
+                            user_id: new_room.user_id.clone(),
+                        }.try_into()?;
+
+                        new_events.push(new_join_rules_event);
+                    }
+                    RoomPreset::TrustedPrivateChat => {
+                        let new_join_rules_event: NewEvent = JoinRulesEvent {
+                            content: JoinRulesEventContent {
+                                join_rule: JoinRule::Invite,
+                            },
+                            event_id: generate_event_id(),
+                            event_type: EventType::RoomJoinRules,
+                            extra_content: (),
+                            prev_content: None,
+                            room_id: room.id.clone(),
+                            state_key: "".to_string(),
+                            unsigned: None,
+                            user_id: new_room.user_id.clone(),
+                        }.try_into()?;
+
+                        new_events.push(new_join_rules_event);
+                    }
+                }
             }
 
             insert(&new_events)
