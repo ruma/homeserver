@@ -77,6 +77,8 @@ impl Room {
                 RoomAlias::create(connection, &new_room_alias)?;
             }
 
+            let mut new_events = Vec::new();
+
             let new_create_event: NewEvent = CreateEvent {
                 content: CreateEventContent {
                     creator: new_room.user_id.clone(),
@@ -92,10 +94,7 @@ impl Room {
                 user_id: new_room.user_id.clone(),
             }.try_into()?;
 
-            insert(&new_create_event)
-                .into(events::table)
-                .execute(connection)
-                .map_err(APIError::from)?;
+            new_events.push(new_create_event);
 
             if let Some(ref name) = creation_options.name {
                 let new_name_event: NewEvent = NameEvent {
@@ -112,10 +111,7 @@ impl Room {
                     user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
-                insert(&new_name_event)
-                    .into(events::table)
-                    .execute(connection)
-                    .map_err(APIError::from)?;
+                new_events.push(new_name_event);
             }
 
             if let Some(ref topic) = creation_options.topic {
@@ -133,11 +129,13 @@ impl Room {
                     user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
-                insert(&new_topic_event)
-                    .into(events::table)
-                    .execute(connection)
-                    .map_err(APIError::from)?;
+                new_events.push(new_topic_event);
             }
+
+            insert(&new_events)
+                .into(events::table)
+                .execute(connection)
+                .map_err(APIError::from)?;
 
             Ok(room)
         }).map_err(APIError::from)
