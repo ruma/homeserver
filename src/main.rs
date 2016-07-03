@@ -1,6 +1,6 @@
 //! Ruma is a Matrix homeserver client API.
 
-#![feature(custom_attribute, custom_derive, plugin, question_mark, try_from)]
+#![feature(custom_attribute, custom_derive, plugin, question_mark, specialization, try_from)]
 #![plugin(diesel_codegen, serde_macros)]
 #![deny(missing_docs)]
 

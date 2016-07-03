@@ -15,6 +15,7 @@ use user::User;
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
     pub creation_content: Option<CreationContent>,
+    pub invite: Option<Vec<String>>,
     pub name: Option<String>,
     pub preset: Option<RoomPreset>,
     pub room_alias_name: Option<String>,
@@ -92,6 +93,7 @@ impl Handler for CreateRoom {
         let creation_options = CreationOptions {
             alias: create_room_request.room_alias_name,
             federate: federate,
+            invite_list: create_room_request.invite,
             name: create_room_request.name,
             preset: create_room_request.preset,
             topic: create_room_request.topic,

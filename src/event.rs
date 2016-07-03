@@ -5,7 +5,7 @@ use std::convert::TryFrom;
 use rand::{Rng, thread_rng};
 use ruma_events::StateEvent;
 use serde::{Serialize, Deserialize};
-use serde_json::{Error, to_string};
+use serde_json::{Error as SerdeJsonError, to_string};
 
 use schema::events;
 
@@ -35,12 +35,27 @@ pub struct NewEvent {
 }
 
 impl<C> TryFrom<StateEvent<C, ()>> for NewEvent where C: Deserialize + Serialize {
-    type Err = Error;
-
     fn try_from(event: StateEvent<C, ()>) -> Result<Self, Self::Err> {
         Ok(NewEvent {
             event_type: event.event_type.to_string(),
             extra_content: None,
+            id: event.event_id,
+            content: to_string(&event.content)?,
+            room_id: event.room_id,
+            state_key: Some(event.state_key),
+            user_id: event.user_id,
+        })
+    }
+}
+
+impl<C, E> TryFrom<StateEvent<C, E>> for NewEvent
+where C: Deserialize + Serialize, E: Deserialize + Serialize {
+    type Err = SerdeJsonError;
+
+    default fn try_from(event: StateEvent<C, E>) -> Result<Self, Self::Err> {
+        Ok(NewEvent {
+            event_type: event.event_type.to_string(),
+            extra_content: Some(to_string(&event.extra_content)?),
             id: event.event_id,
             content: to_string(&event.content)?,
             room_id: event.room_id,

@@ -1,6 +1,6 @@
 //! Matrix rooms.
 
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use diesel::{Connection, ExecuteDsl, LoadDsl, insert};
 use diesel::pg::PgConnection;
@@ -18,6 +18,12 @@ use ruma_events::room::join_rules::{
     JoinRulesEvent,
     JoinRulesEventContent,
 };
+use ruma_events::room::member::{
+    MemberEvent,
+    MemberEventContent,
+    MemberEventExtraContent,
+    MembershipState,
+};
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 
@@ -25,6 +31,7 @@ use error::APIError;
 use event::{NewEvent, generate_event_id};
 use room_alias::{NewRoomAlias, RoomAlias};
 use schema::{events, rooms};
+use user::UserId;
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {
@@ -32,6 +39,8 @@ pub struct CreationOptions {
     pub alias: Option<String>,
     /// Whehter or not the room should be federated.
     pub federate: bool,
+    /// A list of users to invite to the room.
+    pub invite_list: Option<Vec<String>>,
     /// An initial name for the room.
     pub name: Option<String>,
     /// A convenience parameter for setting a few default state events.
@@ -224,6 +233,41 @@ impl Room {
 
                         new_events.push(new_join_rules_event);
                     }
+                }
+            }
+
+            if let Some(ref invite_list) = creation_options.invite_list {
+                for invitee in invite_list {
+                    let invitee_user_id = UserId::try_from(invitee)?;
+
+                    if invitee_user_id.domain != homeserver_domain {
+                        return Err(
+                            APIError::unknown_from_string(
+                                "Federation is not yet supported.".to_string()
+                            )
+                        );
+                    }
+
+                    let new_member_event: NewEvent = MemberEvent {
+                        content: MemberEventContent {
+                            avatar_url: None,
+                            displayname: None,
+                            membership: MembershipState::Invite,
+                            third_party_invite: (),
+                        },
+                        event_id: generate_event_id(),
+                        event_type: EventType::RoomMember,
+                        extra_content: MemberEventExtraContent {
+                            invite_room_state: None,
+                        },
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: invitee.to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
+
+                    new_events.push(new_member_event);
                 }
             }
 

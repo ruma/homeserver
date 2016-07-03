@@ -1,5 +1,7 @@
 //! Matrix users.
 
+use std::convert::TryFrom;
+
 use diesel::{
     Connection,
     ExpressionMethods,
@@ -42,6 +44,15 @@ pub struct NewUser {
     pub id: String,
     /// The user's hashed password.
     pub password_hash: String,
+}
+
+/// A user ID.
+#[derive(Debug)]
+pub struct UserId {
+    /// The local ID, unique within the domain.
+    pub localpart: String,
+    /// The domain of the user's homeserver.
+    pub domain: String,
 }
 
 impl User {
@@ -99,4 +110,34 @@ impl User {
 
 impl Key for User {
     type Value = User;
+}
+
+impl<'a> TryFrom<&'a str> for UserId {
+    type Err = APIError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Err> {
+        if s.len() < 1 || !s.starts_with('@') {
+            return Err(
+                APIError::unknown_from_string(
+                    format!("Invalid user ID: {}. User IDs must start with an @.", s)
+                )
+            );
+        }
+
+        let parts: Vec<&str> = s[1..].split(':').collect();
+
+        if parts.len() != 2 {
+            return Err(
+                APIError::unknown_from_string(format!(
+                    "Invalid user ID: {}. User IDs must contain a single localpart and a single\
+                    domain, delimited by a colon.",
+                s))
+            );
+        }
+
+        Ok(UserId {
+            localpart: parts[0].to_string(),
+            domain: parts[1].to_string(),
+        })
+    }
 }
