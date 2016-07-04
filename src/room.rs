@@ -1,10 +1,12 @@
 //! Matrix rooms.
 
+use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
 
-use diesel::{Connection, ExecuteDsl, LoadDsl, insert};
+use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::pg::expression::dsl::any;
 use rand::{Rng, thread_rng};
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
@@ -30,8 +32,8 @@ use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 use error::APIError;
 use event::{NewEvent, generate_event_id};
 use room_alias::{NewRoomAlias, RoomAlias};
-use schema::{events, rooms};
-use user::UserId;
+use schema::{events, rooms, users};
+use user::{User, UserId};
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {
@@ -237,6 +239,8 @@ impl Room {
             }
 
             if let Some(ref invite_list) = creation_options.invite_list {
+                let mut user_localparts = HashSet::with_capacity(invite_list.len());
+
                 for invitee in invite_list {
                     let invitee_user_id = UserId::try_from(invitee)?;
 
@@ -248,6 +252,36 @@ impl Room {
                         );
                     }
 
+                    user_localparts.insert(invitee_user_id.localpart);
+                }
+
+                let users: Vec<User> = users::table
+                    .filter(users::id.eq(any(
+                        user_localparts.iter().cloned().collect::<Vec<String>>()))
+                    )
+                    .get_results(connection)
+                    .map_err(APIError::from)?;
+
+                let loaded_user_localparts: HashSet<String> = users
+                    .iter()
+                    .map(|user| user.id.clone())
+                    .collect();
+
+                let missing_user_localparts: Vec<String> = user_localparts
+                    .difference(&loaded_user_localparts)
+                    .cloned()
+                    .collect();
+
+                if missing_user_localparts.len() > 0 {
+                    return Err(
+                        APIError::unknown_from_string(format!(
+                            "Unknown users in invite list: {}",
+                            &missing_user_localparts.join(", ")
+                        ))
+                    )
+                }
+
+                for user in users {
                     let new_member_event: NewEvent = MemberEvent {
                         content: MemberEventContent {
                             avatar_url: None,
@@ -262,7 +296,7 @@ impl Room {
                         },
                         prev_content: None,
                         room_id: room.id.clone(),
-                        state_key: invitee.to_string(),
+                        state_key: format!("@{}:{}", user.id, homeserver_domain),
                         unsigned: None,
                         user_id: new_room.user_id.clone(),
                     }.try_into()?;
