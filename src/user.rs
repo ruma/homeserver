@@ -118,8 +118,8 @@ impl<'a> TryFrom<&'a str> for UserId {
     fn try_from(s: &str) -> Result<Self, Self::Err> {
         if s.len() < 1 || !s.starts_with('@') {
             return Err(
-                APIError::unknown_from_string(
-                    format!("Invalid user ID: {}. User IDs must start with an @.", s)
+                APIError::unknown(
+                    &format!("Invalid user ID: {}. User IDs must start with an @.", s)
                 )
             );
         }
@@ -128,7 +128,7 @@ impl<'a> TryFrom<&'a str> for UserId {
 
         if parts.len() != 2 {
             return Err(
-                APIError::unknown_from_string(format!(
+                APIError::unknown(&format!(
                     "Invalid user ID: {}. User IDs must contain a single localpart and a single\
                     domain, delimited by a colon.",
                 s))

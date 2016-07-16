@@ -245,11 +245,7 @@ impl Room {
                     let invitee_user_id = UserId::try_from(invitee)?;
 
                     if invitee_user_id.domain != homeserver_domain {
-                        return Err(
-                            APIError::unknown_from_string(
-                                "Federation is not yet supported.".to_string()
-                            )
-                        );
+                        return Err(APIError::unknown("Federation is not yet supported."));
                     }
 
                     user_localparts.insert(invitee_user_id.localpart);
@@ -274,7 +270,7 @@ impl Room {
 
                 if missing_user_localparts.len() > 0 {
                     return Err(
-                        APIError::unknown_from_string(format!(
+                        APIError::unknown(&format!(
                             "Unknown users in invite list: {}",
                             &missing_user_localparts.join(", ")
                         ))

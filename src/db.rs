@@ -29,7 +29,7 @@ impl DB {
     {
         let mutex = request.get::<Write<DB>>().map_err(APIError::from)?;
         let pool = mutex.lock().map_err(|error| {
-            APIError::unknown_from_string(format!("{}", error))
+            APIError::unknown(&error)
         })?;
         pool.get().map_err(APIError::from)
     }

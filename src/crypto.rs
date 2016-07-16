@@ -36,9 +36,7 @@ pub fn verify_password(encoded_hash: &[u8], plaintext_password: &str)
     let verifier = match Verifier::from_u8(encoded_hash) {
         Ok(verifier) => verifier,
         Err(error) => {
-            let message = format!("argon2rs verifier error: {:?}", error);
-
-            return Err(APIError::unknown_from_string(message));
+            return Err(APIError::unknown(&format!("argon2rs verifier error: {:?}", error)));
         }
     };
 

@@ -1,7 +1,7 @@
 //! Error types and conversions.
 
 use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::fmt::Error as FmtError;
 use std::io::Error as IoError;
 use std::string::FromUtf8Error;
@@ -73,20 +73,8 @@ impl APIError {
     }
 
     /// Create a generic error for anything not specifically covered by the Matrix spec.
-    pub fn unknown<E>(error: &E) -> APIError where E: Error {
-        debug!("APIError::unknown: {:?}", error);
-
-        APIError {
-            errcode: APIErrorCode::Unknown,
-            error: "An unknown server-side error occurred.".to_string(),
-        }
-    }
-
-    /// Create a generic error for anything not specifically covered by the Matrix spec.
-    ///
-    /// Like `unknown`, but uses a `String` instead of an `Error` to create the value.
-    pub fn unknown_from_string(message: String) -> APIError {
-        debug!("APIError::unknown_from_string: {}", message);
+    pub fn unknown<D: Debug + ?Sized>(error: &D) -> APIError {
+        debug!("API error: {:?}", error);
 
         APIError {
             errcode: APIErrorCode::Unknown,

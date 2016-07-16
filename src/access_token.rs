@@ -89,9 +89,9 @@ impl Key for AccessToken {
 fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &str) -> Result<String, APIError> {
     let expiration = match UTC::now().checked_add(Duration::hours(1)) {
         Some(datetime) => datetime,
-        None => return Err(APIError::unknown_from_string(
-            "Failed to generate access token expiration datetime.".to_string()
-        )),
+        None => return Err(
+            APIError::unknown("Failed to generate access token expiration datetime.")
+        ),
     };
 
     let token = Token::new(macaroon_secret_key, "key".as_bytes().to_owned(), vec![])
