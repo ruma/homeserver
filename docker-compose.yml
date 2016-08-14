@@ -1,7 +1,7 @@
 version: "2"
 services:
   rust:
-    image: "rumaio/ruma-dev"
+    image: "rumaio/ruma-dev@sha256:eb361c3196748a5c01248733de73bbf255c810a6c97ec64342b1d049639f08bb"
     links:
       - "postgres"
     volumes:

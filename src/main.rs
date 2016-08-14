@@ -23,6 +23,7 @@ extern crate r2d2_diesel;
 extern crate rand;
 extern crate router;
 extern crate ruma_events;
+extern crate ruma_identifiers;
 extern crate rustc_serialize;
 extern crate serde;
 extern crate serde_json;

@@ -2,7 +2,7 @@
 
 use argon2rs::{Argon2, Variant};
 use argon2rs::verifier::Verifier;
-use base64::u8en;
+use base64::encode;
 use rand::{OsRng, Rng};
 
 use error::{APIError, CLIError};
@@ -14,10 +14,7 @@ pub fn generate_macaroon_secret_key() -> Result<String, CLIError> {
 
     rng.fill_bytes(&mut key);
 
-    let encoded = u8en(&key).map_err(CLIError::from)?;
-    let encoded_string = String::from_utf8(encoded)?;
-
-    Ok(encoded_string)
+    Ok(encode(&key))
 }
 
 /// Hash a password with Argon2.

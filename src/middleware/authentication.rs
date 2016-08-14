@@ -30,18 +30,16 @@ impl UIAuth {
 impl BeforeMiddleware for AccessTokenAuth {
     fn before(&self, request: &mut Request) -> IronResult<()> {
         let connection = DB::from_request(request)?;
+        let url = request.url.clone().into_generic_url();
+        let mut query_pairs = url.query_pairs();
 
-        if let Some(query_pairs) = request.url.clone().into_generic_url().query_pairs() {
-            if let Some(&(_, ref token)) = query_pairs.iter().find(
-                |&&(ref key, _)| key == "access_token"
-            ) {
-                if let Ok(access_token) = AccessToken::find_valid_by_token(&connection, &token) {
-                    if let Ok(user) = User::find_by_access_token(&connection, &access_token) {
-                        request.extensions.insert::<AccessToken>(access_token);
-                        request.extensions.insert::<User>(user);
+        if let Some((_, ref token)) = query_pairs.find(|&(ref key, _)| key == "access_token") {
+            if let Ok(access_token) = AccessToken::find_valid_by_token(&connection, &token) {
+                if let Ok(user) = User::find_by_access_token(&connection, &access_token) {
+                    request.extensions.insert::<AccessToken>(access_token);
+                    request.extensions.insert::<User>(user);
 
-                        return Ok(());
-                    }
+                    return Ok(());
                 }
             }
         }
@@ -81,8 +79,8 @@ impl BeforeMiddleware for UIAuth {
 }
 
 fn get_user_and_password(json: &Value) -> Option<(String, String)> {
-    let user = json.find("user").and_then(|user_json| user_json.as_string());
-    let password = json.find("password").and_then(|password_json| password_json.as_string());
+    let user = json.find("user").and_then(|user_json| user_json.as_str());
+    let password = json.find("password").and_then(|password_json| password_json.as_str());
 
     match (user, password) {
         (Some(user), Some(password)) => Some((user.to_string(), password.to_string())),
@@ -91,7 +89,7 @@ fn get_user_and_password(json: &Value) -> Option<(String, String)> {
 }
 
 fn is_m_login_password(json: &Value) -> bool {
-    if let Some(type_string) = json.find("type").and_then(|type_json| type_json.as_string()) {
+    if let Some(type_string) = json.find("type").and_then(|type_json| type_json.as_str()) {
         return type_string == "m.login.password";
     }
 

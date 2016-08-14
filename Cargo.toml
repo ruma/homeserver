@@ -11,28 +11,29 @@ repository = "https://github.com/ruma/ruma"
 version = "0.1.0"
 
 [dependencies]
-base64 = "0.1.1"
-bodyparser = "0.3.0"
-chrono = "0.2.22"
-clap = "2.5.1"
-diesel = "0.6.2"
-env_logger = "0.3.3"
-iron = "0.3.0"
+base64 = "0.2.0"
+bodyparser = "0.4.1"
+chrono = "0.2.25"
+clap = "2.10.0"
+diesel = "0.7.1"
+env_logger = "0.3.4"
+iron = "0.4.0"
 log = "0.3.6"
-macaroons = "0.2.1"
-mount = "0.1.0"
-persistent = "0.1.0"
+macaroons = "0.3.1"
+mount = "0.2.1"
+persistent = "0.2.0"
 plugin = "0.2.6"
 r2d2 = "0.7.0"
-r2d2-diesel = "0.6.0"
+r2d2-diesel = "0.7.1"
 rand = "0.3.14"
-router = "0.1.1"
-rustc-serialize = "0.3"
-serde = "0.7.11"
-serde_json = "0.7.4"
-serde_macros = "0.7.11"
-serde_yaml = "0.2"
-toml = "0.1"
+router = "0.2.0"
+ruma-identifiers = "0.3.0"
+rustc-serialize = "0.3.19"
+serde = "0.8.1"
+serde_json = "0.8.1"
+serde_macros = "0.8.1"
+serde_yaml = "0.4.0"
+toml = "0.2.0"
 unicase = "1.4.0"
 
 [dependencies.argon2rs]
@@ -41,13 +42,13 @@ git = "https://github.com/bryant/argon2rs"
 [dependencies.diesel_codegen]
 default-features = false
 features = ["postgres"]
-version = "0.6.2"
+version = "0.7.1"
 
 [dependencies.ruma-events]
 git = "https://github.com/ruma/ruma-events"
 
 [dev-dependencies]
-iron-test = "0.3.0"
+iron-test = "0.4.0"
 
 [features]
 default = ["swagger"]

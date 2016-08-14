@@ -5,7 +5,7 @@ use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
 
-use base64::u8de;
+use base64::decode;
 use iron::{Plugin, Request};
 use iron::typemap::Key;
 use persistent::Read as PersistentRead;
@@ -61,7 +61,7 @@ impl Config {
             return Err(CLIError::new("No configuration file was found."));
         }
 
-        let macaroon_secret_key = match u8de(config.macaroon_secret_key.as_bytes()) {
+        let macaroon_secret_key = match decode(&config.macaroon_secret_key) {
             Ok(bytes) => match bytes.len() {
                 32 => bytes,
                 _ => return Err(CLIError::new("macaroon_secret_key must be 32 bytes.")),

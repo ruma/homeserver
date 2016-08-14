@@ -1,19 +1,20 @@
 //! User access tokens.
 
-use base64::u8en;
+use base64::encode;
 use chrono::{Duration, UTC};
-use diesel::{ExpressionMethods, FilterDsl, LoadDsl, Queryable, SaveChangesDsl, Table, insert};
+use diesel::{ExpressionMethods, FilterDsl, LoadDsl, SaveChangesDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use iron::typemap::Key;
-use macaroons::caveat::{Caveat, Predicate};
+use macaroons::caveat::Caveat;
 use macaroons::token::Token;
+use macaroons::v1::V1Token;
 
 use error::APIError;
 use schema::access_tokens;
 
 /// A User access token.
-#[derive(Debug, Queryable)]
+#[derive(Debug, Identifiable, Queryable)]
 #[changeset_for(access_tokens)]
 pub struct AccessToken {
     /// The access token's ID.
@@ -94,17 +95,16 @@ fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &str) -> Result<Strin
         ),
     };
 
-    let token = Token::new(macaroon_secret_key, "key".as_bytes().to_owned(), vec![])
-        .add_caveat(&Caveat::first_party(Predicate(
+    let token = V1Token::new(macaroon_secret_key, "key".as_bytes().to_owned(), None)
+        .add_caveat(&Caveat::first_party(
             format!("user_id = {}", user_id).as_bytes().to_owned()
-        )))
-        .add_caveat(&Caveat::first_party(Predicate("type = access".as_bytes().to_owned())))
-        .add_caveat(&Caveat::first_party(Predicate(
+        ))
+        .add_caveat(&Caveat::first_party("type = access".as_bytes().to_owned()))
+        .add_caveat(&Caveat::first_party(
             format!("time < {}", expiration).as_bytes().to_owned()
-        )));
+        ));
 
-    let serialized = token.serialize();
-    let encoded = u8en(&serialized)?;
+    let serialized = token.serialize()?;
 
-    String::from_utf8(encoded).map_err(APIError::from)
+    Ok(encode(&serialized))
 }

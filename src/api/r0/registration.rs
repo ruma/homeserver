@@ -129,7 +129,7 @@ mod tests {
         );
 
         assert!(response.json().find("access_token").is_some());
-        assert_eq!(response.json().find("home_server").unwrap().as_string().unwrap(), "ruma.test");
+        assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
         assert!(response.json().find("user_id").is_some());
     }
 
@@ -142,8 +142,8 @@ mod tests {
         );
 
         assert!(response.json().find("access_token").is_some());
-        assert_eq!(response.json().find("home_server").unwrap().as_string().unwrap(), "ruma.test");
-        assert_eq!(response.json().find("user_id").unwrap().as_string().unwrap(), "carl");
+        assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
+        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "carl");
     }
 
     #[test]
@@ -155,7 +155,7 @@ mod tests {
         );
 
         assert_eq!(
-            response.json().find("errcode").unwrap().as_string().unwrap(),
+            response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_GUEST_ACCESS_FORBIDDEN"
         );
     }

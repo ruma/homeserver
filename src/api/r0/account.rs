@@ -50,7 +50,7 @@ impl Handler for AccountPassword {
 
         let connection = DB::from_request(request)?;
 
-        if let Err(_) = user.save_changes::<User>(&connection) {
+        if let Err(_) = user.save_changes::<User>(&*connection) {
             let error = APIError::unauthorized();
 
             return Err(IronError::new(error.clone(), error));

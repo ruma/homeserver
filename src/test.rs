@@ -147,7 +147,7 @@ impl Test {
             .json()
             .find("access_token")
             .unwrap()
-            .as_string()
+            .as_str()
             .unwrap()
             .to_string()
     }

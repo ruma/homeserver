@@ -2,17 +2,11 @@
 
 use std::convert::TryFrom;
 
-use rand::{Rng, thread_rng};
 use ruma_events::StateEvent;
 use serde::{Serialize, Deserialize};
 use serde_json::{Error as SerdeJsonError, to_string};
 
 use schema::events;
-
-/// Generate a random event ID.
-pub fn generate_event_id() -> String {
-    thread_rng().gen_ascii_chars().take(18).collect()
-}
 
 /// A new event, not yet saved.
 #[derive(Debug)]
@@ -39,11 +33,11 @@ impl<C> TryFrom<StateEvent<C, ()>> for NewEvent where C: Deserialize + Serialize
         Ok(NewEvent {
             event_type: event.event_type.to_string(),
             extra_content: None,
-            id: event.event_id,
+            id: event.event_id.to_string(),
             content: to_string(&event.content)?,
-            room_id: event.room_id,
+            room_id: event.room_id.to_string(),
             state_key: Some(event.state_key),
-            user_id: event.user_id,
+            user_id: event.user_id.to_string(),
         })
     }
 }
@@ -56,11 +50,11 @@ where C: Deserialize + Serialize, E: Deserialize + Serialize {
         Ok(NewEvent {
             event_type: event.event_type.to_string(),
             extra_content: Some(to_string(&event.extra_content)?),
-            id: event.event_id,
+            id: event.event_id.to_string(),
             content: to_string(&event.content)?,
-            room_id: event.room_id,
+            room_id: event.room_id.to_string(),
             state_key: Some(event.state_key),
-            user_id: event.user_id,
+            user_id: event.user_id.to_string(),
         })
     }
 }

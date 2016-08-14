@@ -28,12 +28,13 @@ use ruma_events::room::member::{
 };
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
+use ruma_identifiers::{EventId, RoomId, UserId};
 
 use error::APIError;
-use event::{NewEvent, generate_event_id};
+use event::NewEvent;
 use room_alias::{NewRoomAlias, RoomAlias};
 use schema::{events, rooms, users};
-use user::{User, UserId};
+use user::User;
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {
@@ -112,20 +113,26 @@ impl Room {
             }
 
             let mut new_events = Vec::new();
+            let room_id = RoomId::try_from(
+                &format!("!{}:{}", &room.id, homeserver_domain)
+            )?;
+            let user_id = UserId::try_from(
+                &format!("@{}:{}", &new_room.user_id, homeserver_domain)
+            )?;
 
             let new_create_event: NewEvent = CreateEvent {
                 content: CreateEventContent {
-                    creator: new_room.user_id.clone(),
+                    creator: user_id.clone(),
                     federate: creation_options.federate,
                 },
-                event_id: generate_event_id(),
+                event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomCreate,
                 extra_content: (),
                 prev_content: None,
-                room_id: room.id.clone(),
+                room_id: room_id.clone(),
                 state_key: "".to_string(),
                 unsigned: None,
-                user_id: new_room.user_id.clone(),
+                user_id: user_id.clone(),
             }.try_into()?;
 
             new_events.push(new_create_event);
@@ -135,14 +142,14 @@ impl Room {
                     content: NameEventContent {
                         name: name.to_string(),
                     },
-                    event_id: generate_event_id(),
+                    event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomName,
                     extra_content: (),
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: room_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: new_room.user_id.clone(),
+                    user_id: user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_name_event);
@@ -153,14 +160,14 @@ impl Room {
                     content: TopicEventContent {
                         topic: topic.to_string(),
                     },
-                    event_id: generate_event_id(),
+                    event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomTopic,
                     extra_content: (),
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: room_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: new_room.user_id.clone(),
+                    user_id: user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_topic_event);
@@ -171,14 +178,14 @@ impl Room {
                     content: HistoryVisibilityEventContent {
                         history_visibility: HistoryVisibility::Shared,
                     },
-                    event_id: generate_event_id(),
+                    event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomHistoryVisibility,
                     extra_content: (),
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: room_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: new_room.user_id.clone(),
+                    user_id: user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_history_visibility_event);
@@ -189,14 +196,14 @@ impl Room {
                             content: JoinRulesEventContent {
                                 join_rule: JoinRule::Invite,
                             },
-                            event_id: generate_event_id(),
+                            event_id: EventId::new(homeserver_domain)?,
                             event_type: EventType::RoomJoinRules,
                             extra_content: (),
                             prev_content: None,
-                            room_id: room.id.clone(),
+                            room_id: room_id.clone(),
                             state_key: "".to_string(),
                             unsigned: None,
-                            user_id: new_room.user_id.clone(),
+                            user_id: user_id.clone(),
                         }.try_into()?;
 
                         new_events.push(new_join_rules_event);
@@ -206,14 +213,14 @@ impl Room {
                             content: JoinRulesEventContent {
                                 join_rule: JoinRule::Public,
                             },
-                            event_id: generate_event_id(),
+                            event_id: EventId::new(homeserver_domain)?,
                             event_type: EventType::RoomJoinRules,
                             extra_content: (),
                             prev_content: None,
-                            room_id: room.id.clone(),
+                            room_id: room_id.clone(),
                             state_key: "".to_string(),
                             unsigned: None,
-                            user_id: new_room.user_id.clone(),
+                            user_id: user_id.clone(),
                         }.try_into()?;
 
                         new_events.push(new_join_rules_event);
@@ -223,14 +230,14 @@ impl Room {
                             content: JoinRulesEventContent {
                                 join_rule: JoinRule::Invite,
                             },
-                            event_id: generate_event_id(),
+                            event_id: EventId::new(homeserver_domain)?,
                             event_type: EventType::RoomJoinRules,
                             extra_content: (),
                             prev_content: None,
-                            room_id: room.id.clone(),
+                            room_id: room_id.clone(),
                             state_key: "".to_string(),
                             unsigned: None,
-                            user_id: new_room.user_id.clone(),
+                            user_id: user_id.clone(),
                         }.try_into()?;
 
                         new_events.push(new_join_rules_event);
@@ -244,11 +251,11 @@ impl Room {
                 for invitee in invite_list {
                     let invitee_user_id = UserId::try_from(invitee)?;
 
-                    if invitee_user_id.domain != homeserver_domain {
+                    if invitee_user_id.hostname().to_string() != homeserver_domain {
                         return Err(APIError::unknown("Federation is not yet supported."));
                     }
 
-                    user_localparts.insert(invitee_user_id.localpart);
+                    user_localparts.insert(invitee_user_id.localpart().to_string());
                 }
 
                 let users: Vec<User> = users::table
@@ -285,16 +292,16 @@ impl Room {
                             membership: MembershipState::Invite,
                             third_party_invite: (),
                         },
-                        event_id: generate_event_id(),
+                        event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomMember,
                         extra_content: MemberEventExtraContent {
                             invite_room_state: None,
                         },
                         prev_content: None,
-                        room_id: room.id.clone(),
+                        room_id: room_id.clone(),
                         state_key: format!("@{}:{}", user.id, homeserver_domain),
                         unsigned: None,
-                        user_id: new_room.user_id.clone(),
+                        user_id: user_id.clone(),
                     }.try_into()?;
 
                     new_events.push(new_member_event);

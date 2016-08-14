@@ -123,7 +123,7 @@ mod tests {
 
         let response = test.post(&create_room_path, "{}");
 
-        assert!(response.json().find("room_id").unwrap().as_string().is_some());
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
 
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
-        assert!(response.json().find("room_id").unwrap().as_string().is_some());
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -149,7 +149,7 @@ mod tests {
 
         let response = test.post(&create_room_path, r#"{"visibility": "public"}"#);
 
-        assert!(response.json().find("room_id").unwrap().as_string().is_some());
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -162,7 +162,7 @@ mod tests {
 
         let response = test.post(&create_room_path, r#"{"visibility": "private"}"#);
 
-        assert!(response.json().find("room_id").unwrap().as_string().is_some());
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -176,7 +176,7 @@ mod tests {
         let response = test.post(&create_room_path, r#"{"visibility": "bogus"}"#);
 
         assert_eq!(
-            response.json().find("errcode").unwrap().as_string().unwrap(),
+            response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_BAD_JSON"
         );
     }

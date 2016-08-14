@@ -11,8 +11,10 @@ use diesel::result::{TransactionError, Error as DieselError};
 use iron::{IronError, Response};
 use iron::modifier::Modifier;
 use iron::status::Status;
+use macaroons::error::Error as MacaroonsError;
 use persistent::PersistentError;
 use r2d2::GetTimeout;
+use ruma_identifiers::Error as RumaIdentifiersError;
 use serde::ser::{Serialize, Serializer};
 use serde_json::{Error as SerdeJsonError, to_string};
 
@@ -119,8 +121,20 @@ impl<T> From<TransactionError<T>> for APIError where T: Error {
     }
 }
 
+impl From<MacaroonsError> for APIError {
+    fn from(error: MacaroonsError) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
 impl From<PersistentError> for APIError {
     fn from(error: PersistentError) -> APIError {
+        APIError::unknown(&error)
+    }
+}
+
+impl From<RumaIdentifiersError> for APIError {
+    fn from(error: RumaIdentifiersError) -> APIError {
         APIError::unknown(&error)
     }
 }

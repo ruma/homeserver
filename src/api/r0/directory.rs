@@ -141,11 +141,11 @@ mod tests {
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        access_token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_string();
+        let room_id = response.json().find("room_id").unwrap().as_str();
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().find("room_id").unwrap().as_string(), room_id);
+        assert_eq!(response.json().find("room_id").unwrap().as_str(), room_id);
         assert!(response.json().find("servers").unwrap().is_array());
     }
 
@@ -162,7 +162,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_string().unwrap(),
+            response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_NOT_FOUND"
         );
     }
@@ -189,7 +189,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_string().unwrap(),
+            response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_NOT_FOUND"
         );
     }
@@ -202,7 +202,7 @@ mod tests {
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        access_token);
         let response = test.post(&create_room_path, "{}");
-        let room_id = response.json().find("room_id").unwrap().as_string().unwrap();
+        let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
 
         let put_room_alias_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
@@ -214,7 +214,7 @@ mod tests {
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().find("room_id").unwrap().as_string().unwrap(), room_id);
+        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap(), room_id);
         assert!(response.json().find("servers").unwrap().is_array());
     }
 
@@ -226,7 +226,7 @@ mod tests {
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        access_token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_string().unwrap();
+        let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
 
         let put_room_alias_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
@@ -237,7 +237,7 @@ mod tests {
         // TODO: Fix returned status. Should be `Status::Conflict` (409) according to the spec.
         assert_eq!(response.status, Status::InternalServerError);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_string().unwrap(),
+            response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_UNKNOWN"
         );
     }
