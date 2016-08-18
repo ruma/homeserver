@@ -48,9 +48,24 @@ Legend:
     <td>POST /register</td>
   </tr>
   <tr>
+    <td align="center">:no_entry_sign:</td>
+    <td><a href="https://github.com/ruma/ruma/issues/80">#80</a></td>
+    <td>POST /account/password/email/requestToken</td>
+  </tr>
+  <tr>
+    <td align="center">:no_entry_sign:</td>
+    <td><a href="https://github.com/ruma/ruma/issues/81">#81</a></td>
+    <td>POST /account/deactivate</td>
+  </tr>
+  <tr>
     <td align="center">:white_check_mark:</td>
     <td></td>
     <td>POST /account/password</td>
+  </tr>
+  <tr>
+    <td align="center">:no_entry_sign:</td>
+    <td><a href="https://github.com/ruma/ruma/issues/82">#82</a></td>
+    <td>POST /register/email/requestToken</td>
   </tr>
   <tr>
     <th align="left" colspan="3">Adding account administrative contact information</th>
@@ -64,6 +79,11 @@ Legend:
     <td align="center">:no_entry_sign:</td>
     <td><a href="https://github.com/ruma/ruma/issues/5">#5</a></td>
     <td>GET /account/3pid</td>
+  </tr>
+  <tr>
+    <td align="center">:no_entry_sign:</td>
+    <td><a href="https://github.com/ruma/ruma/issues/83">#83</a></td>
+    <td>POST /account/3pid/email/requestToken</td>
   </tr>
   <tr>
     <th align="left" colspan="3">Filtering</th>
