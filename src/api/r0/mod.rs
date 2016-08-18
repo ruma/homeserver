@@ -1,17 +1,17 @@
 //! API endpoints for the 0.x.x version of the Matrix spec.
 
 pub use self::account::AccountPassword;
-pub use self::create_room::CreateRoom;
+pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
 pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::registration::Register;
-pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
+pub use self::room_creation::CreateRoom;
 pub use self::versions::Versions;
 
 mod account;
-mod create_room;
+mod directory;
 mod login;
 mod logout;
 mod registration;
-mod directory;
+mod room_creation;
 mod versions;
