@@ -74,6 +74,14 @@ impl APIError {
         }
     }
 
+    /// Create an error for Matrix APIs that Ruma intentionally does not implement.
+    pub fn unimplemented() -> APIError {
+        APIError {
+            errcode: APIErrorCode::Unimplemented,
+            error: "The homeserver does not implement this API.".to_string(),
+        }
+    }
+
     /// Create a generic error for anything not specifically covered by the Matrix spec.
     pub fn unknown<D: Debug + ?Sized>(error: &D) -> APIError {
         debug!("API error: {:?}", error);
@@ -186,6 +194,8 @@ pub enum APIErrorCode {
     NotFound,
     /// Request did not contain valid JSON.
     NotJson,
+    /// Ruma does not implement the requested API.
+    Unimplemented,
     /// Errors not fitting into another category.
     Unknown,
     /// The access token specified was not recognised.
@@ -202,6 +212,7 @@ impl APIErrorCode {
             APIErrorCode::LimitExceeded => Status::TooManyRequests,
             APIErrorCode::NotFound => Status::NotFound,
             APIErrorCode::NotJson => Status::BadRequest,
+            APIErrorCode::Unimplemented => Status::NotFound,
             APIErrorCode::Unknown => Status::InternalServerError,
             APIErrorCode::UnknownToken => Status::Unauthorized,
         }
@@ -217,6 +228,7 @@ impl Serialize for APIErrorCode {
             APIErrorCode::LimitExceeded => "M_LIMIT_EXCEEDED",
             APIErrorCode::NotFound => "M_NOT_FOUND",
             APIErrorCode::NotJson => "M_NOT_JSON",
+            APIErrorCode::Unimplemented => "IO.RUMA.UNIMPLEMENTED",
             APIErrorCode::Unknown => "M_UNKNOWN",
             APIErrorCode::UnknownToken => "M_UNKNOWN_TOKEN",
         };

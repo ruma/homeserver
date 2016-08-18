@@ -1,7 +1,7 @@
 //! Iron web server that serves the API.
 use diesel::migrations::{run_pending_migrations, setup_database};
 use diesel::pg::PgConnection;
-use iron::{Chain, Iron, Listening};
+use iron::{Chain, Iron, IronError, IronResult, Listening, Request, Response};
 use iron::error::HttpResult;
 use mount::Mount;
 use persistent::{Read, Write};
@@ -21,7 +21,7 @@ use api::r0::{
     Versions,
 };
 use config::Config;
-use error::CLIError;
+use error::{APIError, CLIError};
 use db::DB;
 use middleware::Cors;
 use swagger::mount_swagger;
@@ -56,6 +56,7 @@ impl<'a> Server<'a> {
         r0_router.post("/login", Login::chain());
         r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());
+        r0_router.post("/tokenrefresh", unimplemented);
 
         let mut r0 = Chain::new(r0_router);
 
@@ -115,4 +116,10 @@ impl<'a> Server<'a> {
     pub fn into_mount(self) -> Mount {
         self.mount
     }
+}
+
+fn unimplemented(_request: &mut Request) -> IronResult<Response> {
+    let error = APIError::unimplemented();
+
+    Err(IronError::new(error.clone(), error))
 }
