@@ -580,7 +580,7 @@ dependencies = [
 [[package]]
 name = "ruma-events"
 version = "0.1.0"
-source = "git+https://github.com/ruma/ruma-events#7409b61ec5be2fcb9d1bde94e2dbeb1eb335e4c7"
+source = "git+https://github.com/ruma/ruma-events#0dbcbd49f7be552e1fe864cf3a3b51c8f7c4ca3c"
 dependencies = [
  "ruma-identifiers 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",

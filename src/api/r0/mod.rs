@@ -2,6 +2,7 @@
 
 pub use self::account::AccountPassword;
 pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
+pub use self::event_creation::SendMessageEvent;
 pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::registration::Register;
@@ -10,6 +11,7 @@ pub use self::versions::Versions;
 
 mod account;
 mod directory;
+mod event_creation;
 mod login;
 mod logout;
 mod registration;

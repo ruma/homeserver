@@ -18,6 +18,7 @@ use api::r0::{
     Logout,
     PutRoomAlias,
     Register,
+    SendMessageEvent,
     Versions,
 };
 use config::Config;
@@ -57,6 +58,10 @@ impl<'a> Server<'a> {
         r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());
         r0_router.post("/tokenrefresh", unimplemented);
+        r0_router.put(
+            "/rooms/:room_id/send/:event_type/:transaction_id",
+            SendMessageEvent::chain(),
+        );
 
         let mut r0 = Chain::new(r0_router);
 

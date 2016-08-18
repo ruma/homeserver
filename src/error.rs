@@ -26,6 +26,14 @@ pub struct APIError {
 }
 
 impl APIError {
+    /// Create an error for invalid or incomplete input to event creation API endpoints.
+    pub fn bad_event() -> APIError {
+        APIError {
+            errcode: APIErrorCode::BadEvent,
+            error: "Invalid event data.".to_string(),
+        }
+    }
+
     /// Create an error for invalid or incomplete JSON in request bodies.
     pub fn bad_json() -> APIError {
         APIError {
@@ -39,6 +47,14 @@ impl APIError {
         APIError {
             errcode: APIErrorCode::GuestAccessForbidden,
             error: "Guest accounts are forbidden.".to_string(),
+        }
+    }
+
+    /// Create an error for requests missing a required parameter.
+    pub fn missing_param(param_name: &str) -> APIError {
+        APIError {
+            errcode: APIErrorCode::MissingParam,
+            error: format!("Missing required parameter: {}.", param_name),
         }
     }
 
@@ -181,6 +197,8 @@ impl Modifier<Response> for APIError {
 /// The error code for a client-facing error.
 #[derive(Clone, Debug)]
 pub enum APIErrorCode {
+    /// Request contained an event that was not valid input for the requested API.
+    BadEvent,
     /// The request contained valid JSON, but it was malformed in some way,
     /// e.g. missing required keys, invalid values for keys.
     BadJson,
@@ -190,6 +208,8 @@ pub enum APIErrorCode {
     GuestAccessForbidden,
     /// Too many requests have been sent in a short period of time. Wait a while then try again.
     LimitExceeded,
+    /// A required input parameter was not supplied, e.g. query string or URL path-based parameter.
+    MissingParam,
     /// No resource was found for this request.
     NotFound,
     /// Request did not contain valid JSON.
@@ -206,10 +226,12 @@ impl APIErrorCode {
     /// The HTTP status code that should be used to represent the `APIErrorCode`.
     pub fn status_code(&self) -> Status {
         match *self {
+            APIErrorCode::BadEvent => Status::UnprocessableEntity,
             APIErrorCode::BadJson => Status::UnprocessableEntity,
             APIErrorCode::Forbidden => Status::Forbidden,
             APIErrorCode::GuestAccessForbidden => Status::Forbidden,
             APIErrorCode::LimitExceeded => Status::TooManyRequests,
+            APIErrorCode::MissingParam => Status::BadRequest,
             APIErrorCode::NotFound => Status::NotFound,
             APIErrorCode::NotJson => Status::BadRequest,
             APIErrorCode::Unimplemented => Status::NotFound,
@@ -222,13 +244,15 @@ impl APIErrorCode {
 impl Serialize for APIErrorCode {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error> where S: Serializer {
         let value = match *self {
+            APIErrorCode::BadEvent => "IO.RUMA_BAD_EVENT",
             APIErrorCode::BadJson => "M_BAD_JSON",
             APIErrorCode::Forbidden => "M_FORBIDDEN",
             APIErrorCode::GuestAccessForbidden => "M_GUEST_ACCESS_FORBIDDEN",
             APIErrorCode::LimitExceeded => "M_LIMIT_EXCEEDED",
+            APIErrorCode::MissingParam => "M_MISSING_PARAM",
             APIErrorCode::NotFound => "M_NOT_FOUND",
             APIErrorCode::NotJson => "M_NOT_JSON",
-            APIErrorCode::Unimplemented => "IO.RUMA.UNIMPLEMENTED",
+            APIErrorCode::Unimplemented => "IO.RUMA_UNIMPLEMENTED",
             APIErrorCode::Unknown => "M_UNKNOWN",
             APIErrorCode::UnknownToken => "M_UNKNOWN_TOKEN",
         };

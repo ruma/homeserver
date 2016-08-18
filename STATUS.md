@@ -148,7 +148,7 @@ Legend:
     <td>PUT /rooms/:room_id/state/:event_type/:state_key</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/16">#16</a></td>
     <td>PUT /rooms/:room_id/send/:event_type/:transaction_id</td>
   </tr>
