@@ -26,11 +26,7 @@ impl BeforeMiddleware for JsonRequest {
         }
 
         match request.get::<bodyparser::Json>() {
-            Ok(Some(json)) => {
-                request.extensions.insert::<JsonRequest>(json);
-
-                Ok(())
-            },
+            Ok(Some(_)) => Ok(()),
             Ok(_) | Err(_) => {
                 let error = APIError::not_json();
 
