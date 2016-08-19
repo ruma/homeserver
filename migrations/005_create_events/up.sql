@@ -7,6 +7,5 @@ CREATE TABLE events (
   state_key TEXT,
   content TEXT NOT NULL,
   extra_content TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now()
+  created_at TIMESTAMP NOT NULL DEFAULT now()
 );

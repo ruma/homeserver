@@ -26,7 +26,6 @@ table! {
         content -> Text,
         extra_content -> Nullable<Text>,
         created_at -> Timestamp,
-        updated_at -> Timestamp,
     }
 }
 
