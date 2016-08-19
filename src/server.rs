@@ -1,5 +1,5 @@
 //! Iron web server that serves the API.
-use diesel::migrations::{run_pending_migrations, setup_database};
+use diesel::migrations::setup_database;
 use diesel::pg::PgConnection;
 use iron::{Chain, Iron, IronError, IronResult, Listening, Request, Response};
 use iron::error::HttpResult;
@@ -22,6 +22,7 @@ use api::r0::{
     Versions,
 };
 use config::Config;
+use embedded_migrations::run as run_pending_migrations;
 use error::{APIError, CLIError};
 use db::DB;
 use middleware::Cors;

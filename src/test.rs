@@ -2,7 +2,7 @@ use std::sync::{ONCE_INIT, Once};
 
 use env_logger;
 use diesel::Connection;
-use diesel::migrations::{run_pending_migrations, setup_database};
+use diesel::migrations::setup_database;
 use diesel::pg::PgConnection;
 use iron;
 use iron::headers::{ContentType, Headers};
@@ -15,6 +15,7 @@ use r2d2_diesel::Error as R2D2DieselError;
 use serde_json::{Value, from_str};
 
 use config::Config;
+use embedded_migrations::run as run_pending_migrations;
 use server::Server;
 
 static START: Once = ONCE_INIT;

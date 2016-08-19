@@ -58,6 +58,8 @@ pub mod swagger;
 #[cfg(test)] pub mod test;
 pub mod user;
 
+embed_migrations!();
+
 fn main() {
     env_logger::init().expect("Failed to initialize logger.");
 
