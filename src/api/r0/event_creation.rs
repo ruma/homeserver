@@ -3,7 +3,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use bodyparser;
-use diesel::{ExecuteDsl, insert};
+use diesel::{Connection, ExecuteDsl, FindDsl, LoadDsl, insert};
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 use router::Router;
 use ruma_identifiers::{EventId, RoomId, UserId};
@@ -21,7 +21,8 @@ use error::APIError;
 use event::NewEvent;
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
-use schema::events::table as events_table;
+use room::Room;
+use schema::{events, rooms};
 use user::User;
 
 #[derive(Debug, Serialize)]
@@ -85,7 +86,7 @@ impl Handler for SendMessageEvent {
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type,
-                    room_id: room_id,
+                    room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id,
                 }.try_into().map_err(APIError::from)?
@@ -96,7 +97,7 @@ impl Handler for SendMessageEvent {
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type,
-                    room_id: room_id,
+                    room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id,
                 }.try_into().map_err(APIError::from)?
@@ -107,7 +108,7 @@ impl Handler for SendMessageEvent {
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type,
-                    room_id: room_id,
+                    room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id,
                 }.try_into().map_err(APIError::from)?
@@ -118,7 +119,7 @@ impl Handler for SendMessageEvent {
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type,
-                    room_id: room_id,
+                    room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id,
                 }.try_into().map_err(APIError::from)?
@@ -129,7 +130,7 @@ impl Handler for SendMessageEvent {
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type,
-                    room_id: room_id,
+                    room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id,
                 }.try_into().map_err(APIError::from)?
@@ -140,7 +141,7 @@ impl Handler for SendMessageEvent {
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: EventType::Custom(custom_event_type),
-                    room_id: room_id,
+                    room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id,
                 }.try_into().map_err(APIError::from)?
@@ -154,10 +155,16 @@ impl Handler for SendMessageEvent {
 
         let connection = DB::from_request(request)?;
 
-        insert(&room_event)
-            .into(events_table)
-            .execute(&*connection)
-            .map_err(APIError::from)?;
+        connection.transaction(|| {
+            if let Err(_) = rooms::table.find(room_id.to_string()).first::<Room>(&*connection) {
+                return Err(APIError::not_found());
+            };
+
+            insert(&room_event)
+                .into(events::table)
+                .execute(&*connection)
+                .map_err(APIError::from)
+        }).map_err(APIError::from)?;
 
         let response = SendMessageEventResponse {
             event_id: event_id.opaque_id().to_string(),
