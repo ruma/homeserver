@@ -1,7 +1,6 @@
 //! Cryptographic operations.
 
-use argon2rs::{Argon2, Variant};
-use argon2rs::verifier::Verifier;
+use argon2rs::verifier::Encoded;
 use base64::encode;
 use rand::{OsRng, Rng};
 
@@ -20,9 +19,7 @@ pub fn generate_macaroon_secret_key() -> Result<String, CLIError> {
 /// Hash a password with Argon2.
 pub fn hash_password(password: &str) -> Result<String, APIError> {
     let salt = generate_salt()?;
-    let argon2 = Argon2::default(Variant::Argon2i);
-    let verifier = Verifier::new(argon2, password.as_bytes(), &salt, &[], &[]);
-    let encoded_hash = verifier.to_u8();
+    let encoded_hash = Encoded::default2i(password.as_bytes(), &salt, &[], &[]).to_u8();
 
     String::from_utf8(encoded_hash).map_err(APIError::from)
 }
@@ -30,14 +27,14 @@ pub fn hash_password(password: &str) -> Result<String, APIError> {
 /// Verifies a password with Argon2.
 pub fn verify_password(encoded_hash: &[u8], plaintext_password: &str)
 -> Result<bool, APIError> {
-    let verifier = match Verifier::from_u8(encoded_hash) {
-        Ok(verifier) => verifier,
+    let encoded = match Encoded::from_u8(encoded_hash) {
+        Ok(encoded) => encoded,
         Err(error) => {
             return Err(APIError::unknown(&format!("argon2rs verifier error: {:?}", error)));
         }
     };
 
-    Ok(verifier.verify(plaintext_password.as_bytes()))
+    Ok(encoded.verify(plaintext_password.as_bytes()))
 }
 
 /// Generates a random salt for Argon2.

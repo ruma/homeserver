@@ -2,7 +2,7 @@
 name = "ruma"
 version = "0.1.0"
 dependencies = [
- "argon2rs 0.2.1 (git+https://github.com/bryant/argon2rs)",
+ "argon2rs 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bodyparser 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -47,8 +47,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "argon2rs"
-version = "0.2.1"
-source = "git+https://github.com/bryant/argon2rs#4de1a8ed5d528de7ef386407911a1dda07baa531"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "blake2-rfc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "scoped_threadpool 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -868,7 +868,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [metadata]
 "checksum aho-corasick 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2b3fb52b09c1710b961acb35390d514be82e4ac96a9969a8e38565a29b878dc9"
 "checksum ansi_term 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c877397e09fec7a240af5fa74ad0124054b8066149d6544cd1ace93f8de3be68"
-"checksum argon2rs 0.2.1 (git+https://github.com/bryant/argon2rs)" = "<none>"
+"checksum argon2rs 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "3f67b0b6a86dae6e67ff4ca2b6201396074996379fba2b92ff649126f37cb392"
 "checksum aster 0.22.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3c2e21e476ef6522e1762461ddbd1eba4d049c9a86619ccd03226b09f3d0741e"
 "checksum base64 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3ce110e5c96df1817009271c910626fa4b79c2f178d70f9857d768c3886ba6a0"
 "checksum bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "aad18937a628ec6abcd26d1489012cc0e18c21798210f491af69ded9b881106d"
