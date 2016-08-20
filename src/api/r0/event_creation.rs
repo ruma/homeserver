@@ -85,10 +85,10 @@ impl Handler for SendMessageEvent {
                     content: from_value(event_content).map_err(APIError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
-                    event_type: event_type,
+                    event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
-                    user_id: user_id,
+                    user_id: user_id.clone(),
                 }.try_into().map_err(APIError::from)?
             }
             EventType::CallCandidates => {
@@ -96,10 +96,10 @@ impl Handler for SendMessageEvent {
                     content: from_value(event_content).map_err(APIError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
-                    event_type: event_type,
+                    event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
-                    user_id: user_id,
+                    user_id: user_id.clone(),
                 }.try_into().map_err(APIError::from)?
             }
             EventType::CallHangup => {
@@ -107,10 +107,10 @@ impl Handler for SendMessageEvent {
                     content: from_value(event_content).map_err(APIError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
-                    event_type: event_type,
+                    event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
-                    user_id: user_id,
+                    user_id: user_id.clone(),
                 }.try_into().map_err(APIError::from)?
             }
             EventType::CallInvite => {
@@ -118,10 +118,10 @@ impl Handler for SendMessageEvent {
                     content: from_value(event_content).map_err(APIError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
-                    event_type: event_type,
+                    event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
-                    user_id: user_id,
+                    user_id: user_id.clone(),
                 }.try_into().map_err(APIError::from)?
             }
             EventType::RoomMessage => {
@@ -129,21 +129,21 @@ impl Handler for SendMessageEvent {
                     content: from_value(event_content).map_err(APIError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
-                    event_type: event_type,
+                    event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
-                    user_id: user_id,
+                    user_id: user_id.clone(),
                 }.try_into().map_err(APIError::from)?
             }
-            EventType::Custom(custom_event_type) => {
+            EventType::Custom(ref custom_event_type) => {
                 CustomRoomEvent {
                     content: event_content,
                     event_id: event_id.clone(),
                     extra_content: (),
-                    event_type: EventType::Custom(custom_event_type),
+                    event_type: EventType::Custom(custom_event_type.clone()),
                     room_id: room_id.clone(),
                     unsigned: None,
-                    user_id: user_id,
+                    user_id: user_id.clone(),
                 }.try_into().map_err(APIError::from)?
             }
             _ => {
@@ -156,9 +156,20 @@ impl Handler for SendMessageEvent {
         let connection = DB::from_request(request)?;
 
         connection.transaction(|| {
-            if let Err(_) = rooms::table.find(room_id.to_string()).first::<Room>(&*connection) {
-                return Err(APIError::not_found());
-            };
+            let room = rooms::table.find(room_id.to_string()).first::<Room>(&*connection)?;
+            let power_levels = room.current_power_levels(&*connection)?;
+            let user_power_level = power_levels
+                .users
+                .get(&user_id)
+                .unwrap_or(&power_levels.users_default);
+            let required_power_level = power_levels
+                .events
+                .get(&event_type)
+                .unwrap_or(&power_levels.events_default);
+
+            if required_power_level > user_power_level {
+                return Err(APIError::unauthorized());
+            }
 
             insert(&room_event)
                 .into(events::table)

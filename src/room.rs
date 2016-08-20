@@ -1,12 +1,13 @@
 //! Matrix rooms.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
 
-use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl, insert};
+use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl, OrderDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::expression::dsl::any;
+use diesel::result::Error as DieselError;
 use rand::{Rng, thread_rng};
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
@@ -27,11 +28,12 @@ use ruma_events::room::member::{
     MembershipState,
 };
 use ruma_events::room::name::{NameEvent, NameEventContent};
+use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 use ruma_identifiers::{EventId, RoomId, UserId};
 
 use error::APIError;
-use event::NewEvent;
+use event::{Event, NewEvent};
 use room_alias::{NewRoomAlias, RoomAlias};
 use schema::{events, rooms, users};
 use user::User;
@@ -315,6 +317,40 @@ impl Room {
 
             Ok(room)
         }).map_err(APIError::from)
+    }
+
+    /// Looks up the most recent power levels event for the room.
+    ///
+    /// If the room does not have a power levels event, a default one is created according to the
+    /// specification.
+    pub fn current_power_levels(&self, connection: &PgConnection)
+    -> Result<PowerLevelsEventContent, APIError> {
+        match events::table
+            .filter(events::room_id.eq(self.id.clone()))
+            .filter(events::state_key.eq(EventType::RoomPowerLevels.to_string()))
+            .order(events::ordering.desc())
+            .first::<Event>(connection)
+        {
+            Ok(event) => {
+                let power_levels_event: PowerLevelsEvent = event.try_into()?;
+
+                Ok(power_levels_event.content)
+            }
+            Err(error) => match error {
+                DieselError::NotFound => Ok(PowerLevelsEventContent {
+                    ban: 50,
+                    events: HashMap::new(),
+                    events_default: 0,
+                    invite: 50,
+                    kick: 50,
+                    redact: 50,
+                    state_default: 0,
+                    users: HashMap::new(),
+                    users_default: 0,
+                }),
+                _ => Err(error.into()),
+            },
+        }
     }
 
     /// Generate a random room ID.

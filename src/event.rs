@@ -32,22 +32,22 @@ pub struct NewEvent {
 /// A Matrix event.
 #[derive(Debug, Queryable)]
 pub struct Event {
-    /// The depth of the event within its room, with the first event in the room being 1.
-    pub ordering: i64,
-    /// The type of the event, e.g. *m.room.create*.
-    pub event_type: String,
-    /// Extra key-value pairs to be mixed into the top-level JSON representation of the event.
-    pub extra_content: Option<String>,
     /// The unique event ID.
     pub id: String,
-    /// JSON of the event's content.
-    pub content: String,
+    /// The depth of the event within its room, with the first event in the room being 1.
+    pub ordering: i64,
     /// The room the event was sent in.
     pub room_id: String,
-    /// An event subtype that determines whether or not the event will overwrite a previous one.
-    pub state_key: Option<String>,
     /// The user who sent the event.
     pub user_id: String,
+    /// The type of the event, e.g. *m.room.create*.
+    pub event_type: String,
+    /// An event subtype that determines whether or not the event will overwrite a previous one.
+    pub state_key: Option<String>,
+    /// JSON of the event's content.
+    pub content: String,
+    /// Extra key-value pairs to be mixed into the top-level JSON representation of the event.
+    pub extra_content: Option<String>,
     /// The time the event was created.
     pub created_at: PgTimestamp,
 }
