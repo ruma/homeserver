@@ -4,6 +4,7 @@ use diesel::{ExpressionMethods, FilterDsl, LoadDsl, ExecuteDsl, insert, delete};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
+use ruma_identifiers::RoomId;
 
 use error::APIError;
 use schema::room_aliases;
@@ -15,7 +16,7 @@ pub struct NewRoomAlias {
     /// The human-readable alias.
     pub alias: String,
     /// The ID of the room being aliased.
-    pub room_id: String,
+    pub room_id: RoomId,
     /// A list of homeserver domains that know about this alias.
     pub servers: Vec<String>,
 }
@@ -26,7 +27,7 @@ pub struct RoomAlias {
     /// The human-readable alias.
     pub alias: String,
     /// The ID of the room being aliased.
-    pub room_id: String,
+    pub room_id: RoomId,
     /// A list of homeserver domains that know about this alias.
     pub servers: Vec<String>,
     /// The time the room alias was created.

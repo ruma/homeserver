@@ -1,7 +1,10 @@
 //! Endpoints for user account registration.
 
+use std::convert::TryFrom;
+
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
+use ruma_identifiers::UserId;
 use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
 use config::Config;
@@ -92,13 +95,20 @@ impl Handler for Register {
             }
         }
 
+        let config = Config::from_request(request)?;
+
         let new_user = NewUser {
-            id: registration_request.username.unwrap_or(User::generate_uid()),
+            id: match registration_request.username {
+                Some(username) => {
+                    UserId::try_from(&format!("@{}:{}", username, &config.domain))
+                        .map_err(APIError::from)?
+                }
+                None => UserId::new(&config.domain).map_err(APIError::from)?,
+            },
             password_hash: hash_password(&registration_request.password)?,
         };
 
         let connection = DB::from_request(request)?;
-        let config = Config::from_request(request)?;
 
         let (user, access_token) = User::create(
             &connection,
@@ -109,7 +119,7 @@ impl Handler for Register {
         let response = RegistrationResponse {
             access_token: access_token.value,
             home_server: config.domain.clone(),
-            user_id: user.id,
+            user_id: user.id.to_string(),
         };
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))
@@ -143,7 +153,7 @@ mod tests {
 
         assert!(response.json().find("access_token").is_some());
         assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "carl");
+        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
     }
 
     #[test]

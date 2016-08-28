@@ -10,7 +10,7 @@ use diesel::{
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use iron::typemap::Key;
-use rand::{Rng, thread_rng};
+use ruma_identifiers::UserId;
 
 use access_token::AccessToken;
 use crypto::verify_password;
@@ -21,8 +21,8 @@ use schema::users;
 #[derive(Debug, Clone, Identifiable, Queryable)]
 #[changeset_for(users)]
 pub struct User {
-    /// The user's username (localpart).
-    pub id: String,
+    /// The user's unique ID.
+    pub id: UserId,
     /// An [Argon2](https://en.wikipedia.org/wiki/Argon2) hash of the user's password.
     pub password_hash: String,
     /// The time the user was created.
@@ -35,8 +35,8 @@ pub struct User {
 #[derive(Debug)]
 #[insertable_into(users)]
 pub struct NewUser {
-    /// The user's username (localpart).
-    pub id: String,
+    /// The user's unique ID.
+    pub id: UserId,
     /// The user's hashed password.
     pub password_hash: String,
 }
@@ -54,7 +54,7 @@ impl User {
                 .get_result(connection)
                 .map_err(APIError::from)?;
 
-            let access_token = AccessToken::create(connection, &user.id[..], macaroon_secret_key)?;
+            let access_token = AccessToken::create(connection, &user.id, macaroon_secret_key)?;
 
             Ok((user, access_token))
         }).map_err(APIError::from)
@@ -73,7 +73,7 @@ impl User {
     /// Look up a user using the given user ID and plaintext password.
     pub fn find_by_uid_and_password(
         connection: &PgConnection,
-        id: &str,
+        id: &UserId,
         plaintext_password: &str,
     ) -> Result<User, APIError> {
         match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
@@ -86,11 +86,6 @@ impl User {
             }
             Err(error) => Err(APIError::from(error)),
         }
-    }
-
-    /// Generate a random user ID.
-    pub fn generate_uid() -> String {
-        thread_rng().gen_ascii_chars().take(12).collect()
     }
 }
 

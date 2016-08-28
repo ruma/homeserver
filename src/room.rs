@@ -8,7 +8,6 @@ use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::expression::dsl::any;
 use diesel::result::Error as DieselError;
-use rand::{Rng, thread_rng};
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
 use ruma_events::room::history_visibility::{
@@ -59,9 +58,9 @@ pub struct CreationOptions {
 #[insertable_into(rooms)]
 pub struct NewRoom {
     /// The room's unique ID.
-    pub id: String,
+    pub id: RoomId,
     /// The ID of the user creating the room.
-    pub user_id: String,
+    pub user_id: UserId,
     /// Whether or not the room is visible in the directory.
     pub public: bool,
 }
@@ -70,9 +69,9 @@ pub struct NewRoom {
 #[derive(Debug, Queryable)]
 pub struct Room {
     /// The room's unique ID.
-    pub id: String,
+    pub id: RoomId,
     /// The ID of the user who created the room.
-    pub user_id: String,
+    pub user_id: UserId,
     /// Whether or not the room is visible in the directory.
     pub public: bool,
     /// The time the room was created.
@@ -115,26 +114,20 @@ impl Room {
             }
 
             let mut new_events = Vec::new();
-            let room_id = RoomId::try_from(
-                &format!("!{}:{}", &room.id, homeserver_domain)
-            )?;
-            let user_id = UserId::try_from(
-                &format!("@{}:{}", &new_room.user_id, homeserver_domain)
-            )?;
 
             let new_create_event: NewEvent = CreateEvent {
                 content: CreateEventContent {
-                    creator: user_id.clone(),
+                    creator: new_room.user_id.clone(),
                     federate: creation_options.federate,
                 },
                 event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomCreate,
                 extra_content: (),
                 prev_content: None,
-                room_id: room_id.clone(),
+                room_id: room.id.clone(),
                 state_key: "".to_string(),
                 unsigned: None,
-                user_id: user_id.clone(),
+                user_id: new_room.user_id.clone(),
             }.try_into()?;
 
             new_events.push(new_create_event);
@@ -148,10 +141,10 @@ impl Room {
                     event_type: EventType::RoomName,
                     extra_content: (),
                     prev_content: None,
-                    room_id: room_id.clone(),
+                    room_id: room.id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: user_id.clone(),
+                    user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_name_event);
@@ -166,10 +159,10 @@ impl Room {
                     event_type: EventType::RoomTopic,
                     extra_content: (),
                     prev_content: None,
-                    room_id: room_id.clone(),
+                    room_id: room.id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: user_id.clone(),
+                    user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_topic_event);
@@ -184,10 +177,10 @@ impl Room {
                     event_type: EventType::RoomHistoryVisibility,
                     extra_content: (),
                     prev_content: None,
-                    room_id: room_id.clone(),
+                    room_id: room.id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: user_id.clone(),
+                    user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_history_visibility_event);
@@ -202,10 +195,10 @@ impl Room {
                             event_type: EventType::RoomJoinRules,
                             extra_content: (),
                             prev_content: None,
-                            room_id: room_id.clone(),
+                            room_id: room.id.clone(),
                             state_key: "".to_string(),
                             unsigned: None,
-                            user_id: user_id.clone(),
+                            user_id: new_room.user_id.clone(),
                         }.try_into()?;
 
                         new_events.push(new_join_rules_event);
@@ -219,10 +212,10 @@ impl Room {
                             event_type: EventType::RoomJoinRules,
                             extra_content: (),
                             prev_content: None,
-                            room_id: room_id.clone(),
+                            room_id: room.id.clone(),
                             state_key: "".to_string(),
                             unsigned: None,
-                            user_id: user_id.clone(),
+                            user_id: new_room.user_id.clone(),
                         }.try_into()?;
 
                         new_events.push(new_join_rules_event);
@@ -236,10 +229,10 @@ impl Room {
                             event_type: EventType::RoomJoinRules,
                             extra_content: (),
                             prev_content: None,
-                            room_id: room_id.clone(),
+                            room_id: room.id.clone(),
                             state_key: "".to_string(),
                             unsigned: None,
-                            user_id: user_id.clone(),
+                            user_id: new_room.user_id.clone(),
                         }.try_into()?;
 
                         new_events.push(new_join_rules_event);
@@ -248,40 +241,44 @@ impl Room {
             }
 
             if let Some(ref invite_list) = creation_options.invite_list {
-                let mut user_localparts = HashSet::with_capacity(invite_list.len());
+                let mut user_ids = HashSet::with_capacity(invite_list.len());
 
                 for invitee in invite_list {
-                    let invitee_user_id = UserId::try_from(invitee)?;
+                    let user_id = UserId::try_from(invitee)?;
 
-                    if invitee_user_id.hostname().to_string() != homeserver_domain {
+                    if user_id.hostname().to_string() != homeserver_domain {
                         return Err(APIError::unknown("Federation is not yet supported."));
                     }
 
-                    user_localparts.insert(invitee_user_id.localpart().to_string());
+                    user_ids.insert(user_id);
                 }
 
                 let users: Vec<User> = users::table
                     .filter(users::id.eq(any(
-                        user_localparts.iter().cloned().collect::<Vec<String>>()))
+                        user_ids.iter().cloned().collect::<Vec<UserId>>()))
                     )
                     .get_results(connection)
                     .map_err(APIError::from)?;
 
-                let loaded_user_localparts: HashSet<String> = users
+                let loaded_user_ids: HashSet<UserId> = users
                     .iter()
                     .map(|user| user.id.clone())
                     .collect();
 
-                let missing_user_localparts: Vec<String> = user_localparts
-                    .difference(&loaded_user_localparts)
+                let missing_user_ids: Vec<UserId> = user_ids
+                    .difference(&loaded_user_ids)
                     .cloned()
                     .collect();
 
-                if missing_user_localparts.len() > 0 {
+                if missing_user_ids.len() > 0 {
                     return Err(
                         APIError::unknown(&format!(
                             "Unknown users in invite list: {}",
-                            &missing_user_localparts.join(", ")
+                            &missing_user_ids
+                                .iter()
+                                .map(|user_id| user_id.to_string())
+                                .collect::<Vec<String>>()
+                                .join(", ")
                         ))
                     )
                 }
@@ -300,10 +297,10 @@ impl Room {
                             invite_room_state: None,
                         },
                         prev_content: None,
-                        room_id: room_id.clone(),
+                        room_id: room.id.clone(),
                         state_key: format!("@{}:{}", user.id, homeserver_domain),
                         unsigned: None,
-                        user_id: user_id.clone(),
+                        user_id: new_room.user_id.clone(),
                     }.try_into()?;
 
                     new_events.push(new_member_event);
@@ -351,10 +348,5 @@ impl Room {
                 _ => Err(error.into()),
             },
         }
-    }
-
-    /// Generate a random room ID.
-    pub fn generate_room_id() -> String {
-        thread_rng().gen_ascii_chars().take(12).collect()
     }
 }

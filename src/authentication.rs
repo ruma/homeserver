@@ -3,6 +3,7 @@
 use diesel::pg::PgConnection;
 use iron::Response;
 use iron::modifier::Modifier;
+use ruma_identifiers::UserId;
 use serde::{Serialize, Serializer};
 
 use error::{APIError, APIErrorCode};
@@ -70,13 +71,13 @@ pub enum AuthParams {
     Password(PasswordAuthParams)
 }
 
-/// m.login.password reuqest parameters.
+/// m.login.password request parameters.
 #[derive(Clone, Debug)]
 pub struct PasswordAuthParams {
     /// The user's password as plaintext.
     pub password: String,
-    /// The user's username.
-    pub user: String,
+    /// The user's ID.
+    pub user_id: UserId,
 }
 
 impl AuthParams {
@@ -84,6 +85,6 @@ impl AuthParams {
     pub fn authenticate(&self, connection: &PgConnection) -> Result<User, APIError> {
         let &AuthParams::Password(ref credentials) = self;
 
-        User::find_by_uid_and_password(connection, &credentials.user, &credentials.password)
+        User::find_by_uid_and_password(connection, &credentials.user_id, &credentials.password)
     }
 }

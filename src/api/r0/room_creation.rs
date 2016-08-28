@@ -3,6 +3,7 @@
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use ruma_identifiers::RoomId;
 
 use config::Config;
 use db::DB;
@@ -80,7 +81,7 @@ impl Handler for CreateRoom {
         let config = Config::from_request(request)?;
 
         let new_room = NewRoom {
-            id: Room::generate_room_id(),
+            id: RoomId::new(&config.domain).map_err(APIError::from)?,
             user_id: user.id,
             public: create_room_request.visibility.map_or(false, |v| v == "public"),
         };
@@ -102,7 +103,7 @@ impl Handler for CreateRoom {
         let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
 
         let response = CreateRoomResponse {
-            room_id: room.id,
+            room_id: room.id.to_string(),
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))

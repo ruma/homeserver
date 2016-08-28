@@ -1,9 +1,12 @@
 //! Endpoints for managing room aliases.
 
+use std::convert::TryFrom;
+
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use router::Router;
+use ruma_identifiers::RoomId;
 
 use config::Config;
 use db::DB;
@@ -73,7 +76,7 @@ impl Handler for GetRoomAlias {
         let room_alias = RoomAlias::find_by_alias(&connection, room_alias_name)?;
 
         let response = GetRoomAliasResponse {
-            room_id: room_alias.room_id,
+            room_id: room_alias.room_id.to_string(),
             servers: room_alias.servers,
         };
 
@@ -103,7 +106,7 @@ impl Handler for PutRoomAlias {
 
         let parsed_request = request.get::<bodyparser::Struct<PutRoomAliasRequest>>();
         let room_id = if let Ok(Some(api_request)) = parsed_request {
-            api_request.room_id
+            RoomId::try_from(&api_request.room_id).map_err(APIError::from)?
         } else {
             let error = APIError::bad_json();
 

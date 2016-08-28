@@ -9,6 +9,7 @@ use iron::typemap::Key;
 use macaroons::caveat::Caveat;
 use macaroons::token::Token;
 use macaroons::v1::V1Token;
+use ruma_identifiers::UserId;
 
 use error::APIError;
 use schema::access_tokens;
@@ -20,7 +21,7 @@ pub struct AccessToken {
     /// The access token's ID.
     pub id: i64,
     /// The ID of the user who owns the access token.
-    pub user_id: String,
+    pub user_id: UserId,
     /// The value of the access token. This is a Base64-encoded macaroon.
     pub value: String,
     /// Whether or not the access token has been revoked.
@@ -36,7 +37,7 @@ pub struct AccessToken {
 #[insertable_into(access_tokens)]
 pub struct NewAccessToken {
     /// The ID of the user who owns the access token.
-    pub user_id: String,
+    pub user_id: UserId,
     /// The value of the access token. This is a Base64-encoded macaroon.
     pub value: String,
 }
@@ -45,11 +46,11 @@ impl AccessToken {
     /// Create a new `AccessToken` for the given user.
     pub fn create(
         connection: &PgConnection,
-        user_id: &str,
+        user_id: &UserId,
         macaroon_secret_key: &Vec<u8>,
     ) -> Result<Self, APIError> {
         let new_access_token = NewAccessToken {
-            user_id: user_id.to_string(),
+            user_id: user_id.clone(),
             value: create_macaroon(macaroon_secret_key, user_id)?,
         };
 
@@ -87,7 +88,7 @@ impl Key for AccessToken {
     type Value = AccessToken;
 }
 
-fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &str) -> Result<String, APIError> {
+fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &UserId) -> Result<String, APIError> {
     let expiration = match UTC::now().checked_add(Duration::hours(1)) {
         Some(datetime) => datetime,
         None => return Err(
@@ -97,7 +98,7 @@ fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &str) -> Result<Strin
 
     let token = V1Token::new(macaroon_secret_key, "key".as_bytes().to_owned(), None)
         .add_caveat(&Caveat::first_party(
-            format!("user_id = {}", user_id).as_bytes().to_owned()
+            format!("user_id = {}", user_id.to_string()).as_bytes().to_owned()
         ))
         .add_caveat(&Caveat::first_party("type = access".as_bytes().to_owned()))
         .add_caveat(&Caveat::first_party(

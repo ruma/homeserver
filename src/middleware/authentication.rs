@@ -1,9 +1,13 @@
+use std::convert::TryFrom;
+
 use bodyparser;
 use iron::{BeforeMiddleware, IronError, IronResult, Plugin, Request};
+use ruma_identifiers::UserId;
 use serde_json::Value;
 
 use access_token::AccessToken;
 use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
+use config::Config;
 use db::DB;
 use error::APIError;
 use user::User;
@@ -54,13 +58,14 @@ impl BeforeMiddleware for UIAuth {
             .get::<bodyparser::Json>()
             .expect("bodyparser failed to parse")
             .expect("bodyparser did not find JSON in the body");
+        let config = Config::from_request(request)?;
 
         if let Some(auth_json) = json.find("auth") {
             if is_m_login_password(auth_json) {
-                if let Some((user, password)) = get_user_and_password(auth_json) {
+                if let Ok((user_id, password)) = get_user_id_and_password(auth_json, &config) {
                     let auth_params = AuthParams::Password(PasswordAuthParams {
                         password: password,
-                        user: user,
+                        user_id: user_id,
                     });
 
                     let connection = DB::from_request(request)?;
@@ -78,13 +83,21 @@ impl BeforeMiddleware for UIAuth {
     }
 }
 
-fn get_user_and_password(json: &Value) -> Option<(String, String)> {
-    let user = json.find("user").and_then(|user_json| user_json.as_str());
+fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, String), ()> {
+    let username = json.find("user").and_then(|username_json| username_json.as_str());
     let password = json.find("password").and_then(|password_json| password_json.as_str());
 
-    match (user, password) {
-        (Some(user), Some(password)) => Some((user.to_string(), password.to_string())),
-        _ => None,
+    match (username, password) {
+        (Some(username), Some(password)) => {
+            match UserId::try_from(username) {
+                Ok(user_id) => Ok((user_id, password.to_string())),
+                Err(_) => match UserId::try_from(&format!("@{}:{}", username, &config.domain)) {
+                    Ok(user_id) => Ok((user_id, password.to_string())),
+                    Err(_) => Err(()),
+                },
+            }
+        }
+        _ => Err(()),
     }
 }
 

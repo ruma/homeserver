@@ -46,7 +46,7 @@ impl Handler for Login {
         let response = LoginResponse {
             access_token: access_token.value,
             home_server: config.domain.clone(),
-            user_id: user.id,
+            user_id: user.id.to_string(),
         };
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))
@@ -72,6 +72,6 @@ mod tests {
 
         assert!(response.json().find("access_token").is_some());
         assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "carl");
+        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
     }
 }

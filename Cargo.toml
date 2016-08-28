@@ -28,7 +28,6 @@ r2d2 = "0.7.0"
 r2d2-diesel = "0.7.1"
 rand = "0.3.14"
 router = "0.2.0"
-ruma-identifiers = "0.3.0"
 rustc-serialize = "0.3.19"
 serde = "0.8.1"
 serde_json = "0.8.1"
@@ -44,6 +43,10 @@ version = "0.7.1"
 
 [dependencies.ruma-events]
 git = "https://github.com/ruma/ruma-events"
+
+[dependencies.ruma-identifiers]
+features = ["diesel"]
+version = "0.4.0"
 
 [dev-dependencies]
 iron-test = "0.4.0"
