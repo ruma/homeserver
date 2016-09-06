@@ -5,7 +5,7 @@ If you're interested in working on an API, take a look at the corresponding trac
 
 Legend:
 
-:white_check_mark: Supported :construction: Partialially supported :no_entry_sign: Not supported
+:white_check_mark: Supported :construction: Partially supported :no_entry_sign: Not supported
 
 <table>
   <tr>
