@@ -35,12 +35,27 @@ The application will be written to `target/debug/ruma`.
 You can also build and run Ruma in one step with `script/cargo run`.
 (When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `script/cargo run -- run`.)
 
-Ruma currently requires the nightly version of Rust, primarily because it makes heavy use of the code generation features of [Diesel](https://github.com/sgrif/diesel) and [Serde](https://github.com/serde-rs/serde), which use compiler plugins, an unstable Rust feature.
-This particular use of compiler plugins is likely to be replaced by a new macro system currently being developed by Nick Cameron (see [libmacro](http://www.ncameron.org/blog/libmacro/) and the [procedural macros RFC](https://github.com/rust-lang/rfcs/pull/1566)), but is probably a very long way off from making it to stable Rust.
+### Nightly Rust
 
-To generate API documentation, run `script/cargo doc`.
+Ruma currently requires the nightly version of Rust because it uses the following unstable features, listed below with links to the GitHub issues tracking stabilization:
+
+* `custom_attribute`, `custom_derive`, `plugin`: These will all be replaced and stabilized soon by [Macros 1.1](https://github.com/rust-lang/rust/issues/35900).
+* [`question_mark`](https://github.com/rust-lang/rust/issues/31436)
+* [`specialization`](https://github.com/rust-lang/rust/issues/31844)
+* [`try_from`](https://github.com/rust-lang/rust/issues/33417)
+
+When all of these features are stabilized, Ruma will target stable Rust.
+
+### Developing without Docker
+
+Docker is used to make everyone's life easier by pinning a compatible version of nightly Rust and managing test PostgreSQL databases without assuming anything about the host system. If you really want to avoid Docker, it's up to you to configure your development environment to match the assumptions made by code in Ruma. In particular, this means a version of the nightly Rust compiler that can compile Ruma given the current Cargo.lock and a PostgreSQL installation with suitable permissions available at the address and port used in `src/test.rs`.
+
+## Documentation
+
+To generate API documentation for Ruma, run `script/cargo doc`.
 Then open `target/doc/ruma/index.html` in your browser.
 Note that this documentation is for Ruma's internal Rust code, not the public-facing Matrix API.
+User-facing documentation will live on the [Ruma website](https://www.ruma.io/).
 
 ## Testing
 
