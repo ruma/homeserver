@@ -6,7 +6,7 @@ use iron::modifier::Modifier;
 use ruma_identifiers::UserId;
 use serde::{Serialize, Serializer};
 
-use error::{APIError, APIErrorCode};
+use error::{ApiError, ApiErrorCode};
 use user::User;
 
 /// A set of authorization flows the user can follow to authenticate a request.
@@ -26,7 +26,7 @@ impl InteractiveAuth {
 
 impl<'a> Modifier<Response> for &'a InteractiveAuth {
     fn modify(self, response: &mut Response) {
-        response.status = Some(APIErrorCode::Forbidden.status_code());
+        response.status = Some(ApiErrorCode::Forbidden.status_code());
         response.body = Some(Box::new(r#"{"flows":[{"stages":["m.login.dummy"]}]}"#));
     }
 }
@@ -82,7 +82,7 @@ pub struct PasswordAuthParams {
 
 impl AuthParams {
     /// Attempts to authenticate as a user with the supplied credentials.
-    pub fn authenticate(&self, connection: &PgConnection) -> Result<User, APIError> {
+    pub fn authenticate(&self, connection: &PgConnection) -> Result<User, ApiError> {
         let &AuthParams::Password(ref credentials) = self;
 
         User::find_by_uid_and_password(connection, &credentials.user_id, &credentials.password)

@@ -13,7 +13,7 @@ use serde_json;
 use serde_yaml;
 use toml;
 
-use error::{APIError, CLIError};
+use error::{ApiError, CliError};
 
 /// The user's configuration as loaded from the configuration file.
 ///
@@ -48,7 +48,7 @@ pub struct Config {
 
 impl Config {
     /// Load the user's configuration file.
-    pub fn from_file() -> Result<Config, CLIError> {
+    pub fn from_file() -> Result<Config, CliError> {
         let config: RawConfig;
 
         if Self::json_exists() {
@@ -58,15 +58,15 @@ impl Config {
         } else if Self::yaml_exists() {
             config = Self::load_yaml()?;
         } else {
-            return Err(CLIError::new("No configuration file was found."));
+            return Err(CliError::new("No configuration file was found."));
         }
 
         let macaroon_secret_key = match decode(&config.macaroon_secret_key) {
             Ok(bytes) => match bytes.len() {
                 32 => bytes,
-                _ => return Err(CLIError::new("macaroon_secret_key must be 32 bytes.")),
+                _ => return Err(CliError::new("macaroon_secret_key must be 32 bytes.")),
             },
-            Err(_) => return Err(CLIError::new(
+            Err(_) => return Err(CliError::new(
                 "macaroon_secret_key must be valid Base64."
             )),
         };
@@ -81,16 +81,16 @@ impl Config {
     }
 
     /// Load the `RawConfig` from a JSON configuration file.
-    fn load_json() -> Result<RawConfig, CLIError> {
+    fn load_json() -> Result<RawConfig, CliError> {
         let contents = Self::read_file_contents("ruma.json");
         match serde_json::from_str(&contents) {
             Ok(config) => return Ok(config),
-            Err(error) => return Err(CLIError::from(error)),
+            Err(error) => return Err(CliError::from(error)),
         };
     }
 
     /// Load the `RawConfig` from a TOML configuration file.
-    fn load_toml() -> Result<RawConfig, CLIError> {
+    fn load_toml() -> Result<RawConfig, CliError> {
         let contents = Self::read_file_contents("ruma.toml");
         let mut parser = toml::Parser::new(&contents);
         let data  = parser.parse();
@@ -102,18 +102,18 @@ impl Config {
                 println!("ruma.toml: {}:{}-{}:{} error: {}", loline, locol, hiline, hicol, err.desc);
             }
 
-            return Err(CLIError::new("Unable to parse ruma.toml."));
+            return Err(CliError::new("Unable to parse ruma.toml."));
         }
 
         let config = toml::Value::Table(data.unwrap());
         match toml::decode(config) {
             Some(t) => return Ok(t),
-            None => return Err(CLIError::new("Error while decoding ruma.toml.")),
+            None => return Err(CliError::new("Error while decoding ruma.toml.")),
         }
     }
 
     /// Load the `RawConfig` from a YAML configuration file.
-    fn load_yaml() -> Result<RawConfig, CLIError> {
+    fn load_yaml() -> Result<RawConfig, CliError> {
         let contents;
 
         if Path::new("ruma.yaml").is_file() {
@@ -124,7 +124,7 @@ impl Config {
 
         match serde_yaml::from_str(&contents) {
             Ok(config) => return Ok(config),
-            Err(error) => return Err(CLIError::from(error)),
+            Err(error) => return Err(CliError::from(error)),
         };
     }
 
@@ -152,8 +152,8 @@ impl Config {
     }
 
     /// Extract the `Config` stored in the request.
-    pub fn from_request(request: &mut Request) -> Result<Arc<Config>, APIError> {
-        request.get::<PersistentRead<Config>>().map_err(APIError::from)
+    pub fn from_request(request: &mut Request) -> Result<Arc<Config>, ApiError> {
+        request.get::<PersistentRead<Config>>().map_err(ApiError::from)
     }
 }
 

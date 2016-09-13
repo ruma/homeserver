@@ -23,7 +23,7 @@ use api::r0::{
 };
 use config::Config;
 use embedded_migrations::run as run_pending_migrations;
-use error::{APIError, CLIError};
+use error::{ApiError, CliError};
 use db::DB;
 use middleware::Cors;
 use swagger::mount_swagger;
@@ -37,7 +37,7 @@ pub struct Server<'a> {
 impl<'a> Server<'a> {
     /// Create a new `Server` from a `Config`.
     pub fn new(config: &Config)
-    -> Result<Server, CLIError> {
+    -> Result<Server, CliError> {
         Server::with_options(config, R2D2Config::default(), true)
     }
 
@@ -47,7 +47,7 @@ impl<'a> Server<'a> {
         ruma_config: &Config,
         r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
         set_up_db: bool,
-    ) -> Result<Server, CLIError> {
+    ) -> Result<Server, CliError> {
         let mut r0_router = Router::new();
 
         r0_router.post("/account/password", AccountPassword::chain());
@@ -73,12 +73,12 @@ impl<'a> Server<'a> {
         if set_up_db {
             debug!("Setting up database.");
             if let Err(error) =  setup_database(&*connection) {
-                return Err(CLIError::new(format!("{:?}", error)));
+                return Err(CliError::new(format!("{:?}", error)));
             }
 
             debug!("Running pending database migrations.");
             if let Err(error) = run_pending_migrations(&*connection) {
-                return Err(CLIError::new(format!("{:?}", error)));
+                return Err(CliError::new(format!("{:?}", error)));
             }
         }
 
@@ -125,7 +125,7 @@ impl<'a> Server<'a> {
 }
 
 fn unimplemented(_request: &mut Request) -> IronResult<Response> {
-    let error = APIError::unimplemented();
+    let error = ApiError::unimplemented(None);
 
     Err(IronError::new(error.clone(), error))
 }

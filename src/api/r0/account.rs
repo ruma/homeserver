@@ -5,7 +5,7 @@ use iron::status::Status;
 
 use crypto::hash_password;
 use db::DB;
-use error::APIError;
+use error::ApiError;
 use middleware::AccessTokenAuth;
 use user::User;
 
@@ -36,7 +36,7 @@ impl Handler for AccountPassword {
         {
             Ok(Some(account_password_request)) => account_password_request,
             Ok(None) | Err(_) => {
-                let error = APIError::not_json();
+                let error = ApiError::not_json(None);
 
                 return Err(IronError::new(error.clone(), error));
             }
@@ -51,7 +51,7 @@ impl Handler for AccountPassword {
         let connection = DB::from_request(request)?;
 
         if let Err(_) = user.save_changes::<User>(&*connection) {
-            let error = APIError::unauthorized();
+            let error = ApiError::unauthorized(None);
 
             return Err(IronError::new(error.clone(), error));
         }

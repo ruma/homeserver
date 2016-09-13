@@ -11,7 +11,7 @@ use macaroons::token::Token;
 use macaroons::v1::V1Token;
 use ruma_identifiers::UserId;
 
-use error::APIError;
+use error::ApiError;
 use schema::access_tokens;
 
 /// A User access token.
@@ -48,7 +48,7 @@ impl AccessToken {
         connection: &PgConnection,
         user_id: &UserId,
         macaroon_secret_key: &Vec<u8>,
-    ) -> Result<Self, APIError> {
+    ) -> Result<Self, ApiError> {
         let new_access_token = NewAccessToken {
             user_id: user_id.clone(),
             value: create_macaroon(macaroon_secret_key, user_id)?,
@@ -57,29 +57,29 @@ impl AccessToken {
         insert(&new_access_token)
             .into(access_tokens::table)
             .get_result(connection)
-            .map_err(APIError::from)
+            .map_err(ApiError::from)
     }
 
     /// Creates an `AccessToken` from an access token string value.
     ///
     /// The access token cannot be revoked.
     pub fn find_valid_by_token(connection: &PgConnection, token: &str)
-    -> Result<AccessToken, APIError> {
+    -> Result<AccessToken, ApiError> {
         access_tokens::table
             .filter(access_tokens::value.eq(token))
             .filter(access_tokens::revoked.eq(false))
             .first(connection)
             .map(AccessToken::from)
-            .map_err(APIError::from)
+            .map_err(ApiError::from)
     }
 
     /// Revoke the access token so it cannot be used again.
-    pub fn revoke(&mut self, connection: &PgConnection) -> Result<(), APIError> {
+    pub fn revoke(&mut self, connection: &PgConnection) -> Result<(), ApiError> {
         self.revoked = true;
 
         match self.save_changes::<AccessToken>(connection) {
             Ok(_) => Ok(()),
-            Err(error) => Err(APIError::from(error)),
+            Err(error) => Err(ApiError::from(error)),
         }
     }
 }
@@ -88,11 +88,11 @@ impl Key for AccessToken {
     type Value = AccessToken;
 }
 
-fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &UserId) -> Result<String, APIError> {
+fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &UserId) -> Result<String, ApiError> {
     let expiration = match UTC::now().checked_add(Duration::hours(1)) {
         Some(datetime) => datetime,
         None => return Err(
-            APIError::unknown("Failed to generate access token expiration datetime.")
+            ApiError::unknown(Some("Failed to generate access token expiration datetime."))
         ),
     };
 

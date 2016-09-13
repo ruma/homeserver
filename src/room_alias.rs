@@ -6,7 +6,7 @@ use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::RoomId;
 
-use error::APIError;
+use error::ApiError;
 use schema::room_aliases;
 
 /// A new room alias, not yet saved.
@@ -39,32 +39,32 @@ pub struct RoomAlias {
 impl RoomAlias {
     /// Creates a new room alias in the database.
     pub fn create(connection: &PgConnection, new_room_alias: &NewRoomAlias)
-    -> Result<RoomAlias, APIError> {
+    -> Result<RoomAlias, ApiError> {
         insert(new_room_alias)
             .into(room_aliases::table)
             .get_result(connection)
-            .map_err(APIError::from)
+            .map_err(ApiError::from)
     }
 
     /// Return room ID for given room alias.
     pub fn find_by_alias(connection: &PgConnection, alias: &str)
-    -> Result<RoomAlias, APIError> {
+    -> Result<RoomAlias, ApiError> {
         room_aliases::table
             .filter(room_aliases::alias.eq(alias))
             .first(connection)
             .map_err(|err| match err {
-                DieselError::NotFound => APIError::not_found(),
-                _ => APIError::from(err),
+                DieselError::NotFound => ApiError::not_found(None),
+                _ => ApiError::from(err),
             })
     }
 
     /// Deletes a room alias in the database.
     pub fn delete(connection: &PgConnection, room_alias: &str)
-                  -> Result<usize, APIError> {
+                  -> Result<usize, ApiError> {
         let thing = room_aliases::table.filter(room_aliases::alias.eq(room_alias));
 
         delete(thing)
             .execute(connection)
-            .map_err(APIError::from)
+            .map_err(ApiError::from)
     }
 }

@@ -7,7 +7,7 @@ use persistent::Write;
 use r2d2::{Config as R2D2Config, InitializationError, Pool, PooledConnection};
 use r2d2_diesel::{ConnectionManager, Error as R2D2DieselError};
 
-use error::APIError;
+use error::ApiError;
 
 /// An Iron plugin for attaching a database connection pool to an Iron request.
 pub struct DB;
@@ -25,13 +25,11 @@ impl DB {
 
     /// Extract a database conection from the pool stored in the request.
     pub fn from_request(request: &mut Request)
-        -> Result<PooledConnection<ConnectionManager<PgConnection>>, APIError>
+        -> Result<PooledConnection<ConnectionManager<PgConnection>>, ApiError>
     {
-        let mutex = request.get::<Write<DB>>().map_err(APIError::from)?;
-        let pool = mutex.lock().map_err(|error| {
-            APIError::unknown(&error)
-        })?;
-        pool.get().map_err(APIError::from)
+        let mutex = request.get::<Write<DB>>().map_err(ApiError::from)?;
+        let pool = mutex.lock().map_err(ApiError::from)?;
+        pool.get().map_err(ApiError::from)
     }
 }
 

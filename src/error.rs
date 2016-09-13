@@ -1,11 +1,13 @@
 //! Error types and conversions.
 
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::fmt::Error as FmtError;
 use std::io::Error as IoError;
 use std::string::FromUtf8Error;
+use std::sync::PoisonError;
 
+use argon2rs::verifier::DecodeError;
 use base64::Base64Error;
 use diesel::result::{TransactionError, Error as DieselError};
 use iron::{IronError, Response};
@@ -20,183 +22,220 @@ use serde_json::{Error as SerdeJsonError, to_string};
 
 /// A client-facing error.
 #[derive(Clone, Debug, Serialize)]
-pub struct APIError {
-    errcode: APIErrorCode,
+pub struct ApiError {
+    errcode: ApiErrorCode,
     error: String,
 }
 
-impl APIError {
+impl ApiError {
     /// Create an error for invalid or incomplete input to event creation API endpoints.
-    pub fn bad_event() -> APIError {
-        APIError {
-            errcode: APIErrorCode::BadEvent,
-            error: "Invalid event data.".to_string(),
+    pub fn bad_event(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::BadEvent,
+            error: message.unwrap_or("Invalid event data.").to_string(),
         }
     }
 
     /// Create an error for invalid or incomplete JSON in request bodies.
-    pub fn bad_json() -> APIError {
-        APIError {
-            errcode: APIErrorCode::BadJson,
-            error: "Invalid or missing key-value pairs in JSON.".to_string(),
+    pub fn bad_json(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::BadJson,
+            error: message.unwrap_or("Invalid or missing key-value pairs in JSON.").to_string(),
         }
     }
 
     /// Create an error for endpoints where guest accounts are not supported.
-    pub fn guest_forbidden() -> APIError {
-        APIError {
-            errcode: APIErrorCode::GuestAccessForbidden,
-            error: "Guest accounts are forbidden.".to_string(),
+    pub fn guest_forbidden(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::GuestAccessForbidden,
+            error: message.unwrap_or("Guest accounts are forbidden.").to_string(),
         }
     }
 
-    /// Create an error for requests missing a required parameter.
-    pub fn missing_param(param_name: &str) -> APIError {
-        APIError {
-            errcode: APIErrorCode::MissingParam,
-            error: format!("Missing required parameter: {}.", param_name),
+    /// Create an error for requests missing a value for a required parameter.
+    pub fn missing_param(param_name: &str) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::MissingParam,
+            error: format!("Missing value for required parameter: {}.", param_name),
         }
     }
 
     /// Create an error for requests that do not map to a resource.
-    pub fn not_found() -> APIError {
-        APIError {
-            errcode: APIErrorCode::NotFound,
-            error: "No resource was found for this request.".to_string(),
+    pub fn not_found(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::NotFound,
+            error: message.unwrap_or("No resource was found for this request.").to_string(),
         }
     }
 
     /// Create an error for requests without JSON bodies.
-    pub fn not_json() -> APIError {
-        APIError {
-            errcode: APIErrorCode::NotJson,
-            error: "No JSON found in request body.".to_string(),
+    pub fn not_json(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::NotJson,
+            error: message.unwrap_or("No JSON found in request body.").to_string(),
         }
     }
 
     /// Create an error for requests that are not marked as containing JSON.
-    pub fn wrong_content_type() -> APIError {
-        APIError {
-            errcode: APIErrorCode::NotJson,
-            error: "Request's Content-Type header must be application/json.".to_string(),
+    pub fn wrong_content_type(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::NotJson,
+            error: message.unwrap_or(
+                "Request's Content-Type header must be application/json."
+            ).to_string(),
         }
     }
 
     /// Create an error for requests that did not provide required authentication parameters.
-    pub fn unauthorized() -> APIError {
-        APIError {
-            errcode: APIErrorCode::Forbidden,
-            error: "Authentication is required.".to_string(),
+    pub fn unauthorized(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::Forbidden,
+            error: message.unwrap_or("Authentication is required.").to_string(),
         }
     }
 
     /// Create an error for Matrix APIs that Ruma intentionally does not implement.
-    pub fn unimplemented() -> APIError {
-        APIError {
-            errcode: APIErrorCode::Unimplemented,
-            error: "The homeserver does not implement this API.".to_string(),
+    pub fn unimplemented(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::Unimplemented,
+            error: message.unwrap_or("The homeserver does not implement this API.").to_string(),
         }
     }
 
     /// Create a generic error for anything not specifically covered by the Matrix spec.
-    pub fn unknown<D: Debug + ?Sized>(error: &D) -> APIError {
-        debug!("API error: {:?}", error);
-
-        APIError {
-            errcode: APIErrorCode::Unknown,
-            error: "An unknown server-side error occurred.".to_string(),
+    pub fn unknown(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::Unknown,
+            error: message.unwrap_or("An unknown server-side error occurred.").to_string(),
         }
     }
 }
 
-impl Display for APIError {
+impl Display for ApiError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
         write!(f, "{}", self.error)
     }
 }
 
-impl Error for APIError {
+impl Error for ApiError {
     fn description(&self) -> &str {
         &self.error
     }
 }
 
-impl From<IoError> for APIError {
-    fn from(error: IoError) -> APIError {
-        APIError::unknown(&error)
+impl From<IoError> for ApiError {
+    fn from(error: IoError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<Base64Error> for APIError {
-    fn from(error: Base64Error) -> APIError {
-        APIError::unknown(&error)
+impl From<DecodeError> for ApiError {
+    fn from(error: DecodeError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<DieselError> for APIError {
-    fn from(error: DieselError) -> APIError {
-        APIError::unknown(&error)
+
+impl From<Base64Error> for ApiError {
+    fn from(error: Base64Error) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl<T> From<TransactionError<T>> for APIError where T: Error {
-    fn from(error: TransactionError<T>) -> APIError {
-        APIError::unknown(&error)
+impl From<DieselError> for ApiError {
+    fn from(error: DieselError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<MacaroonsError> for APIError {
-    fn from(error: MacaroonsError) -> APIError {
-        APIError::unknown(&error)
+impl<T> From<TransactionError<T>> for ApiError where T: Error {
+    fn from(error: TransactionError<T>) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<PersistentError> for APIError {
-    fn from(error: PersistentError) -> APIError {
-        APIError::unknown(&error)
+impl From<MacaroonsError> for ApiError {
+    fn from(error: MacaroonsError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<RumaIdentifiersError> for APIError {
-    fn from(error: RumaIdentifiersError) -> APIError {
-        APIError::unknown(&error)
+impl From<PersistentError> for ApiError {
+    fn from(error: PersistentError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<GetTimeout> for APIError {
-    fn from(error: GetTimeout) -> APIError {
-        APIError::unknown(&error)
+impl From<RumaIdentifiersError> for ApiError {
+    fn from(error: RumaIdentifiersError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<FromUtf8Error> for APIError {
-    fn from(error: FromUtf8Error) -> APIError {
-        APIError::unknown(&error)
+impl From<GetTimeout> for ApiError {
+    fn from(error: GetTimeout) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<SerdeJsonError> for APIError {
-    fn from(error: SerdeJsonError) -> APIError {
-        APIError::unknown(&error)
+impl From<FromUtf8Error> for ApiError {
+    fn from(error: FromUtf8Error) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
     }
 }
 
-impl From<APIError> for IronError {
-    fn from(error: APIError) -> IronError {
+impl<T> From<PoisonError<T>> for ApiError {
+    fn from(error: PoisonError<T>) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
+    }
+}
+
+impl From<SerdeJsonError> for ApiError {
+    fn from(error: SerdeJsonError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
+    }
+}
+
+impl From<ApiError> for IronError {
+    fn from(error: ApiError) -> IronError {
         IronError::new(error.clone(), error)
     }
 }
 
-impl Modifier<Response> for APIError {
+impl Modifier<Response> for ApiError {
     fn modify(self, response: &mut Response) {
         response.status = Some(self.errcode.status_code());
-        response.body = Some(Box::new(to_string(&self).expect("APIError should always serialize")));
+        response.body = Some(Box::new(to_string(&self).expect("ApiError should always serialize")));
     }
 }
 
 /// The error code for a client-facing error.
 #[derive(Clone, Debug)]
-pub enum APIErrorCode {
+pub enum ApiErrorCode {
     /// Request contained an event that was not valid input for the requested API.
     BadEvent,
     /// The request contained valid JSON, but it was malformed in some way,
@@ -222,39 +261,39 @@ pub enum APIErrorCode {
     UnknownToken,
 }
 
-impl APIErrorCode {
-    /// The HTTP status code that should be used to represent the `APIErrorCode`.
+impl ApiErrorCode {
+    /// The HTTP status code that should be used to represent the `ApiErrorCode`.
     pub fn status_code(&self) -> Status {
         match *self {
-            APIErrorCode::BadEvent => Status::UnprocessableEntity,
-            APIErrorCode::BadJson => Status::UnprocessableEntity,
-            APIErrorCode::Forbidden => Status::Forbidden,
-            APIErrorCode::GuestAccessForbidden => Status::Forbidden,
-            APIErrorCode::LimitExceeded => Status::TooManyRequests,
-            APIErrorCode::MissingParam => Status::BadRequest,
-            APIErrorCode::NotFound => Status::NotFound,
-            APIErrorCode::NotJson => Status::BadRequest,
-            APIErrorCode::Unimplemented => Status::NotFound,
-            APIErrorCode::Unknown => Status::InternalServerError,
-            APIErrorCode::UnknownToken => Status::Unauthorized,
+            ApiErrorCode::BadEvent => Status::UnprocessableEntity,
+            ApiErrorCode::BadJson => Status::UnprocessableEntity,
+            ApiErrorCode::Forbidden => Status::Forbidden,
+            ApiErrorCode::GuestAccessForbidden => Status::Forbidden,
+            ApiErrorCode::LimitExceeded => Status::TooManyRequests,
+            ApiErrorCode::MissingParam => Status::BadRequest,
+            ApiErrorCode::NotFound => Status::NotFound,
+            ApiErrorCode::NotJson => Status::BadRequest,
+            ApiErrorCode::Unimplemented => Status::NotFound,
+            ApiErrorCode::Unknown => Status::InternalServerError,
+            ApiErrorCode::UnknownToken => Status::Unauthorized,
         }
     }
 }
 
-impl Serialize for APIErrorCode {
+impl Serialize for ApiErrorCode {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error> where S: Serializer {
         let value = match *self {
-            APIErrorCode::BadEvent => "IO.RUMA_BAD_EVENT",
-            APIErrorCode::BadJson => "M_BAD_JSON",
-            APIErrorCode::Forbidden => "M_FORBIDDEN",
-            APIErrorCode::GuestAccessForbidden => "M_GUEST_ACCESS_FORBIDDEN",
-            APIErrorCode::LimitExceeded => "M_LIMIT_EXCEEDED",
-            APIErrorCode::MissingParam => "M_MISSING_PARAM",
-            APIErrorCode::NotFound => "M_NOT_FOUND",
-            APIErrorCode::NotJson => "M_NOT_JSON",
-            APIErrorCode::Unimplemented => "IO.RUMA_UNIMPLEMENTED",
-            APIErrorCode::Unknown => "M_UNKNOWN",
-            APIErrorCode::UnknownToken => "M_UNKNOWN_TOKEN",
+            ApiErrorCode::BadEvent => "IO.RUMA_BAD_EVENT",
+            ApiErrorCode::BadJson => "M_BAD_JSON",
+            ApiErrorCode::Forbidden => "M_FORBIDDEN",
+            ApiErrorCode::GuestAccessForbidden => "M_GUEST_ACCESS_FORBIDDEN",
+            ApiErrorCode::LimitExceeded => "M_LIMIT_EXCEEDED",
+            ApiErrorCode::MissingParam => "M_MISSING_PARAM",
+            ApiErrorCode::NotFound => "M_NOT_FOUND",
+            ApiErrorCode::NotJson => "M_NOT_JSON",
+            ApiErrorCode::Unimplemented => "IO.RUMA_UNIMPLEMENTED",
+            ApiErrorCode::Unknown => "M_UNKNOWN",
+            ApiErrorCode::UnknownToken => "M_UNKNOWN_TOKEN",
         };
 
         serializer.serialize_str(value)
@@ -262,26 +301,26 @@ impl Serialize for APIErrorCode {
 }
 
 /// An operator-facing error.
-pub struct CLIError {
+pub struct CliError {
     error: String,
 }
 
-impl CLIError {
-    /// Create a new `CLIError` from any `Error` type.
-    pub fn new<E>(error: E) -> CLIError where E: Into<String> {
-        CLIError {
+impl CliError {
+    /// Create a new `CliError` from any `Error` type.
+    pub fn new<E>(error: E) -> CliError where E: Into<String> {
+        CliError {
             error: error.into(),
         }
     }
 }
 
-impl<E> From<E> for CLIError where E: Error {
-    fn from(error: E) -> CLIError {
-        CLIError::new(error.description())
+impl<E> From<E> for CliError where E: Error {
+    fn from(error: E) -> CliError {
+        CliError::new(error.description())
     }
 }
 
-impl Display for CLIError {
+impl Display for CliError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
         write!(f, "{}", self.error)
     }

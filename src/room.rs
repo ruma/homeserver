@@ -31,7 +31,7 @@ use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent}
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 use ruma_identifiers::{EventId, RoomId, UserId};
 
-use error::APIError;
+use error::ApiError;
 use event::{Event, NewEvent};
 use room_alias::{NewRoomAlias, RoomAlias};
 use schema::{events, rooms, users};
@@ -96,12 +96,12 @@ impl Room {
         new_room: &NewRoom,
         homeserver_domain: &str,
         creation_options: &CreationOptions,
-    ) -> Result<Room, APIError> {
-        connection.transaction::<Room, APIError, _>(|| {
+    ) -> Result<Room, ApiError> {
+        connection.transaction::<Room, ApiError, _>(|| {
             let room: Room = insert(new_room)
                 .into(rooms::table)
                 .get_result(connection)
-                .map_err(APIError::from)?;
+                .map_err(ApiError::from)?;
 
             if let Some(ref alias) = creation_options.alias {
                 let new_room_alias = NewRoomAlias {
@@ -247,7 +247,9 @@ impl Room {
                     let user_id = UserId::try_from(invitee)?;
 
                     if user_id.hostname().to_string() != homeserver_domain {
-                        return Err(APIError::unknown("Federation is not yet supported."));
+                        return Err(
+                            ApiError::unimplemented(Some("Federation is not yet supported."))
+                        );
                     }
 
                     user_ids.insert(user_id);
@@ -258,7 +260,7 @@ impl Room {
                         user_ids.iter().cloned().collect::<Vec<UserId>>()))
                     )
                     .get_results(connection)
-                    .map_err(APIError::from)?;
+                    .map_err(ApiError::from)?;
 
                 let loaded_user_ids: HashSet<UserId> = users
                     .iter()
@@ -272,14 +274,14 @@ impl Room {
 
                 if missing_user_ids.len() > 0 {
                     return Err(
-                        APIError::unknown(&format!(
+                        ApiError::unknown(Some(&format!(
                             "Unknown users in invite list: {}",
                             &missing_user_ids
                                 .iter()
                                 .map(|user_id| user_id.to_string())
                                 .collect::<Vec<String>>()
                                 .join(", ")
-                        ))
+                        )))
                     )
                 }
 
@@ -310,10 +312,10 @@ impl Room {
             insert(&new_events)
                 .into(events::table)
                 .execute(connection)
-                .map_err(APIError::from)?;
+                .map_err(ApiError::from)?;
 
             Ok(room)
-        }).map_err(APIError::from)
+        }).map_err(ApiError::from)
     }
 
     /// Looks up the most recent power levels event for the room.
@@ -321,7 +323,7 @@ impl Room {
     /// If the room does not have a power levels event, a default one is created according to the
     /// specification.
     pub fn current_power_levels(&self, connection: &PgConnection)
-    -> Result<PowerLevelsEventContent, APIError> {
+    -> Result<PowerLevelsEventContent, ApiError> {
         match events::table
             .filter(events::room_id.eq(self.id.clone()))
             .filter(events::state_key.eq(EventType::RoomPowerLevels.to_string()))

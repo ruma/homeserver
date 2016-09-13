@@ -10,7 +10,7 @@ use ruma_identifiers::RoomId;
 
 use config::Config;
 use db::DB;
-use error::APIError;
+use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
 use room_alias::{RoomAlias, NewRoomAlias};
@@ -69,7 +69,7 @@ impl Handler for GetRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_alias_name = params.find("room_alias").ok_or(APIError::not_found())?;
+        let room_alias_name = params.find("room_alias").ok_or(ApiError::not_found(None))?;
 
         let connection = DB::from_request(request)?;
 
@@ -88,7 +88,7 @@ impl Handler for DeleteRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_alias_name = params.find("room_alias").ok_or(APIError::not_found())?;
+        let room_alias_name = params.find("room_alias").ok_or(ApiError::not_found(None))?;
 
         let connection = DB::from_request(request)?;
 
@@ -102,13 +102,13 @@ impl Handler for PutRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_alias_name = params.find("room_alias").ok_or(APIError::not_found())?;
+        let room_alias_name = params.find("room_alias").ok_or(ApiError::not_found(None))?;
 
         let parsed_request = request.get::<bodyparser::Struct<PutRoomAliasRequest>>();
         let room_id = if let Ok(Some(api_request)) = parsed_request {
-            RoomId::try_from(&api_request.room_id).map_err(APIError::from)?
+            RoomId::try_from(&api_request.room_id).map_err(ApiError::from)?
         } else {
-            let error = APIError::bad_json();
+            let error = ApiError::bad_json(None);
 
             return Err(IronError::new(error.clone(), error));
         };

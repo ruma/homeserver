@@ -9,7 +9,7 @@ use access_token::AccessToken;
 use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
 use config::Config;
 use db::DB;
-use error::APIError;
+use error::ApiError;
 use user::User;
 
 /// Handles access token authentication for all API endpoints that require it.
@@ -48,7 +48,7 @@ impl BeforeMiddleware for AccessTokenAuth {
             }
         }
 
-        Err(IronError::new(APIError::unauthorized(), APIError::unauthorized()))
+        Err(IronError::new(ApiError::unauthorized(None), ApiError::unauthorized(None)))
     }
 }
 
@@ -79,7 +79,7 @@ impl BeforeMiddleware for UIAuth {
             }
         }
 
-        Err(IronError::new(APIError::unauthorized(), APIError::unauthorized()))
+        Err(IronError::new(ApiError::unauthorized(None), ApiError::unauthorized(None)))
     }
 }
 

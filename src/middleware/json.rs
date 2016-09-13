@@ -5,7 +5,7 @@ use iron::mime::{Mime, SubLevel, TopLevel};
 use iron::typemap::Key;
 use serde_json::Value;
 
-use error::APIError;
+use error::ApiError;
 
 /// Ensures that requests contain valid JSON and stores the parsed JSON in the Iron request.
 pub struct JsonRequest;
@@ -20,7 +20,7 @@ impl BeforeMiddleware for JsonRequest {
             Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
             _ => None,
         }).is_none() {
-            let error = APIError::wrong_content_type();
+            let error = ApiError::wrong_content_type(None);
 
             return Err(IronError::new(error.clone(), error));
         }
@@ -28,7 +28,7 @@ impl BeforeMiddleware for JsonRequest {
         match request.get::<bodyparser::Json>() {
             Ok(Some(_)) => Ok(()),
             Ok(_) | Err(_) => {
-                let error = APIError::not_json();
+                let error = ApiError::not_json(None);
 
                 Err(IronError::new(error.clone(), error))
             },

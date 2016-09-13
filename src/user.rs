@@ -14,7 +14,7 @@ use ruma_identifiers::UserId;
 
 use access_token::AccessToken;
 use crypto::verify_password;
-use error::APIError;
+use error::ApiError;
 use schema::users;
 
 /// A Matrix user.
@@ -47,27 +47,27 @@ impl User {
         connection: &PgConnection,
         new_user: &NewUser,
         macaroon_secret_key: &Vec<u8>,
-    ) -> Result<(User, AccessToken), APIError> {
-        connection.transaction::<(User, AccessToken), APIError, _>(|| {
+    ) -> Result<(User, AccessToken), ApiError> {
+        connection.transaction::<(User, AccessToken), ApiError, _>(|| {
             let user: User = insert(new_user)
                 .into(users::table)
                 .get_result(connection)
-                .map_err(APIError::from)?;
+                .map_err(ApiError::from)?;
 
             let access_token = AccessToken::create(connection, &user.id, macaroon_secret_key)?;
 
             Ok((user, access_token))
-        }).map_err(APIError::from)
+        }).map_err(ApiError::from)
     }
 
     /// Look up a user using the given `AccessToken`.
     pub fn find_by_access_token(connection: &PgConnection, token: &AccessToken)
-    -> Result<User, APIError> {
+    -> Result<User, ApiError> {
         users::table
             .filter(users::id.eq(&token.user_id))
             .first(connection)
             .map(User::from)
-            .map_err(APIError::from)
+            .map_err(ApiError::from)
     }
 
     /// Look up a user using the given user ID and plaintext password.
@@ -75,16 +75,16 @@ impl User {
         connection: &PgConnection,
         id: &UserId,
         plaintext_password: &str,
-    ) -> Result<User, APIError> {
+    ) -> Result<User, ApiError> {
         match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
             Ok(user) => {
                 if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
                     Ok(user)
                 } else {
-                    Err(APIError::unauthorized())
+                    Err(ApiError::unauthorized(None))
                 }
             }
-            Err(error) => Err(APIError::from(error)),
+            Err(error) => Err(ApiError::from(error)),
         }
     }
 }

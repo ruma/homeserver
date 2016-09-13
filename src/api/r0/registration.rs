@@ -10,7 +10,7 @@ use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 use config::Config;
 use crypto::hash_password;
 use db::DB;
-use error::APIError;
+use error::ApiError;
 use middleware::JsonRequest;
 use modifier::SerializableResponse;
 use user::{NewUser, User};
@@ -78,7 +78,7 @@ impl Handler for Register {
         let registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
             Ok(Some(registration_request)) => registration_request,
             Ok(None) | Err(_) => {
-                let error = APIError::bad_json();
+                let error = ApiError::bad_json(None);
 
                 return Err(IronError::new(error.clone(), error));
             }
@@ -87,7 +87,7 @@ impl Handler for Register {
         if let Some(kind) = registration_request.kind {
             match kind {
                 RegistrationKind::Guest => {
-                    let error = APIError::guest_forbidden();
+                    let error = ApiError::guest_forbidden(None);
 
                     return Err(IronError::new(error.clone(), error));
                 }
@@ -101,9 +101,9 @@ impl Handler for Register {
             id: match registration_request.username {
                 Some(username) => {
                     UserId::try_from(&format!("@{}:{}", username, &config.domain))
-                        .map_err(APIError::from)?
+                        .map_err(ApiError::from)?
                 }
-                None => UserId::new(&config.domain).map_err(APIError::from)?,
+                None => UserId::new(&config.domain).map_err(ApiError::from)?,
             },
             password_hash: hash_password(&registration_request.password)?,
         };

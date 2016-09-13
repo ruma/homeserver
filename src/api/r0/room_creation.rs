@@ -7,7 +7,7 @@ use ruma_identifiers::RoomId;
 
 use config::Config;
 use db::DB;
-use error::APIError;
+use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
 use room::{CreationOptions, NewRoom, Room, RoomPreset};
@@ -42,7 +42,7 @@ impl CreateRoomRequest {
     pub fn validate(self) -> Result<Self, IronError> {
         if let Some(ref visibility) = self.visibility {
             if visibility != "public" && visibility != "private" {
-                let error = APIError::bad_json();
+                let error = ApiError::bad_json(None);
 
                 return Err(IronError::new(error.clone(), error));
             }
@@ -71,7 +71,7 @@ impl Handler for CreateRoom {
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
             Ok(Some(create_room_request)) => create_room_request.validate()?,
             Ok(None) | Err(_) => {
-                let error = APIError::bad_json();
+                let error = ApiError::bad_json(None);
 
                 return Err(IronError::new(error.clone(), error));
             }
@@ -81,7 +81,7 @@ impl Handler for CreateRoom {
         let config = Config::from_request(request)?;
 
         let new_room = NewRoom {
-            id: RoomId::new(&config.domain).map_err(APIError::from)?,
+            id: RoomId::new(&config.domain).map_err(ApiError::from)?,
             user_id: user.id,
             public: create_room_request.visibility.map_or(false, |v| v == "public"),
         };

@@ -17,7 +17,7 @@ use serde_json::from_value;
 
 use db::DB;
 use config::Config;
-use error::APIError;
+use error::ApiError;
 use event::NewEvent;
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
@@ -50,9 +50,9 @@ impl Handler for SendMessageEvent {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
         let room_id = match params.find("room_id") {
-            Some(room_id) => RoomId::try_from(room_id).map_err(APIError::from)?,
+            Some(room_id) => RoomId::try_from(room_id).map_err(ApiError::from)?,
             None => {
-                let error = APIError::missing_param("room_id");
+                let error = ApiError::missing_param("room_id");
 
                 return Err(IronError::new(error.clone(), error));
             }
@@ -60,12 +60,12 @@ impl Handler for SendMessageEvent {
 
         let event_type = params
             .find("event_type")
-            .ok_or(APIError::missing_param("event_type"))
+            .ok_or(ApiError::missing_param("event_type"))
             .map(EventType::from)?;
 
         let transaction_id = params
             .find("transaction_id")
-            .ok_or(APIError::missing_param("transaction_id"));
+            .ok_or(ApiError::missing_param("transaction_id"));
 
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
@@ -75,65 +75,65 @@ impl Handler for SendMessageEvent {
             .expect("JsonRequest verifies the Result is Ok")
             .expect("JsonRequest verifies the Option is Some");
         let config = Config::from_request(request)?;
-        let event_id = EventId::new(&config.domain).map_err(APIError::from)?;
+        let event_id = EventId::new(&config.domain).map_err(ApiError::from)?;
         let user_id = UserId::try_from(&format!("@{}:{}", user.id, config.domain))
-            .map_err(APIError::from)?;
+            .map_err(ApiError::from)?;
 
         let room_event: NewEvent = match event_type {
             EventType::CallAnswer => {
                 AnswerEvent {
-                    content: from_value(event_content).map_err(APIError::from)?,
+                    content: from_value(event_content).map_err(ApiError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id.clone(),
-                }.try_into().map_err(APIError::from)?
+                }.try_into().map_err(ApiError::from)?
             }
             EventType::CallCandidates => {
                 CandidatesEvent {
-                    content: from_value(event_content).map_err(APIError::from)?,
+                    content: from_value(event_content).map_err(ApiError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id.clone(),
-                }.try_into().map_err(APIError::from)?
+                }.try_into().map_err(ApiError::from)?
             }
             EventType::CallHangup => {
                 HangupEvent {
-                    content: from_value(event_content).map_err(APIError::from)?,
+                    content: from_value(event_content).map_err(ApiError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id.clone(),
-                }.try_into().map_err(APIError::from)?
+                }.try_into().map_err(ApiError::from)?
             }
             EventType::CallInvite => {
                 InviteEvent {
-                    content: from_value(event_content).map_err(APIError::from)?,
+                    content: from_value(event_content).map_err(ApiError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id.clone(),
-                }.try_into().map_err(APIError::from)?
+                }.try_into().map_err(ApiError::from)?
             }
             EventType::RoomMessage => {
                 MessageEvent {
-                    content: from_value(event_content).map_err(APIError::from)?,
+                    content: from_value(event_content).map_err(ApiError::from)?,
                     event_id: event_id.clone(),
                     extra_content: (),
                     event_type: event_type.clone(),
                     room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id.clone(),
-                }.try_into().map_err(APIError::from)?
+                }.try_into().map_err(ApiError::from)?
             }
             EventType::Custom(ref custom_event_type) => {
                 CustomRoomEvent {
@@ -144,10 +144,10 @@ impl Handler for SendMessageEvent {
                     room_id: room_id.clone(),
                     unsigned: None,
                     user_id: user_id.clone(),
-                }.try_into().map_err(APIError::from)?
+                }.try_into().map_err(ApiError::from)?
             }
             _ => {
-                let error = APIError::bad_event();
+                let error = ApiError::bad_event(None);
 
                 return Err(IronError::new(error.clone(), error));
             }
@@ -168,14 +168,14 @@ impl Handler for SendMessageEvent {
                 .unwrap_or(&power_levels.events_default);
 
             if required_power_level > user_power_level {
-                return Err(APIError::unauthorized());
+                return Err(ApiError::unauthorized(None));
             }
 
             insert(&room_event)
                 .into(events::table)
                 .execute(&*connection)
-                .map_err(APIError::from)
-        }).map_err(APIError::from)?;
+                .map_err(ApiError::from)
+        }).map_err(ApiError::from)?;
 
         let response = SendMessageEventResponse {
             event_id: event_id.opaque_id().to_string(),
