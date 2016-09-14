@@ -60,9 +60,13 @@ pub struct CliError {
     error: String,
 }
 
-/// Extensions for `Result` to making handling Ruma API errors easier.
+/// Extensions for `Result` to make handling Ruma API errors easier.
 pub trait MapApiError {
+    /// The type contained in a successful result.
     type Output;
+    /// The initial error type contained in an unsuccessful result.
+    ///
+    /// This will be converted to `ApiError`.
     type Error: Debug;
 
     /// Similar to `map_err`, but prints the original error to the debug log and must always
