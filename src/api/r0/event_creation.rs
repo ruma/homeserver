@@ -173,7 +173,9 @@ impl Handler for SendMessageEvent {
                 .unwrap_or(&power_levels.events_default);
 
             if required_power_level > user_power_level {
-                return Err(ApiError::unauthorized(None));
+                return Err(
+                    ApiError::unauthorized(Some("Insufficient power level to create this event."))
+                );
             }
 
             insert(&room_event)
