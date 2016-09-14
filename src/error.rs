@@ -1,7 +1,7 @@
 //! Error types and conversions.
 
 use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::fmt::Error as FmtError;
 use std::io::Error as IoError;
 use std::string::FromUtf8Error;
@@ -25,6 +25,50 @@ use serde_json::{Error as SerdeJsonError, to_string};
 pub struct ApiError {
     errcode: ApiErrorCode,
     error: String,
+}
+
+/// The error code for a client-facing error.
+#[derive(Clone, Debug)]
+pub enum ApiErrorCode {
+    /// Request contained an event that was not valid input for the requested API.
+    BadEvent,
+    /// The request contained valid JSON, but it was malformed in some way,
+    /// e.g. missing required keys, invalid values for keys.
+    BadJson,
+    /// Forbidden access, e.g. joining a room without permission, failed login.
+    Forbidden,
+    /// Guests are not allowed to perform the requested operation.
+    GuestAccessForbidden,
+    /// Too many requests have been sent in a short period of time. Wait a while then try again.
+    LimitExceeded,
+    /// A required input parameter was not supplied, e.g. query string or URL path-based parameter.
+    MissingParam,
+    /// No resource was found for this request.
+    NotFound,
+    /// Request did not contain valid JSON.
+    NotJson,
+    /// Ruma does not implement the requested API.
+    Unimplemented,
+    /// Errors not fitting into another category.
+    Unknown,
+    /// The access token specified was not recognised.
+    UnknownToken,
+}
+
+/// An operator-facing error.
+pub struct CliError {
+    error: String,
+}
+
+/// Extensions for `Result` to making handling Ruma API errors easier.
+pub trait MapApiError {
+    type Output;
+    type Error: Debug;
+
+    /// Similar to `map_err`, but prints the original error to the debug log and must always
+    /// return an `ApiError`.
+    fn map_api_err<O>(self, op: O) -> Result<Self::Output, ApiError>
+    where O: FnOnce(Self::Error) -> ApiError;
 }
 
 impl ApiError {
@@ -233,34 +277,6 @@ impl Modifier<Response> for ApiError {
     }
 }
 
-/// The error code for a client-facing error.
-#[derive(Clone, Debug)]
-pub enum ApiErrorCode {
-    /// Request contained an event that was not valid input for the requested API.
-    BadEvent,
-    /// The request contained valid JSON, but it was malformed in some way,
-    /// e.g. missing required keys, invalid values for keys.
-    BadJson,
-    /// Forbidden access, e.g. joining a room without permission, failed login.
-    Forbidden,
-    /// Guests are not allowed to perform the requested operation.
-    GuestAccessForbidden,
-    /// Too many requests have been sent in a short period of time. Wait a while then try again.
-    LimitExceeded,
-    /// A required input parameter was not supplied, e.g. query string or URL path-based parameter.
-    MissingParam,
-    /// No resource was found for this request.
-    NotFound,
-    /// Request did not contain valid JSON.
-    NotJson,
-    /// Ruma does not implement the requested API.
-    Unimplemented,
-    /// Errors not fitting into another category.
-    Unknown,
-    /// The access token specified was not recognised.
-    UnknownToken,
-}
-
 impl ApiErrorCode {
     /// The HTTP status code that should be used to represent the `ApiErrorCode`.
     pub fn status_code(&self) -> Status {
@@ -300,11 +316,6 @@ impl Serialize for ApiErrorCode {
     }
 }
 
-/// An operator-facing error.
-pub struct CliError {
-    error: String,
-}
-
 impl CliError {
     /// Create a new `CliError` from any `Error` type.
     pub fn new<E>(error: E) -> CliError where E: Into<String> {
@@ -323,5 +334,22 @@ impl<E> From<E> for CliError where E: Error {
 impl Display for CliError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
         write!(f, "{}", self.error)
+    }
+}
+
+impl<T, E> MapApiError for Result<T, E> where E: Debug {
+    type Output = T;
+    type Error = E;
+
+    #[inline]
+    fn map_api_err<O>(self, op: O) -> Result<T, ApiError> where O: FnOnce(E) -> ApiError {
+        match self {
+            Ok(t) => Ok(t),
+            Err(e) => {
+                debug!("Converting to ApiError from: {:?}", e);
+
+                Err(op(e))
+            }
+        }
     }
 }
