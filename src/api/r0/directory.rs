@@ -144,11 +144,11 @@ mod tests {
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        access_token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_str();
+        let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().find("room_id").unwrap().as_str(), room_id);
+        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap(), room_id);
         assert!(response.json().find("servers").unwrap().is_array());
     }
 
@@ -201,11 +201,7 @@ mod tests {
     fn put_room_alias() {
         let test = Test::new();
         let access_token = test.create_access_token();
-
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
-        let response = test.post(&create_room_path, "{}");
-        let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = test.create_room(&access_token);
 
         let put_room_alias_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token

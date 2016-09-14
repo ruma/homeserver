@@ -22,10 +22,13 @@ static START: Once = ONCE_INIT;
 const DATABASE_URL: &'static str = "postgres://postgres:test@postgres:5432/ruma_test";
 const POSTGRES_URL: &'static str = "postgres://postgres:test@postgres:5432";
 
+/// Manages the Postgres for the duration of a test case and provides helper methods for
+/// interacting with the Ruma API server.
 pub struct Test {
     mount: Mount,
 }
 
+/// An HTTP response from the server.
 #[derive(Debug)]
 pub struct Response {
     pub body: String,
@@ -34,6 +37,8 @@ pub struct Response {
     pub status: Status,
 }
 
+/// An R2D2 plugin for starting a test transaction whenever a database connection is acquired from
+/// the connection pool.
 #[derive(Debug)]
 pub struct TestTransactionConnectionCustomizer;
 
@@ -44,6 +49,7 @@ impl CustomizeConnection<PgConnection, R2D2DieselError> for TestTransactionConne
 }
 
 impl Test {
+    /// Creates a new `Test`.
     pub fn new() -> Self {
         // Since we don't have control of the `main` function during tests, we initialize the
         // logger here. It will only actually initialize on the first test that is run. Subsequent
@@ -104,22 +110,27 @@ impl Test {
         }
     }
 
+    /// Makes a GET request to the server.
     pub fn get(&self, path: &str) -> Response {
         self.request(Method::Get, path, "")
     }
 
+    /// Makes a POST request to the server.
     pub fn post(&self, path: &str, body: &str) -> Response {
         self.request(Method::Post, path, body)
     }
 
+    /// Makes a DELETE request to the server.
     pub fn delete(&self, path: &str) -> Response {
         self.request(Method::Delete, path, "")
     }
 
+    /// Makes a PUT request to the server.
     pub fn put(&self, path: &str, body: &str) -> Response {
         self.request(Method::Put, path, body)
     }
 
+    /// Makes a request to the server.
     pub fn request(&self, method: Method, path: &str, body: &str) -> Response {
         let mut headers = Headers::new();
 
@@ -139,10 +150,12 @@ impl Test {
         Response::from_iron_response(response)
     }
 
+    /// Registers a new user account and returns the response of the API call.
     pub fn register_user(&self, body: &str) -> Response {
         self.post("/_matrix/client/r0/register", body)
     }
 
+    /// Registers a new user account and returns the user's access token.
     pub fn create_access_token(&self) -> String {
         self.register_user(r#"{"username": "carl", "password": "secret"}"#)
             .json()
@@ -152,9 +165,21 @@ impl Test {
             .unwrap()
             .to_string()
     }
+
+    /// Creates a room and returns the room ID as a string.
+    pub fn create_room(&self, access_token: &str) -> String {
+        self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), "{}")
+            .json()
+            .find("room_id")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string()
+    }
 }
 
 impl Response {
+    /// Creates a `Response` from an `iron::response::Response`.
     pub fn from_iron_response(response: iron::response::Response) -> Response {
         let headers = response.headers.clone();
         let status = response.status.expect("Response had no status").clone();
@@ -173,6 +198,8 @@ impl Response {
         }
     }
 
+    /// Returns the JSON in the response as a `serde_json::Value`. Panics if response body is not
+    /// JSON.
     pub fn json(&self) -> &Value {
         self.json.as_ref().expect("Response did not contain JSON")
     }

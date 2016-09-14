@@ -212,15 +212,7 @@ mod tests {
     fn create_message_event() {
         let test = Test::new();
         let access_token = test.create_access_token();
-
-        let create_room_path = format!(
-            "/_matrix/client/r0/createRoom?access_token={}",
-            access_token
-        );
-
-        let create_room_response = test.post(&create_room_path, "{}");
-
-        let room_id = create_room_response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = test.create_room(&access_token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
@@ -237,15 +229,7 @@ mod tests {
     fn event_content_does_not_match_event_type() {
         let test = Test::new();
         let access_token = test.create_access_token();
-
-        let create_room_path = format!(
-            "/_matrix/client/r0/createRoom?access_token={}",
-            access_token
-        );
-
-        let create_room_response = test.post(&create_room_path, "{}");
-
-        let room_id = create_room_response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = test.create_room(&access_token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.call.answer/1?access_token={}",
@@ -268,15 +252,7 @@ mod tests {
     fn non_message_event_type() {
         let test = Test::new();
         let access_token = test.create_access_token();
-
-        let create_room_path = format!(
-            "/_matrix/client/r0/createRoom?access_token={}",
-            access_token
-        );
-
-        let create_room_response = test.post(&create_room_path, "{}");
-
-        let room_id = create_room_response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = test.create_room(&access_token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.topic/1?access_token={}",
@@ -299,15 +275,7 @@ mod tests {
     fn custom_message_event() {
         let test = Test::new();
         let access_token = test.create_access_token();
-
-        let create_room_path = format!(
-            "/_matrix/client/r0/createRoom?access_token={}",
-            access_token
-        );
-
-        let create_room_response = test.post(&create_room_path, "{}");
-
-        let room_id = create_room_response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = test.create_room(&access_token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/io.ruma.test/1?access_token={}",
