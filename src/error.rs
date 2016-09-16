@@ -30,6 +30,8 @@ pub struct ApiError {
 /// The error code for a client-facing error.
 #[derive(Clone, Debug)]
 pub enum ApiErrorCode {
+    /// The requested room alias is already taken.
+    AliasTaken,
     /// Request contained an event that was not valid input for the requested API.
     BadEvent,
     /// The request contained valid JSON, but it was malformed in some way,
@@ -76,6 +78,14 @@ pub trait MapApiError {
 }
 
 impl ApiError {
+    /// Create an error for requests that try to create a room alias that is already taken.
+    pub fn alias_taken(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::AliasTaken,
+            error: message.unwrap_or("Alias already taken.").to_string(),
+        }
+    }
+
     /// Create an error for invalid or incomplete input to event creation API endpoints.
     pub fn bad_event(message: Option<&str>) -> ApiError {
         ApiError {
@@ -285,6 +295,7 @@ impl ApiErrorCode {
     /// The HTTP status code that should be used to represent the `ApiErrorCode`.
     pub fn status_code(&self) -> Status {
         match *self {
+            ApiErrorCode::AliasTaken => Status::Conflict,
             ApiErrorCode::BadEvent => Status::UnprocessableEntity,
             ApiErrorCode::BadJson => Status::UnprocessableEntity,
             ApiErrorCode::Forbidden => Status::Forbidden,
@@ -303,7 +314,8 @@ impl ApiErrorCode {
 impl Serialize for ApiErrorCode {
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error> where S: Serializer {
         let value = match *self {
-            ApiErrorCode::BadEvent => "IO.RUMA_BAD_EVENT",
+            ApiErrorCode::AliasTaken => "IO_RUMA_ALIAS_TAKEN",
+            ApiErrorCode::BadEvent => "IO_RUMA_BAD_EVENT",
             ApiErrorCode::BadJson => "M_BAD_JSON",
             ApiErrorCode::Forbidden => "M_FORBIDDEN",
             ApiErrorCode::GuestAccessForbidden => "M_GUEST_ACCESS_FORBIDDEN",
@@ -311,7 +323,7 @@ impl Serialize for ApiErrorCode {
             ApiErrorCode::MissingParam => "M_MISSING_PARAM",
             ApiErrorCode::NotFound => "M_NOT_FOUND",
             ApiErrorCode::NotJson => "M_NOT_JSON",
-            ApiErrorCode::Unimplemented => "IO.RUMA_UNIMPLEMENTED",
+            ApiErrorCode::Unimplemented => "IO_RUMA_UNIMPLEMENTED",
             ApiErrorCode::Unknown => "M_UNKNOWN",
             ApiErrorCode::UnknownToken => "M_UNKNOWN_TOKEN",
         };

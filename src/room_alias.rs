@@ -3,7 +3,7 @@
 use diesel::{ExpressionMethods, FilterDsl, LoadDsl, ExecuteDsl, insert, delete};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
-use diesel::result::Error as DieselError;
+use diesel::result::{Error as DieselError, DatabaseErrorKind};
 use ruma_identifiers::RoomId;
 
 use error::ApiError;
@@ -43,7 +43,11 @@ impl RoomAlias {
         insert(new_room_alias)
             .into(room_aliases::table)
             .get_result(connection)
-            .map_err(ApiError::from)
+            .map_err(|err| match err {
+                DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)
+                    => ApiError::alias_taken(None),
+                _ => ApiError::from(err),
+            })
     }
 
     /// Return room ID for given room alias.

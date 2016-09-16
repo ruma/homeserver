@@ -122,9 +122,6 @@ impl Handler for PutRoomAlias {
             servers: vec![config.domain.to_string()],
         };
 
-        // TODO: Fix returned status if the alias could not be created because an alias with that
-        // name already exists. Should be `Status::Conflict` (409) according to the spec.
-        // See #77 for discussion.
         RoomAlias::create(&connection, &new_room_alias)?;
 
         Ok(Response::with(Status::Ok))
@@ -233,11 +230,10 @@ mod tests {
         let put_room_alias_body = format!(r#"{{"room_id": "{}"}}"#, room_id);
         let response = test.put(&put_room_alias_path, &put_room_alias_body);
 
-        // TODO: Fix returned status. Should be `Status::Conflict` (409) according to the spec.
-        assert_eq!(response.status, Status::InternalServerError);
+        assert_eq!(response.status, Status::Conflict);
         assert_eq!(
             response.json().find("errcode").unwrap().as_str().unwrap(),
-            "M_UNKNOWN"
+            "IO_RUMA_ALIAS_TAKEN"
         );
     }
 }

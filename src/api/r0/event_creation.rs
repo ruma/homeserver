@@ -241,7 +241,7 @@ mod tests {
 
         let json = response.json();
 
-        assert_eq!(json.find("errcode").unwrap().as_str().unwrap(), "IO.RUMA_BAD_EVENT");
+        assert_eq!(json.find("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
         assert_eq!(
             json.find("error").unwrap().as_str().unwrap(),
             "Event content did not match expected structure for event of type m.call.answer."
@@ -264,7 +264,7 @@ mod tests {
 
         let json = response.json();
 
-        assert_eq!(json.find("errcode").unwrap().as_str().unwrap(), "IO.RUMA_BAD_EVENT");
+        assert_eq!(json.find("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
         assert_eq!(
             json.find("error").unwrap().as_str().unwrap(),
             "Events of type m.room.topic cannot be created with this API."
