@@ -1,6 +1,6 @@
 # Ruma Status
 
-The following chart shows the status of support for individual client-server API endpoints.
+The following chart shows the status of support for the endpoints in the [client-server API specification](https://matrix.org/docs/spec/client_server/latest.html).
 If you're interested in working on an API, take a look at the corresponding tracking issue and leave a comment indicating your interest!
 
 Legend:
