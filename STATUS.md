@@ -3,6 +3,8 @@
 The following chart shows the status of support for individual client-server API endpoints.
 If you're interested in working on an API, take a look at the corresponding tracking issue and leave a comment indicating your interest!
 
+The matrix client-server protocol specification can be found [here](https://matrix.org/docs/spec/client_server/latest.html).
+
 Legend:
 
 :white_check_mark: Supported :construction: Partially supported :no_entry_sign: Not supported
