@@ -53,6 +53,7 @@ table! {
     users {
         id -> Text,
         password_hash -> Text,
+        active -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

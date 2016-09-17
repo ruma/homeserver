@@ -1,6 +1,6 @@
 //! API endpoints for the 0.x.x version of the Matrix spec.
 
-pub use self::account::AccountPassword;
+pub use self::account::{AccountPassword, DeactivateAccount};
 pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
 pub use self::event_creation::{SendMessageEvent, StateMessageEvent};
 pub use self::login::Login;

@@ -1,6 +1,7 @@
 CREATE TABLE users (
   id TEXT NOT NULL PRIMARY KEY,
   password_hash TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   updated_at TIMESTAMP NOT NULL DEFAULT now()
 );

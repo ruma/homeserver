@@ -5,6 +5,7 @@ use diesel::{
     ExpressionMethods,
     FilterDsl,
     LoadDsl,
+    SaveChangesDsl,
     insert,
 };
 use diesel::pg::PgConnection;
@@ -25,6 +26,8 @@ pub struct User {
     pub id: UserId,
     /// An [Argon2](https://en.wikipedia.org/wiki/Argon2) hash of the user's password.
     pub password_hash: String,
+    /// Whether or not the user has the ability to login.
+    pub active: bool,
     /// The time the user was created.
     pub created_at: PgTimestamp,
     /// The time the user was last modified.
@@ -65,6 +68,7 @@ impl User {
     -> Result<User, ApiError> {
         users::table
             .filter(users::id.eq(&token.user_id))
+            .filter(users::active.eq(true))
             .first(connection)
             .map(User::from)
             .map_err(ApiError::from)
@@ -76,7 +80,10 @@ impl User {
         id: &UserId,
         plaintext_password: &str,
     ) -> Result<User, ApiError> {
-        match users::table.filter(users::id.eq(id)).first(connection).map(User::from) {
+        match users::table
+            .filter(users::id.eq(id))
+            .filter(users::active.eq(true))
+            .first(connection).map(User::from) {
             Ok(user) => {
                 if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
                     Ok(user)
@@ -84,6 +91,16 @@ impl User {
                     Err(ApiError::unauthorized(None))
                 }
             }
+            Err(error) => Err(ApiError::from(error)),
+        }
+    }
+
+    /// Remove the user's ability to login.
+    pub fn deactivate(&mut self, connection: &PgConnection) -> Result<(), ApiError> {
+        self.active = false;
+
+        match self.save_changes::<User>(connection) {
+            Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
     }
