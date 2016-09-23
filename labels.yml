@@ -78,6 +78,8 @@
   color: fef2c0
 - name: status/under consideration
   color: fef2c0
+- name: status/work in progress
+  color: fef2c0
 - name: type/bug
   color: f7c6c7
 - name: type/feature
