@@ -2,7 +2,7 @@
 
 pub use self::account::AccountPassword;
 pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
-pub use self::event_creation::SendMessageEvent;
+pub use self::event_creation::{SendMessageEvent, StateMessageEvent};
 pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::registration::Register;

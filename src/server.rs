@@ -19,6 +19,7 @@ use api::r0::{
     PutRoomAlias,
     Register,
     SendMessageEvent,
+    StateMessageEvent,
     Versions,
 };
 use config::Config;
@@ -62,6 +63,14 @@ impl<'a> Server<'a> {
         r0_router.put(
             "/rooms/:room_id/send/:event_type/:transaction_id",
             SendMessageEvent::chain(),
+        );
+        r0_router.put(
+            "/rooms/:room_id/state/:event_type",
+            StateMessageEvent::chain(),
+        );
+        r0_router.put(
+            "/rooms/:room_id/state/:event_type/:state_key",
+            StateMessageEvent::chain(),
         );
 
         let mut r0 = Chain::new(r0_router);
