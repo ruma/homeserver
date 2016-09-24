@@ -214,11 +214,14 @@ impl From<DieselError> for ApiError {
     }
 }
 
-impl<T> From<TransactionError<T>> for ApiError where T: Error {
-    fn from(error: TransactionError<T>) -> ApiError {
+impl From<TransactionError<ApiError>> for ApiError {
+    fn from(error: TransactionError<ApiError>) -> ApiError {
         debug!("Converting to ApiError from: {:?}", error);
 
-        ApiError::unknown(None)
+        match error {
+            TransactionError::CouldntCreateTransaction(_) => ApiError::unknown(None),
+            TransactionError::UserReturnedError(api_error) => api_error,
+        }
     }
 }
 

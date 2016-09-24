@@ -155,9 +155,14 @@ impl Test {
         self.post("/_matrix/client/r0/register", body)
     }
 
-    /// Registers a new user account and returns the user's access token.
+    /// Registers a new user account with a fixed name and returns the user's access token.
     pub fn create_access_token(&self) -> String {
-        self.register_user(r#"{"username": "carl", "password": "secret"}"#)
+        self.create_access_token_with_username("carl")
+    }
+
+    /// Registers a new user account with the given username and returns the user's access token.
+    pub fn create_access_token_with_username(&self, username: &str) -> String {
+        self.register_user(&format!(r#"{{"username": "{}", "password": "secret"}}"#, username))
             .json()
             .find("access_token")
             .unwrap()

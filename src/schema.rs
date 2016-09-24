@@ -33,6 +33,7 @@ table! {
     room_aliases (alias) {
         alias -> Text,
         room_id -> Text,
+        user_id -> Text,
         servers -> Array<Text>,
         created_at -> Timestamp,
         updated_at -> Timestamp,

@@ -5,15 +5,16 @@ use std::convert::TryFrom;
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
-use router::Router;
-use ruma_identifiers::RoomId;
+use router::{Params, Router};
+use ruma_identifiers::{RoomAliasId, RoomId};
 
 use config::Config;
 use db::DB;
-use error::ApiError;
+use error::{ApiError, MapApiError};
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
 use room_alias::{RoomAlias, NewRoomAlias};
+use user::User;
 
 #[derive(Debug, Serialize)]
 struct GetRoomAliasResponse {
@@ -69,11 +70,13 @@ impl Handler for GetRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_alias_name = params.find("room_alias").ok_or(ApiError::not_found(None))?;
+        let config = Config::from_request(request)?;
+
+        let room_alias_id = get_room_alias_id_from_params(&params, &config.domain)?;
 
         let connection = DB::from_request(request)?;
 
-        let room_alias = RoomAlias::find_by_alias(&connection, room_alias_name)?;
+        let room_alias = RoomAlias::find_by_alias(&connection, &room_alias_id)?;
 
         let response = GetRoomAliasResponse {
             room_id: room_alias.room_id.to_string(),
@@ -88,13 +91,26 @@ impl Handler for DeleteRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_alias_name = params.find("room_alias").ok_or(ApiError::not_found(None))?;
+        let config = Config::from_request(request)?;
+
+        let room_alias_id = get_room_alias_id_from_params(&params, &config.domain)?;
+
+        let user = request.extensions.get::<User>()
+            .expect("AccessTokenAuth should ensure a user").clone();
 
         let connection = DB::from_request(request)?;
 
-        RoomAlias::delete(&connection, room_alias_name)?;
+        let affected_rows = RoomAlias::delete(&connection, &room_alias_id, &user.id)?;
 
-        Ok(Response::with((Status::Ok, "{}")))
+        if affected_rows > 0 {
+            Ok(Response::with((Status::Ok, "{}")))
+        } else {
+            let error = ApiError::not_found(Some(
+                "Provided room alias did not exist or you do not have access to delete it."
+            ));
+
+            Err(IronError::new(error.clone(), error))
+        }
     }
 }
 
@@ -102,7 +118,9 @@ impl Handler for PutRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_alias_name = params.find("room_alias").ok_or(ApiError::not_found(None))?;
+        let config = Config::from_request(request)?;
+
+        let room_alias_id = get_room_alias_id_from_params(&params, &config.domain)?;
 
         let parsed_request = request.get::<bodyparser::Struct<PutRoomAliasRequest>>();
         let room_id = if let Ok(Some(api_request)) = parsed_request {
@@ -113,18 +131,43 @@ impl Handler for PutRoomAlias {
             return Err(IronError::new(error.clone(), error));
         };
 
+        let user = request.extensions.get::<User>()
+            .expect("AccessTokenAuth should ensure a user").clone();
+
         let connection = DB::from_request(request)?;
-        let config = Config::from_request(request)?;
 
         let new_room_alias = NewRoomAlias {
-            alias: room_alias_name.to_string(),
+            alias: room_alias_id,
             room_id: room_id,
+            user_id: user.id,
             servers: vec![config.domain.to_string()],
         };
 
         RoomAlias::create(&connection, &new_room_alias)?;
 
         Ok(Response::with(Status::Ok))
+    }
+}
+
+fn get_room_alias_id_from_params(params: &Params, domain: &str) -> Result<RoomAliasId, IronError> {
+    match params.find("room_alias") {
+        Some(room_alias) => {
+            debug!("room_alias param: {}", room_alias);
+
+            let room_alias_id = RoomAliasId::try_from(&format!("#{}:{}", room_alias, domain))
+                .map_api_err(|_| {
+                    ApiError::not_found(
+                        Some(&format!("No room alias found with ID {}", room_alias))
+                    )
+                })?;
+
+            Ok(room_alias_id)
+        }
+        None => {
+            let error = ApiError::missing_param("room_alias");
+
+            Err(IronError::new(error.clone(), error))
+        }
     }
 }
 
@@ -172,26 +215,49 @@ mod tests {
         let test = Test::new();
         let access_token = test.create_access_token();
 
-        // Create a room
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+        let create_room_path = format!(
+            "/_matrix/client/r0/createRoom?access_token={}",
+            access_token
+        );
+
         test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
-        // Delete the room alias
-        let delete_room_path = format!("/_matrix/client/r0/directory/room/my_room?access_token={}",
-                                       access_token);
-        let response = test.delete(&delete_room_path);
+        let delete_room_path = format!(
+            "/_matrix/client/r0/directory/room/my_room?access_token={}",
+            access_token
+        );
 
-        assert_eq!(response.status, Status::Ok);
+        let delete_response = test.delete(&delete_room_path);
 
-        // Make sure the room no longer exists
+        assert_eq!(delete_response.status, Status::Ok);
+
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
         assert_eq!(response.status, Status::NotFound);
-        assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
-            "M_NOT_FOUND"
+    }
+
+    #[test]
+    fn delete_room_alias_from_different_user() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+
+        let create_room_path = format!(
+            "/_matrix/client/r0/createRoom?access_token={}",
+            access_token
         );
+
+        test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
+
+        let access_token_2 = test.create_access_token_with_username("henry");
+
+        let delete_room_path = format!(
+            "/_matrix/client/r0/directory/room/my_room?access_token={}",
+            access_token_2
+        );
+
+        let response = test.delete(&delete_room_path);
+
+        assert_eq!(response.status, Status::NotFound);
     }
 
     #[test]
@@ -212,6 +278,20 @@ mod tests {
 
         assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap(), room_id);
         assert!(response.json().find("servers").unwrap().is_array());
+    }
+
+    #[test]
+    fn put_room_alias_with_no_room() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+
+        let put_room_alias_path = format!(
+            "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
+        );
+        let put_room_alias_body = r#"{"room_id": "!nonexistent:ruma.test"}"#;
+        let response = test.put(&put_room_alias_path, &put_room_alias_body);
+
+        assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
     #[test]

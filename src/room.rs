@@ -29,7 +29,7 @@ use ruma_events::room::member::{
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
-use ruma_identifiers::{EventId, RoomId, UserId};
+use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 
 use error::ApiError;
 use event::{Event, NewEvent};
@@ -105,8 +105,9 @@ impl Room {
 
             if let Some(ref alias) = creation_options.alias {
                 let new_room_alias = NewRoomAlias {
-                    alias: alias.to_string(),
+                    alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?,
                     room_id: room.id.clone(),
+                    user_id: new_room.user_id.clone(),
                     servers: vec![homeserver_domain.to_string()],
                 };
 
