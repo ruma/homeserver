@@ -1,3 +1,9 @@
 #!/usr/bin/env bash
 
-docker-compose run --rm -e RUST_BACKTRACE=1 rust cargo "$@"
+if [ -n "$RUST_LOG" ]; then
+  rust_log="-e RUST_LOG=$RUST_LOG"
+else
+  rust_log=""
+fi
+
+docker-compose run --rm -e RUST_BACKTRACE=1 $rust_log rust cargo "$@"
