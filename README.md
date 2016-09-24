@@ -48,7 +48,16 @@ When all of these features are stabilized, Ruma will target stable Rust.
 
 ### Developing without Docker
 
-Docker is used to make everyone's life easier by pinning a compatible version of nightly Rust and managing test PostgreSQL databases without assuming anything about the host system. If you really want to avoid Docker, it's up to you to configure your development environment to match the assumptions made by code in Ruma. In particular, this means a version of the nightly Rust compiler that can compile Ruma given the current Cargo.lock and a PostgreSQL installation with suitable permissions available at the address and port used in `src/test.rs`.
+Docker is used to make everyone's life easier by pinning a compatible version of nightly Rust and managing test PostgreSQL databases without assuming anything about the host system.
+If you really want to avoid Docker, it's up to you to configure your development environment to match the assumptions made by code in Ruma.
+In particular, this means a version of the nightly Rust compiler that can compile Ruma given the current Cargo.lock and a PostgreSQL installation with suitable permissions available at the address and port used in `src/test.rs`.
+You can find the version of nightly Rust used in the Docker setup by looking at the Dockerfile for Ruma's [development Docker image](https://github.com/ruma/docker-ruma-dev).
+Look at the line that installs rustup for the date.
+It will look something like this:
+
+``` bash
+./rustup-init -y --no-modify-path --default-toolchain nightly-YYYY-MM-DD
+```
 
 ## Documentation
 
