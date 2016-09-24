@@ -138,12 +138,12 @@ Legend:
     <th align="left" colspan="3">Sending events to a room</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/14">#14</a></td>
     <td>PUT /rooms/:room_id/state/:event_type</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/15">#15</a></td>
     <td>PUT /rooms/:room_id/state/:event_type/:state_key</td>
   </tr>
