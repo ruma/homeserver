@@ -1,6 +1,6 @@
 //! Endpoints for creating events.
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 
 use bodyparser;
 use diesel::{Connection, ExecuteDsl, FindDsl, LoadDsl, insert};
@@ -21,7 +21,7 @@ use ruma_events::room::power_levels::PowerLevelsEvent;
 use ruma_events::room::third_party_invite::ThirdPartyInviteEvent;
 use ruma_events::room::topic::TopicEvent;
 use ruma_events::{CustomRoomEvent, CustomStateEvent, EventType};
-use ruma_identifiers::{EventId, RoomId};
+use ruma_identifiers::EventId;
 use serde::Deserialize;
 use serde_json::{Value, from_value};
 
@@ -29,7 +29,7 @@ use db::DB;
 use config::Config;
 use error::{ApiError, MapApiError};
 use event::NewEvent;
-use middleware::{AccessTokenAuth, JsonRequest};
+use middleware::{AccessTokenAuth, JsonRequest, RoomIdParam};
 use modifier::SerializableResponse;
 use room::Room;
 use schema::{events, rooms};
@@ -99,6 +99,7 @@ impl SendMessageEvent {
 
         chain.link_before(JsonRequest);
         chain.link_before(AccessTokenAuth);
+        chain.link_before(RoomIdParam);
 
         chain
     }
@@ -111,6 +112,7 @@ impl StateMessageEvent {
 
         chain.link_before(JsonRequest);
         chain.link_before(AccessTokenAuth);
+        chain.link_before(RoomIdParam);
 
         chain
     }
@@ -120,16 +122,9 @@ impl Handler for SendMessageEvent {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_id = match params.find("room_id") {
-            Some(room_id) => RoomId::try_from(room_id).map_api_err(|_| {
-                ApiError::not_found(Some(&format!("No room found with ID {}", room_id)))
-            })?,
-            None => {
-                let error = ApiError::missing_param("room_id");
-
-                return Err(IronError::new(error.clone(), error));
-            }
-        };
+        let room_id = request.extensions.get::<RoomIdParam>()
+            .expect("Should have been required by RoomIdParam.")
+            .clone();
 
         let event_type = params
             .find("event_type")
@@ -226,16 +221,9 @@ impl Handler for StateMessageEvent {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
-        let room_id = match params.find("room_id") {
-            Some(room_id) => RoomId::try_from(room_id).map_api_err(|_| {
-                ApiError::not_found(Some(&format!("No room found with ID {}", room_id)))
-            })?,
-            None => {
-                let error = ApiError::missing_param("room_id");
-
-                return Err(IronError::new(error.clone(), error));
-            }
-        };
+        let room_id = request.extensions.get::<RoomIdParam>()
+            .expect("Should have been required by RoomIdParam.")
+            .clone();
 
         let event_type = params
             .find("event_type")
