@@ -98,8 +98,8 @@ impl SendMessageEvent {
         let mut chain = Chain::new(SendMessageEvent);
 
         chain.link_before(JsonRequest);
-        chain.link_before(AccessTokenAuth);
         chain.link_before(RoomIdParam);
+        chain.link_before(AccessTokenAuth);
 
         chain
     }
@@ -111,8 +111,8 @@ impl StateMessageEvent {
         let mut chain = Chain::new(StateMessageEvent);
 
         chain.link_before(JsonRequest);
-        chain.link_before(AccessTokenAuth);
         chain.link_before(RoomIdParam);
+        chain.link_before(AccessTokenAuth);
 
         chain
     }

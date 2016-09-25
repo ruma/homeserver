@@ -1,4 +1,3 @@
-
 use std::convert::TryFrom;
 
 use iron::{BeforeMiddleware, IronResult, Request};
@@ -8,7 +7,7 @@ use ruma_identifiers::RoomId;
 
 use error::{ApiError, MapApiError};
 
-/// Handles convert `room_id` param to `RoomId`.
+/// Extracts a `RoomId` from the URL path parameter `room_id`.
 pub struct RoomIdParam;
 
 impl Key for RoomIdParam {
