@@ -58,3 +58,12 @@ table! {
         updated_at -> Timestamp,
     }
 }
+
+table! {
+    account_data {
+        id -> BigSerial,
+        user_id -> Text,
+        data_type -> Text,
+        content -> Text,
+    }
+}

@@ -11,12 +11,13 @@ use router::Router;
 
 use api::r0::{
     AccountPassword,
-    DeactivateAccount,
     CreateRoom,
+    DeactivateAccount,
     DeleteRoomAlias,
     GetRoomAlias,
     Login,
     Logout,
+    PutAccountData,
     PutRoomAlias,
     Register,
     SendMessageEvent,
@@ -62,6 +63,7 @@ impl<'a> Server<'a> {
         r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());
         r0_router.post("/tokenrefresh", unimplemented);
+        r0_router.put("/user/:user_id/account_data/:type", PutAccountData::chain());
         r0_router.put(
             "/rooms/:room_id/send/:event_type/:transaction_id",
             SendMessageEvent::chain(),
