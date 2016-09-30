@@ -1,6 +1,0 @@
-CREATE TABLE rooms (
-  id TEXT NOT NULL PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  public BOOLEAN NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT now()
-);
