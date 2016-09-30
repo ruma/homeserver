@@ -53,7 +53,17 @@ table! {
     users {
         id -> Text,
         password_hash -> Text,
+        active -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+    }
+}
+
+table! {
+    account_data {
+        id -> BigSerial,
+        user_id -> Text,
+        data_type -> Text,
+        content -> Text,
     }
 }

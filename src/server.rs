@@ -12,10 +12,12 @@ use router::Router;
 use api::r0::{
     AccountPassword,
     CreateRoom,
+    DeactivateAccount,
     DeleteRoomAlias,
     GetRoomAlias,
     Login,
     Logout,
+    PutAccountData,
     PutRoomAlias,
     Register,
     SendMessageEvent,
@@ -52,6 +54,7 @@ impl<'a> Server<'a> {
         let mut r0_router = Router::new();
 
         r0_router.post("/account/password", AccountPassword::chain());
+        r0_router.post("/account/deactivate", DeactivateAccount::chain());
         r0_router.post("/createRoom", CreateRoom::chain());
         r0_router.get("/directory/room/:room_alias", GetRoomAlias::chain());
         r0_router.delete("/directory/room/:room_alias", DeleteRoomAlias::chain());
@@ -60,6 +63,7 @@ impl<'a> Server<'a> {
         r0_router.post("/logout", Logout::chain());
         r0_router.post("/register", Register::chain());
         r0_router.post("/tokenrefresh", unimplemented);
+        r0_router.put("/user/:user_id/account_data/:type", PutAccountData::chain());
         r0_router.put(
             "/rooms/:room_id/send/:event_type/:transaction_id",
             SendMessageEvent::chain(),
