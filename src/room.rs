@@ -48,7 +48,7 @@ pub struct CreationOptions {
     /// An initial name for the room.
     pub name: Option<String>,
     /// A convenience parameter for setting a few default state events.
-    pub preset: Option<RoomPreset>,
+    pub preset: RoomPreset,
     /// An initial topic for the room.
     pub topic: Option<String>,
 }
@@ -169,75 +169,67 @@ impl Room {
                 new_events.push(new_topic_event);
             }
 
-            if let Some(preset) = creation_options.preset {
-                let new_history_visibility_event: NewEvent = HistoryVisibilityEvent {
-                    content: HistoryVisibilityEventContent {
-                        history_visibility: HistoryVisibility::Shared,
-                    },
-                    event_id: EventId::new(homeserver_domain)?,
-                    event_type: EventType::RoomHistoryVisibility,
-                    extra_content: (),
-                    prev_content: None,
-                    room_id: room.id.clone(),
-                    state_key: "".to_string(),
-                    unsigned: None,
-                    user_id: new_room.user_id.clone(),
-                }.try_into()?;
+            let new_history_visibility_event: NewEvent = HistoryVisibilityEvent {
+                content: HistoryVisibilityEventContent {
+                    history_visibility: HistoryVisibility::Shared,
+                },
+                event_id: EventId::new(homeserver_domain)?,
+                event_type: EventType::RoomHistoryVisibility,
+                extra_content: (),
+                prev_content: None,
+                room_id: room.id.clone(),
+                state_key: "".to_string(),
+                unsigned: None,
+                user_id: new_room.user_id.clone(),
+            }.try_into()?;
 
-                new_events.push(new_history_visibility_event);
+            new_events.push(new_history_visibility_event);
 
-                match preset {
-                    RoomPreset::PrivateChat => {
-                        let new_join_rules_event: NewEvent = JoinRulesEvent {
-                            content: JoinRulesEventContent {
-                                join_rule: JoinRule::Invite,
-                            },
-                            event_id: EventId::new(homeserver_domain)?,
-                            event_type: EventType::RoomJoinRules,
-                            extra_content: (),
-                            prev_content: None,
-                            room_id: room.id.clone(),
-                            state_key: "".to_string(),
-                            unsigned: None,
-                            user_id: new_room.user_id.clone(),
-                        }.try_into()?;
+            match creation_options.preset {
+                RoomPreset::PrivateChat => {
+                    let new_join_rules_event: NewEvent = JoinRulesEvent {
+                        content: JoinRulesEventContent { join_rule: JoinRule::Invite },
+                        event_id: EventId::new(homeserver_domain)?,
+                        event_type: EventType::RoomJoinRules,
+                        extra_content: (),
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: "".to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
 
-                        new_events.push(new_join_rules_event);
-                    }
-                    RoomPreset::PublicChat => {
-                        let new_join_rules_event: NewEvent = JoinRulesEvent {
-                            content: JoinRulesEventContent {
-                                join_rule: JoinRule::Public,
-                            },
-                            event_id: EventId::new(homeserver_domain)?,
-                            event_type: EventType::RoomJoinRules,
-                            extra_content: (),
-                            prev_content: None,
-                            room_id: room.id.clone(),
-                            state_key: "".to_string(),
-                            unsigned: None,
-                            user_id: new_room.user_id.clone(),
-                        }.try_into()?;
+                    new_events.push(new_join_rules_event);
+                }
+                RoomPreset::PublicChat => {
+                    let new_join_rules_event: NewEvent = JoinRulesEvent {
+                        content: JoinRulesEventContent { join_rule: JoinRule::Public },
+                        event_id: EventId::new(homeserver_domain)?,
+                        event_type: EventType::RoomJoinRules,
+                        extra_content: (),
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: "".to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
 
-                        new_events.push(new_join_rules_event);
-                    }
-                    RoomPreset::TrustedPrivateChat => {
-                        let new_join_rules_event: NewEvent = JoinRulesEvent {
-                            content: JoinRulesEventContent {
-                                join_rule: JoinRule::Invite,
-                            },
-                            event_id: EventId::new(homeserver_domain)?,
-                            event_type: EventType::RoomJoinRules,
-                            extra_content: (),
-                            prev_content: None,
-                            room_id: room.id.clone(),
-                            state_key: "".to_string(),
-                            unsigned: None,
-                            user_id: new_room.user_id.clone(),
-                        }.try_into()?;
+                    new_events.push(new_join_rules_event);
+                }
+                RoomPreset::TrustedPrivateChat => {
+                    let new_join_rules_event: NewEvent = JoinRulesEvent {
+                        content: JoinRulesEventContent { join_rule: JoinRule::Invite },
+                        event_id: EventId::new(homeserver_domain)?,
+                        event_type: EventType::RoomJoinRules,
+                        extra_content: (),
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: "".to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
 
-                        new_events.push(new_join_rules_event);
-                    }
+                    new_events.push(new_join_rules_event);
                 }
             }
 

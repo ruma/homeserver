@@ -60,6 +60,17 @@ table! {
 }
 
 table! {
+    room_memberships (event_id) {
+        event_id -> Text,
+        room_id -> Text,
+        user_id -> Text,
+        sender -> Text,
+        membership -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
     account_data {
         id -> BigSerial,
         user_id -> Text,

@@ -91,12 +91,20 @@ impl Handler for CreateRoom {
             None => true,
         };
 
+        let preset = match create_room_request.preset {
+            Some(preset) => preset,
+            None => match new_room.public {
+                true => RoomPreset::PublicChat,
+                false => RoomPreset::PrivateChat,
+            }
+        };
+
         let creation_options = CreationOptions {
             alias: create_room_request.room_alias_name,
             federate: federate,
             invite_list: create_room_request.invite,
             name: create_room_request.name,
-            preset: create_room_request.preset,
+            preset: preset,
             topic: create_room_request.topic,
         };
 
