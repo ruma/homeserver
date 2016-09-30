@@ -105,6 +105,9 @@ impl Handler for DeactivateAccount {
         };
 
         // Delete all the account data associated with the user.
+        if let Err(error) = AccountData::delete_by_uid(&connection, user.id.clone()) {
+            return Err(IronError::new(error.clone(), error));
+        };
 
         Ok(Response::with(Status::Ok))
     }
@@ -147,8 +150,6 @@ impl Handler for PutAccountData {
         // Check if the given user_id corresponds to a registered user.
         match params.find("user_id") {
             Some(user_id) => {
-                debug!("user_id param: {}", user_id);
-
                 let uid = match UserId::try_from(user_id) {
                     Ok(uid) => uid,
                     Err(err) => {
@@ -205,7 +206,7 @@ impl Handler for PutAccountData {
             Err(err) => {
                 match err {
                     DieselError::NotFound => {
-                        if let Err(err) = AccountData::create(&connection, new_data) {
+                        if let Err(err) = AccountData::create(&connection, &new_data) {
                             let error = ApiError::from(err);
 
                             return Err(IronError::new(error.clone(), error));
@@ -293,7 +294,6 @@ mod tests {
             test.put(&account_data_path, &content).status.is_success()
         );
 
-        // Update existing content.
         let new_content = r#"{"email": "user@email.org", "phone": "123456789", "fax": "123456991"}"#;
 
         assert!(

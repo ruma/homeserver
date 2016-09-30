@@ -1,10 +1,12 @@
 //! Account information stored for a user.
 
 use diesel::{
+    ExecuteDsl,
     ExpressionMethods,
     FilterDsl,
     LoadDsl,
     SaveChangesDsl,
+    delete,
     insert,
 };
 use diesel::result::Error as DieselError;
@@ -44,11 +46,11 @@ pub struct NewAccountData {
 
 impl AccountData {
     /// Create new `AccountData` for a user.
-    pub fn create(connection: &PgConnection, new_account_data: NewAccountData)
-    -> Result<Self, ApiError> {
-        insert(&new_account_data)
+    pub fn create(connection: &PgConnection, new_account_data: &NewAccountData)
+    -> Result<usize, ApiError> {
+        insert(new_account_data)
             .into(account_data::table)
-            .get_result(connection)
+            .execute(connection)
             .map_err(ApiError::from)
     }
 
@@ -71,6 +73,26 @@ impl AccountData {
             Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
+    }
+
+    /// Delete all account data of a user given a `UserId`.
+    pub fn delete_by_uid(connection: &PgConnection, uid: UserId)
+    -> Result<usize, ApiError> {
+        let rows = account_data::table
+            .filter(account_data::user_id.eq(uid));
+
+        delete(rows)
+            .execute(connection)
+            .map_err(ApiError::from)
+    }
+
+    /// Get all account data given a `UserId`.
+    pub fn get_by_uid(connection: &PgConnection, uid: &UserId)
+    -> Result<Vec<AccountData>, ApiError> {
+        account_data::table
+            .filter(account_data::user_id.eq(uid))
+            .load::<AccountData>(connection)
+            .map_err(ApiError::from)
     }
 }
 
