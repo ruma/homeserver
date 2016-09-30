@@ -160,6 +160,14 @@ impl ApiError {
         }
     }
 
+    /// Create an error for Matrix APIs that Ruma intentionally does not implement.
+    pub fn limited_rate(message: Option<&str>) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::LimitExceeded,
+            error: message.unwrap_or("Too many retry!").to_string(),
+        }
+    }
+
     /// Create a generic error for anything not specifically covered by the Matrix spec.
     pub fn unknown(message: Option<&str>) -> ApiError {
         ApiError {

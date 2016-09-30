@@ -2,12 +2,17 @@
 
 use std::convert::{TryInto, TryFrom};
 
+use diesel::{ExpressionMethods, FilterDsl, LoadDsl};
+use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
-use ruma_events::{RoomEvent, StateEvent};
+use diesel::pg::PgConnection;
+use ruma_events::{RoomEvent, StateEvent, EventType};
+use ruma_events::room::join_rules::{JoinRulesEvent};
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde::{Serialize, Deserialize};
 use serde_json::{Error as SerdeJsonError, from_str, to_string};
 
+use error::ApiError;
 use schema::events;
 
 /// A new event, not yet saved.
@@ -51,6 +56,24 @@ pub struct Event {
     pub extra_content: Option<String>,
     /// The time the event was created.
     pub created_at: PgTimestamp,
+}
+
+impl Event {
+    /// Return room join rules for given `room_id`.
+    pub fn find_room_join_rules_by_room_id(connection: &PgConnection, room_id: RoomId)
+        -> Result<JoinRulesEvent, ApiError>
+    {
+        let event: Event = events::table
+            .filter(events::event_type.eq((&EventType::RoomJoinRules).to_string()))
+            .filter(events::room_id.eq(room_id))
+            .first(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => ApiError::not_found(None),
+                _ => ApiError::from(err),
+            })?;
+
+        TryInto::try_into(event).map_err(ApiError::from)
+    }
 }
 
 impl<C> TryFrom<RoomEvent<C, ()>> for NewEvent where C: Deserialize + Serialize {
@@ -149,7 +172,7 @@ where C: Deserialize + Serialize, E: Deserialize + Serialize {
 }
 
 impl<C> TryInto<StateEvent<C, ()>> for Event where C: Deserialize + Serialize {
-    fn try_into(self) -> Result<StateEvent<C, ()>, Self::Err> {
+    default fn try_into(self) -> Result<StateEvent<C, ()>, Self::Err> {
         Ok(StateEvent {
             content: from_str(&self.content)?,
             event_id: self.id,
@@ -183,6 +206,22 @@ where C: Deserialize + Serialize, E: Deserialize + Serialize {
             state_key: from_str(&self.state_key.expect(
                 "failed to deserialize extra event content from the DB record"
             ))?,
+            unsigned: None,
+            user_id: self.user_id,
+        })
+    }
+}
+
+impl TryInto<JoinRulesEvent> for Event {
+    fn try_into(self) -> Result<JoinRulesEvent, Self::Err> {
+        Ok(JoinRulesEvent {
+            content: from_str(&self.content)?,
+            event_id: self.id,
+            extra_content: (),
+            event_type: EventType::RoomJoinRules,
+            prev_content: None,
+            room_id: self.room_id,
+            state_key: "".to_string(),
             unsigned: None,
             user_id: self.user_id,
         })

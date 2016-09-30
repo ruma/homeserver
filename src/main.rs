@@ -56,6 +56,7 @@ pub mod room_alias;
 pub mod schema;
 pub mod server;
 pub mod swagger;
+pub mod room_membership;
 #[cfg(test)] pub mod test;
 pub mod user;
 

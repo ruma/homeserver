@@ -15,6 +15,7 @@ use api::r0::{
     DeactivateAccount,
     DeleteRoomAlias,
     GetRoomAlias,
+    JoinRoom,
     Login,
     Logout,
     PutAccountData,
@@ -76,6 +77,7 @@ impl<'a> Server<'a> {
             "/rooms/:room_id/state/:event_type/:state_key",
             StateMessageEvent::chain(),
         );
+        r0_router.post("/rooms/:room_id/join", JoinRoom::chain());
 
         let mut r0 = Chain::new(r0_router);
 
