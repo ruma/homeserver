@@ -153,7 +153,6 @@ impl Handler for PutAccountData {
                 let uid = match UserId::try_from(user_id) {
                     Ok(uid) => uid,
                     Err(err) => {
-                        // TODO: Use invalid_param error
                         let error = ApiError::missing_param(err.description());
 
                         return Err(IronError::new(error.clone(), error));
@@ -298,6 +297,38 @@ mod tests {
 
         assert!(
             test.put(&account_data_path, &new_content).status.is_success()
+        );
+    }
+
+    #[test]
+    fn update_account_data_with_invalid_user_id() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+        let mut user_id = "carl.ruma.test";
+
+        let content = r#"{"email": "user@email.com", "phone": "123456789"}"#;
+        let data_type = "org.matrix.personal.config";
+        let mut account_data_path = format!(
+            "/_matrix/client/r0/user/{}/account_data/{}?access_token={}",
+            user_id, data_type, access_token
+        );
+
+        // Invalid UserId.
+        assert_eq!(
+            test.put(&account_data_path, &content).status,
+            Status::BadRequest
+        );
+
+        // Non-existent user.
+        user_id = "@mark:ruma.test";
+        account_data_path = format!(
+            "/_matrix/client/r0/user/{}/account_data/{}?access_token={}",
+            user_id, data_type, access_token
+        );
+
+        assert_eq!(
+            test.put(&account_data_path, &content).status,
+            Status::NotFound
         );
     }
 }
