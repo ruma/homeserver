@@ -77,7 +77,7 @@ mod tests {
             access_token
         );
         let response = test.post(&room_join_path, r"{}");
-        println!("test {:?}", response);
+
         assert_eq!(response.status, Status::Ok);
         assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
@@ -125,6 +125,7 @@ mod tests {
             access_token
         );
         let response = test.post(&room_join_path, r"{}");
+
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("errcode").unwrap().as_str().unwrap(),

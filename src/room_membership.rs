@@ -8,8 +8,10 @@ use diesel::{
     ExecuteDsl,
     LoadDsl,
     FilterDsl,
+    SelectDsl,
     insert,
 };
+use diesel::expression::dsl::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
@@ -19,9 +21,10 @@ use ruma_events::room::member::{
     MemberEvent,
     MembershipState,
     MemberEventContent,
-    MemberEventExtraContent};
+    MemberEventExtraContent
+};
 use ruma_identifiers::{EventId, RoomId, UserId};
-use serde_json::{Value, from_value};
+use serde_json::{Error as SerdeJsonError, Value, from_value};
 
 use error::ApiError;
 use event::{NewEvent, Event};
@@ -94,7 +97,7 @@ impl RoomMembership {
                     Ok(room_membership)
                 },
                 None => {
-                    if join_rules_event.content.join_rule == JoinRule::Invite  {
+                    if join_rules_event.content.join_rule == JoinRule::Invite {
                         return Err(ApiError::unauthorized(Some("You are not invited to this room.")));
                     }
                     let event_id = EventId::new(&homeserver_domain).map_err(ApiError::from)?;
@@ -137,12 +140,11 @@ impl RoomMembership {
                     Ok(room_membership)
                 }
             }
-
         }).map_err(ApiError::from)
     }
 
     /// Return `RoomMembership` for given `RoomId` and `UserId`.
-    pub fn find(connection: &PgConnection, room_id: RoomId, user_id: UserId) -> Result<Option<RoomMembership>,ApiError> {
+    pub fn find(connection: &PgConnection, room_id: RoomId, user_id: UserId) -> Result<Option<RoomMembership>, ApiError> {
         let membership = room_memberships::table
             .filter(room_memberships::room_id.eq(room_id))
             .filter(room_memberships::user_id.eq(user_id))
@@ -152,5 +154,22 @@ impl RoomMembership {
             Err(DieselError::NotFound) => Ok(None),
             Err(err) => Err(ApiError::from(err)),
         }
+    }
+
+    /// Return member event's for given `room_id`.
+    pub fn get_events_by_room(connection: &PgConnection, room_id: RoomId) -> Result<Vec<MemberEvent>, ApiError> {
+        let event_ids = room_memberships::table
+            .filter(room_memberships::room_id.eq(room_id))
+            .select(room_memberships::event_id);
+        let events: Vec<Event> = events::table
+            .filter(events::id.eq(any(event_ids)))
+            .get_results(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => ApiError::not_found(None),
+                _ => ApiError::from(err),
+            })?;
+
+        let member_events: Result<Vec<MemberEvent>, SerdeJsonError> = events.into_iter().map(TryInto::try_into).collect();
+        member_events.map_err(ApiError::from)
     }
 }
