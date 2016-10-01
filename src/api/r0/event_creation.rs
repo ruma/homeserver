@@ -29,7 +29,13 @@ use db::DB;
 use config::Config;
 use error::{ApiError, MapApiError};
 use event::NewEvent;
-use middleware::{AccessTokenAuth, JsonRequest, RoomIdParam};
+use middleware::{
+    AccessTokenAuth,
+    JsonRequest,
+    EventTypeParam,
+    RoomIdParam,
+    TransactionIdParam,
+};
 use modifier::SerializableResponse;
 use room::Room;
 use schema::{events, rooms};
@@ -99,6 +105,8 @@ impl SendMessageEvent {
 
         chain.link_before(JsonRequest);
         chain.link_before(RoomIdParam);
+        chain.link_before(EventTypeParam);
+        chain.link_before(TransactionIdParam);
         chain.link_before(AccessTokenAuth);
 
         chain
@@ -112,6 +120,7 @@ impl StateMessageEvent {
 
         chain.link_before(JsonRequest);
         chain.link_before(RoomIdParam);
+        chain.link_before(EventTypeParam);
         chain.link_before(AccessTokenAuth);
 
         chain
@@ -120,20 +129,14 @@ impl StateMessageEvent {
 
 impl Handler for SendMessageEvent {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
-
         let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("Should have been required by RoomIdParam.")
-            .clone();
+            .expect("Should have been required by RoomIdParam.").clone();
 
-        let event_type = params
-            .find("event_type")
-            .ok_or(ApiError::missing_param("event_type"))
-            .map(EventType::from)?;
+        let event_type = request.extensions.get::<EventTypeParam>()
+            .expect("EventTypeParam should ensure an EventType").clone();
 
-        let transaction_id = params
-            .find("transaction_id")
-            .ok_or(ApiError::missing_param("transaction_id"));
+        let transaction_id = request.extensions.get::<TransactionIdParam>()
+            .expect("TransactionIdParam should ensure a TransactionId").clone();
 
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
@@ -225,10 +228,8 @@ impl Handler for StateMessageEvent {
             .expect("Should have been required by RoomIdParam.")
             .clone();
 
-        let event_type = params
-            .find("event_type")
-            .ok_or(ApiError::missing_param("event_type"))
-            .map(EventType::from)?;
+        let event_type = request.extensions.get::<EventTypeParam>()
+            .expect("EventTypeParam should ensure an EventType").clone();
 
         let state_key = params
             .find("state_key")

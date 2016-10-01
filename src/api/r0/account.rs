@@ -4,16 +4,16 @@ use diesel::result::Error as DieselError;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 
-use std::convert::TryFrom;
-use std::error::Error;
-
 use crypto::hash_password;
 use db::DB;
 use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest};
+use middleware::{
+    AccessTokenAuth,
+    JsonRequest,
+    DataTypeParam,
+    UserIdParam,
+};
 use user::User;
-use ruma_identifiers::UserId;
-use router::Router;
 use access_token::AccessToken;
 use account_data::{AccountData, NewAccountData};
 
@@ -124,6 +124,8 @@ impl PutAccountData {
         let mut chain = Chain::new(PutAccountData);
 
         chain.link_before(JsonRequest);
+        chain.link_before(UserIdParam);
+        chain.link_before(DataTypeParam);
         chain.link_before(AccessTokenAuth);
 
         chain
@@ -132,52 +134,28 @@ impl PutAccountData {
 
 impl Handler for PutAccountData {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let params = request.extensions.get::<Router>()
-            .expect("Params object is missing").clone();
-
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
+
+        let user_id = request.extensions.get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId").clone();
+
+        // Check if the given user_id corresponds to the authenticated user.
+        if user_id != user.id {
+            let error = ApiError::not_found(
+                Some(&format!("No user found with ID {}", user_id))
+            );
+
+            return Err(IronError::new(error.clone(), error));
+        }
+
+        let data_type = request.extensions.get::<DataTypeParam>()
+            .expect("DataTypeParam should ensure a data type").clone();
 
         let content = match request.get::<bodyparser::Json>() {
             Ok(Some(content)) => content.to_string().clone(),
             Ok(None) | Err(_) => {
                 let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
-            }
-        };
-
-        // Check if the given user_id corresponds to a registered user.
-        match params.find("user_id") {
-            Some(user_id) => {
-                let uid = match UserId::try_from(user_id) {
-                    Ok(uid) => uid,
-                    Err(err) => {
-                        let error = ApiError::missing_param(err.description());
-
-                        return Err(IronError::new(error.clone(), error));
-                    }
-                };
-
-                if uid != user.id {
-                    let error = ApiError::not_found(
-                        Some(&format!("No user found with ID {}", user_id))
-                    );
-
-                    return Err(IronError::new(error.clone(), error));
-                }
-            },
-            None => {
-                let error = ApiError::missing_param("user_id");
-
-                return Err(IronError::new(error.clone(), error));
-            }
-        };
-
-        let data_type = match params.find("type") {
-            Some(data_type) => data_type,
-            None => {
-                let error = ApiError::missing_param("type");
 
                 return Err(IronError::new(error.clone(), error));
             }
