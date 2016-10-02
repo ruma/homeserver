@@ -84,9 +84,16 @@ impl RoomMembership {
                   room_membership_options: RoomMembershipOptions)
                   -> Result<RoomMembership, ApiError> {
         connection.transaction::<RoomMembership, ApiError, _>(|| {
-            let room_membership = RoomMembership::find(connection, room_membership_options.clone().room_id, room_membership_options.clone().user_id)?;
+            let room_membership = RoomMembership::find(
+                connection,
+                &room_membership_options.room_id,
+                &room_membership_options.user_id
+            )?;
 
-            let join_rules_event = Event::find_room_join_rules_by_room_id(&connection, room_membership_options.clone().room_id)?;
+            let join_rules_event = Event::find_room_join_rules_by_room_id(
+                &connection,
+                room_membership_options.clone().room_id
+            )?;
 
             match room_membership {
                 Some(room_membership) => {
@@ -144,11 +151,13 @@ impl RoomMembership {
     }
 
     /// Return `RoomMembership` for given `RoomId` and `UserId`.
-    pub fn find(connection: &PgConnection, room_id: RoomId, user_id: UserId) -> Result<Option<RoomMembership>, ApiError> {
+    pub fn find(connection: &PgConnection, room_id: &RoomId, user_id: &UserId)
+    -> Result<Option<RoomMembership>,ApiError> {
         let membership = room_memberships::table
             .filter(room_memberships::room_id.eq(room_id))
             .filter(room_memberships::user_id.eq(user_id))
             .first(connection);
+
         match membership {
             Ok(membership) => Ok(Some(membership)),
             Err(DieselError::NotFound) => Ok(None),

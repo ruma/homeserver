@@ -78,3 +78,13 @@ table! {
         content -> Text,
     }
 }
+
+table! {
+    room_account_data {
+        id -> BigSerial,
+        user_id -> Text,
+        room_id -> Text,
+        data_type -> Text,
+        content -> Text,
+    }
+}
