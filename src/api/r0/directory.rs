@@ -5,13 +5,12 @@ use std::convert::TryFrom;
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
-use router::{Params, Router};
-use ruma_identifiers::{RoomAliasId, RoomId};
+use ruma_identifiers::RoomId;
 
 use config::Config;
 use db::DB;
-use error::{ApiError, MapApiError};
-use middleware::{AccessTokenAuth, JsonRequest};
+use error::ApiError;
+use middleware::{AccessTokenAuth, JsonRequest, RoomAliasIdParam};
 use modifier::SerializableResponse;
 use room_alias::{RoomAlias, NewRoomAlias};
 use user::User;
@@ -39,7 +38,11 @@ pub struct PutRoomAlias;
 impl GetRoomAlias {
     /// Create a `GetRoomAlias`.
     pub fn chain() -> Chain {
-        Chain::new(GetRoomAlias)
+        let mut chain = Chain::new(GetRoomAlias);
+
+        chain.link_before(RoomAliasIdParam);
+
+        chain
     }
 }
 
@@ -48,6 +51,7 @@ impl DeleteRoomAlias {
     pub fn chain() -> Chain {
         let mut chain = Chain::new(DeleteRoomAlias);
 
+        chain.link_before(RoomAliasIdParam);
         chain.link_before(AccessTokenAuth);
 
         chain
@@ -60,6 +64,7 @@ impl PutRoomAlias {
         let mut chain = Chain::new(PutRoomAlias);
 
         chain.link_before(JsonRequest);
+        chain.link_before(RoomAliasIdParam);
         chain.link_before(AccessTokenAuth);
 
         chain
@@ -68,11 +73,8 @@ impl PutRoomAlias {
 
 impl Handler for GetRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
-
-        let config = Config::from_request(request)?;
-
-        let room_alias_id = get_room_alias_id_from_params(&params, &config.domain)?;
+        let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
+            .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
 
         let connection = DB::from_request(request)?;
 
@@ -89,11 +91,8 @@ impl Handler for GetRoomAlias {
 
 impl Handler for DeleteRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
-
-        let config = Config::from_request(request)?;
-
-        let room_alias_id = get_room_alias_id_from_params(&params, &config.domain)?;
+        let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
+            .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
 
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
@@ -116,11 +115,10 @@ impl Handler for DeleteRoomAlias {
 
 impl Handler for PutRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
-
         let config = Config::from_request(request)?;
 
-        let room_alias_id = get_room_alias_id_from_params(&params, &config.domain)?;
+        let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
+            .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
 
         let parsed_request = request.get::<bodyparser::Struct<PutRoomAliasRequest>>();
         let room_id = if let Ok(Some(api_request)) = parsed_request {
@@ -146,28 +144,6 @@ impl Handler for PutRoomAlias {
         RoomAlias::create(&connection, &new_room_alias)?;
 
         Ok(Response::with(Status::Ok))
-    }
-}
-
-fn get_room_alias_id_from_params(params: &Params, domain: &str) -> Result<RoomAliasId, IronError> {
-    match params.find("room_alias") {
-        Some(room_alias) => {
-            debug!("room_alias param: {}", room_alias);
-
-            let room_alias_id = RoomAliasId::try_from(&format!("#{}:{}", room_alias, domain))
-                .map_api_err(|_| {
-                    ApiError::not_found(
-                        Some(&format!("No room alias found with ID {}", room_alias))
-                    )
-                })?;
-
-            Ok(room_alias_id)
-        }
-        None => {
-            let error = ApiError::missing_param("room_alias");
-
-            Err(IronError::new(error.clone(), error))
-        }
     }
 }
 
