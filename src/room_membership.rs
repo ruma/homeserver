@@ -96,18 +96,18 @@ impl RoomMembership {
             )?;
 
             match room_membership {
-                Some(room_membership) => {
-                    if room_membership.membership == room_membership_options.membership {
-                        return Err(ApiError::limited_rate(Some("Try to set the membership again!")));
-                    }
-
-                    Ok(room_membership)
-                },
+                Some(room_membership) => Ok(room_membership),
                 None => {
-                    if join_rules_event.content.join_rule == JoinRule::Invite {
+                    // If there is no membership entry for the current user and
+                    // the room is invite-only, no membership entry can be created for that user.
+                    // Unless it's the owner of the room.
+                    if room_membership_options.user_id != room_membership_options.sender &&
+                       join_rules_event.content.join_rule == JoinRule::Invite {
                         return Err(ApiError::unauthorized(Some("You are not invited to this room.")));
                     }
+
                     let event_id = EventId::new(&homeserver_domain).map_err(ApiError::from)?;
+
                     let new_room_membership = NewRoomMembership {
                         event_id: event_id.clone(),
                         room_id: room_membership_options.clone().room_id,
@@ -144,6 +144,7 @@ impl RoomMembership {
                     insert(&new_room_membership).into(room_memberships::table)
                         .get_result(connection)
                         .map_err(ApiError::from)?;
+
                     Ok(room_membership)
                 }
             }
