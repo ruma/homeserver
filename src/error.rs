@@ -41,6 +41,8 @@ pub enum ApiErrorCode {
     Forbidden,
     /// Guests are not allowed to perform the requested operation.
     GuestAccessForbidden,
+    /// An input parameter didn't have a valid format.
+    InvalidParam,
     /// Too many requests have been sent in a short period of time. Wait a while then try again.
     LimitExceeded,
     /// A required input parameter was not supplied, e.g. query string or URL path-based parameter.
@@ -107,6 +109,14 @@ impl ApiError {
         ApiError {
             errcode: ApiErrorCode::GuestAccessForbidden,
             error: message.unwrap_or("Guest accounts are forbidden.").to_string(),
+        }
+    }
+
+    /// Create an error for invalid input parameters.
+    pub fn invalid_param(param_name: &str, msg: &str) -> ApiError {
+        ApiError {
+            errcode: ApiErrorCode::InvalidParam,
+            error: format!("Parameter '{}' is not valid: {}", param_name, msg),
         }
     }
 
@@ -311,6 +321,7 @@ impl ApiErrorCode {
             ApiErrorCode::BadJson => Status::UnprocessableEntity,
             ApiErrorCode::Forbidden => Status::Forbidden,
             ApiErrorCode::GuestAccessForbidden => Status::Forbidden,
+            ApiErrorCode::InvalidParam => Status::BadRequest,
             ApiErrorCode::LimitExceeded => Status::TooManyRequests,
             ApiErrorCode::MissingParam => Status::BadRequest,
             ApiErrorCode::NotFound => Status::NotFound,
@@ -330,6 +341,7 @@ impl Serialize for ApiErrorCode {
             ApiErrorCode::BadJson => "M_BAD_JSON",
             ApiErrorCode::Forbidden => "M_FORBIDDEN",
             ApiErrorCode::GuestAccessForbidden => "M_GUEST_ACCESS_FORBIDDEN",
+            ApiErrorCode::InvalidParam => "IO_RUMA_INVALID_PARAM",
             ApiErrorCode::LimitExceeded => "M_LIMIT_EXCEEDED",
             ApiErrorCode::MissingParam => "M_MISSING_PARAM",
             ApiErrorCode::NotFound => "M_NOT_FOUND",

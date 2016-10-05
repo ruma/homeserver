@@ -291,10 +291,17 @@ mod tests {
             user_id, data_type, access_token
         );
 
+        let response = test.put(&account_data_path, &content);
+
         // Invalid UserId.
+        assert_eq!(response.status, Status::BadRequest);
         assert_eq!(
-            test.put(&account_data_path, &content).status,
-            Status::BadRequest
+            response.json().find("errcode").unwrap().as_str().unwrap(),
+            "IO_RUMA_INVALID_PARAM"
+        );
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "Parameter 'user_id' is not valid: leading sigil is missing"
         );
 
         // Non-existent user.
