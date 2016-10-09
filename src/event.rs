@@ -8,6 +8,7 @@ use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::PgConnection;
 use ruma_events::{RoomEvent, StateEvent, EventType};
 use ruma_events::room::join_rules::{JoinRulesEvent};
+use ruma_events::room::member::MemberEvent;
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde::{Serialize, Deserialize};
 use serde_json::{Error as SerdeJsonError, from_str, to_string};
@@ -71,7 +72,6 @@ impl Event {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
             })?;
-
         TryInto::try_into(event).map_err(ApiError::from)
     }
 }
@@ -222,6 +222,22 @@ impl TryInto<JoinRulesEvent> for Event {
             prev_content: None,
             room_id: self.room_id,
             state_key: "".to_string(),
+            unsigned: None,
+            user_id: self.user_id,
+        })
+    }
+}
+
+impl TryInto<MemberEvent> for Event {
+    fn try_into(self) -> Result<MemberEvent, Self::Err> {
+        Ok(MemberEvent {
+            content: from_str(&self.content)?,
+            event_id: self.id,
+            prev_content: None,
+            extra_content: from_str(&self.extra_content.unwrap())?,
+            state_key: "".to_string(),
+            event_type: EventType::RoomMember,
+            room_id: self.room_id,
             unsigned: None,
             user_id: self.user_id,
         })
