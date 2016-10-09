@@ -26,8 +26,8 @@ impl BeforeMiddleware for RoomIdParam {
     fn before(&self, request: &mut Request) -> IronResult<()> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
         let room_id = match params.find("room_id") {
-            Some(room_id) => RoomId::try_from(room_id).map_api_err(|_| {
-                ApiError::not_found(Some(&format!("No room found with ID {}", room_id)))
+            Some(room_id) => RoomId::try_from(room_id).map_api_err(|err| {
+                ApiError::invalid_param("room_id", err.description())
             }),
             None => {
                 Err(ApiError::missing_param("room_id"))
@@ -51,20 +51,13 @@ impl BeforeMiddleware for UserIdParam {
             .expect("Params object is missing").clone();
 
         let user_id = match params.find("user_id") {
-            Some(user_id) => match UserId::try_from(user_id) {
-                Ok(uid) => uid,
-                Err(err) => {
-                    let error = ApiError::missing_param(err.description());
-
-                    return Err(IronError::new(error.clone(), error));
-                }
-            },
+            Some(user_id) => UserId::try_from(user_id).map_api_err(|err| {
+                ApiError::invalid_param("user_id", err.description())
+            }),
             None => {
-                let error = ApiError::missing_param("user_id");
-
-                return Err(IronError::new(error.clone(), error));
+                Err(ApiError::missing_param("user_id"))
             }
-        };
+        }?;
 
         request.extensions.insert::<UserIdParam>(user_id);
 
@@ -114,10 +107,8 @@ impl BeforeMiddleware for RoomAliasIdParam {
 
                 let room_alias_id = RoomAliasId::try_from(
                     &format!("#{}:{}", room_alias, config.domain)
-                ).map_api_err(|_| {
-                    ApiError::not_found(
-                        Some(&format!("No room alias found with ID {}", room_alias))
-                    )
+                ).map_api_err(|err| {
+                    ApiError::invalid_param("room_alias", err.description())
                 })?;
 
                 room_alias_id
