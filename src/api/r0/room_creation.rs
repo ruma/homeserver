@@ -1,6 +1,9 @@
 //! Endpoints for room creation.
 
+use std::convert::From;
+
 use bodyparser;
+use diesel::Connection;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_identifiers::RoomId;
@@ -11,6 +14,7 @@ use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest};
 use modifier::SerializableResponse;
 use room::{CreationOptions, NewRoom, Room, RoomPreset};
+use room_membership::{RoomMembership, RoomMembershipOptions};
 use user::User;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -108,7 +112,22 @@ impl Handler for CreateRoom {
             topic: create_room_request.topic,
         };
 
-        let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
+        let room: Room = connection.transaction::<Room, ApiError, _>(|| {
+            let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
+
+            let options = RoomMembershipOptions {
+                room_id: room.id.clone(),
+                user_id: room.user_id.clone(),
+                sender: room.user_id.clone(),
+                membership: String::from("join")
+            };
+
+            RoomMembership::create(&connection, &config.domain, options)
+                .map_err(ApiError::from)?;
+
+            Ok(room)
+        })
+        .map_err(ApiError::from)?;
 
         let response = CreateRoomResponse {
             room_id: room.id.to_string(),

@@ -171,37 +171,30 @@ impl Test {
             .to_string()
     }
 
+    /// Creates a room given the body parameters and returns the room ID as a string.
+    pub fn create_room_with_params(&self, access_token: &str, body: &str) -> String {
+        self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), body)
+            .json()
+            .find("room_id")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string()
+    }
+
     /// Creates a room and returns the room ID as a string.
     pub fn create_room(&self, access_token: &str) -> String {
-        self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), "{}")
-            .json()
-            .find("room_id")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string()
+        self.create_room_with_params(access_token, "{}")
     }
 
-    /// Creates a room and returns the room ID as a string.
+    /// Creates a public room and returns the room ID as a string.
     pub fn create_public_room(&self, access_token: &str) -> String {
-        self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), r#"{"visibility": "public"}"#)
-            .json()
-            .find("room_id")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string()
+        self.create_room_with_params(access_token, r#"{"visibility": "public"}"#)
     }
 
-    /// Creates a room and returns the room ID as a string.
+    /// Creates a private room and returns the room ID as a string.
     pub fn create_private_room(&self, access_token: &str) -> String {
-        self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), r#"{"visibility": "private"}"#)
-            .json()
-            .find("room_id")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string()
+        self.create_room_with_params(access_token, r#"{"visibility": "private"}"#)
     }
 
     /// Join an existent room.

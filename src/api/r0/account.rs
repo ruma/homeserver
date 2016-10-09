@@ -447,13 +447,17 @@ mod tests {
             user_id, room_id, data_type, access_token
         );
 
-        assert_eq!(test.put(&path, &content).status, Status::NotFound);
+        let response = test.put(&path, &content);
 
+        assert_eq!(response.status, Status::BadRequest);
         assert_eq!(
-            test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
-            format!("No room found with ID {}", room_id)
+            response.json().find("errcode").unwrap().as_str().unwrap(),
+            "IO_RUMA_INVALID_PARAM"
         );
-
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "Parameter 'room_id' is not valid: leading sigil is missing"
+        );
     }
 
     #[test]

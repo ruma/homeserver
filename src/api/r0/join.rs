@@ -52,7 +52,12 @@ impl Handler for JoinRoom {
             sender: user.id,
             membership: String::from("join"),
         };
-        let room_membership = RoomMembership::create(&connection, &config.domain, room_membership_options)?;
+
+        let room_membership = RoomMembership::create(
+            &connection,
+            &config.domain,
+            room_membership_options
+        )?;
 
         let response = JoinRoomResponse { room_id: room_membership.room_id.to_string() };
 
@@ -66,7 +71,7 @@ mod tests {
     use iron::status::Status;
 
     #[test]
-    fn join_room() {
+    fn join_own_public_room() {
         let test = Test::new();
         let access_token = test.create_access_token();
         let room_id = test.create_public_room(&access_token);
@@ -76,6 +81,7 @@ mod tests {
             room_id,
             access_token
         );
+
         let response = test.post(&room_join_path, r"{}");
 
         assert_eq!(response.status, Status::Ok);
@@ -83,38 +89,27 @@ mod tests {
     }
 
     #[test]
-    fn rate_limited() {
+    fn join_other_public_room() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_public_room(&access_token);
+        let carl_token = test.create_access_token_with_username("carl");
+        let mark_token = test.create_access_token_with_username("mark");
+
+        let room_id = test.create_public_room(&carl_token);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            access_token
+            mark_token
         );
-        test.post(&room_join_path, r"{}");
 
-        let room_join_path = format!(
-            "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            access_token
-        );
         let response = test.post(&room_join_path, r"{}");
 
-        assert_eq!(response.status, Status::TooManyRequests);
-        assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
-            "M_LIMIT_EXCEEDED"
-        );
-        assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
-            "Try to set the membership again!"
-        );
+        assert_eq!(response.status, Status::Ok);
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
-    fn forbidden_joining_private_room() {
+    fn join_own_private_room() {
         let test = Test::new();
         let access_token = test.create_access_token();
         let room_id = test.create_private_room(&access_token);
@@ -124,16 +119,31 @@ mod tests {
             room_id,
             access_token
         );
+
         let response = test.post(&room_join_path, r"{}");
 
-        assert_eq!(response.status, Status::Forbidden);
-        assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
-            "M_FORBIDDEN"
+        assert_eq!(response.status, Status::Ok);
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+    }
+
+    #[test]
+    fn join_other_private_room() {
+        let test = Test::new();
+        let carl_token = test.create_access_token_with_username("carl");
+        let mark_token = test.create_access_token_with_username("mark");
+
+        let body = r#"{"visibility": "private", "invite": ["@mark:ruma.test"]}"#;
+        let room_id = test.create_room_with_params(&carl_token, body);
+
+        let room_join_path = format!(
+            "/_matrix/client/r0/rooms/{}/join?access_token={}",
+            room_id,
+            mark_token
         );
-        assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
-            "You are not invited to this room."
-        );
+
+        let response = test.post(&room_join_path, r"{}");
+
+        assert_eq!(response.status, Status::Ok);
+        assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 }
