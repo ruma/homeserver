@@ -4,6 +4,7 @@ pub use self::account::{
     AccountPassword,
     DeactivateAccount,
     PutAccountData,
+    PutRoomAccountData,
 };
 pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
 pub use self::event_creation::{SendMessageEvent, StateMessageEvent};

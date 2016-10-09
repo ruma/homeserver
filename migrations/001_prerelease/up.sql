@@ -36,6 +36,15 @@ CREATE TABLE room_aliases (
   updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
+CREATE TABLE room_account_data (
+    id BIGSERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    room_id TEXT NOT NULL,
+    data_type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    UNIQUE (user_id, room_id, data_type)
+);
+
 CREATE TABLE room_memberships(
     event_id TEXT NOT NULL PRIMARY KEY,
     room_id TEXT NOT NULL,

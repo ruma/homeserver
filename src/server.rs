@@ -18,8 +18,9 @@ use api::r0::{
     JoinRoom,
     Login,
     Logout,
-    PutAccountData,
     Members,
+    PutAccountData,
+    PutRoomAccountData,
     PutRoomAlias,
     Register,
     SendMessageEvent,
@@ -66,6 +67,7 @@ impl<'a> Server<'a> {
         r0_router.post("/register", Register::chain());
         r0_router.post("/tokenrefresh", unimplemented);
         r0_router.put("/user/:user_id/account_data/:type", PutAccountData::chain());
+        r0_router.put("/user/:user_id/rooms/:room_id/account_data/:type", PutRoomAccountData::chain());
         r0_router.put(
             "/rooms/:room_id/send/:event_type/:transaction_id",
             SendMessageEvent::chain(),

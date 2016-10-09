@@ -203,6 +203,17 @@ impl Test {
             .unwrap()
             .to_string()
     }
+
+    /// Join an existent room.
+    pub fn join_room(&self, access_token: &str, room_id: &str) -> Response {
+        let join_path = format!(
+            "/_matrix/client/r0/rooms/{}/join?access_token={}",
+            room_id,
+            access_token
+        );
+
+        self.post(&join_path, r"{}")
+    }
 }
 
 impl Response {

@@ -1,6 +1,5 @@
 use bodyparser;
 use diesel::SaveChangesDsl;
-use diesel::result::Error as DieselError;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 
@@ -11,11 +10,18 @@ use middleware::{
     AccessTokenAuth,
     JsonRequest,
     DataTypeParam,
+    RoomIdParam,
     UserIdParam,
 };
 use user::User;
 use access_token::AccessToken;
-use account_data::{AccountData, NewAccountData};
+use room_membership::RoomMembership;
+use account_data::{
+    AccountData,
+    NewAccountData,
+    RoomAccountData,
+    NewRoomAccountData,
+};
 
 /// The /account/password endpoint.
 #[derive(Debug)]
@@ -105,9 +111,11 @@ impl Handler for DeactivateAccount {
         };
 
         // Delete all the account data associated with the user.
-        if let Err(error) = AccountData::delete_by_uid(&connection, user.id.clone()) {
-            return Err(IronError::new(error.clone(), error));
-        };
+        AccountData::delete_by_uid(&connection, &user.id)
+            .map_err(IronError::from)?;
+
+        RoomAccountData::delete_by_uid(&connection, &user.id)
+            .map_err(IronError::from)?;
 
         Ok(Response::with(Status::Ok))
     }
@@ -169,34 +177,93 @@ impl Handler for PutAccountData {
 
         let connection = DB::from_request(request)?;
 
-        // Insert or update an existing AccountData entry.
-        match AccountData::find_by_uid_and_type(
-            &connection,
-            &new_data.user_id,
-            &new_data.data_type
-        ) {
-            Ok(mut saved_data) => {
-                if let Err(err) = saved_data.update(&connection, new_data.content) {
-                    return Err(IronError::new(err.clone(), err));
-                }
-            }
-            Err(err) => {
-                match err {
-                    DieselError::NotFound => {
-                        if let Err(err) = AccountData::create(&connection, &new_data) {
-                            let error = ApiError::from(err);
+        AccountData::upsert(&connection, &new_data)
+            .map_err(IronError::from)?;
 
-                            return Err(IronError::new(error.clone(), error));
-                        }
-                    }
-                    _ => {
-                        let error = ApiError::from(err);
+        Ok(Response::with(Status::Ok))
+    }
+}
 
-                        return Err(IronError::new(error.clone(), error));
-                    }
-                }
-            }
+/// The /user/:user_id/rooms/:room_id/account_data/:type endpoint.
+#[derive(Debug)]
+pub struct PutRoomAccountData;
+
+impl PutRoomAccountData {
+    /// Create an `PutAccountData` with all necessary middleware.
+    pub fn chain() -> Chain {
+        let mut chain = Chain::new(PutRoomAccountData);
+
+        chain.link_before(JsonRequest);
+        chain.link_before(UserIdParam);
+        chain.link_before(RoomIdParam);
+        chain.link_before(DataTypeParam);
+        chain.link_before(AccessTokenAuth);
+
+        chain
+    }
+}
+
+impl Handler for PutRoomAccountData {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        let user = request.extensions.get::<User>()
+            .expect("AccessTokenAuth should ensure a user").clone();
+
+        let user_id = request.extensions.get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId").clone();
+
+        // Check if the given user_id corresponds to the authenticated user.
+        if user_id != user.id {
+            let error = ApiError::not_found(
+                Some(&format!("No user found with ID: {}", user_id))
+            );
+
+            return Err(IronError::new(error.clone(), error));
         }
+
+        let room_id = request.extensions.get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a RoomId").clone();
+
+        let connection = DB::from_request(request)?;
+
+        // Check if the user has joined the room.
+        let entry = RoomMembership::find(&connection, &room_id, &user_id)
+            .map_err(IronError::from)?;
+
+        if entry.is_none() {
+            let err = ApiError::unauthorized(
+                Some("No membership entry was found.")
+            );
+
+            return Err(IronError::new(err.clone(), err));
+        }
+
+        if entry.unwrap().membership != "join" {
+            let err = ApiError::unauthorized(Some("The room is not accesible."));
+
+            return Err(IronError::new(err.clone(), err));
+        }
+
+        let data_type = request.extensions.get::<DataTypeParam>()
+            .expect("DataTypeParam should ensure a data type").clone();
+
+        let content = match request.get::<bodyparser::Json>() {
+            Ok(Some(content)) => content.to_string().clone(),
+            Ok(None) | Err(_) => {
+                let error = ApiError::bad_json(None);
+
+                return Err(IronError::new(error.clone(), error));
+            }
+        };
+
+        let new_data = NewRoomAccountData {
+            user_id: user.id,
+            room_id: room_id,
+            data_type: String::from(data_type),
+            content: content,
+        };
+
+        RoomAccountData::upsert(&connection, &new_data)
+            .map_err(IronError::from)?;
 
         Ok(Response::with(Status::Ok))
     }
@@ -309,4 +376,101 @@ mod tests {
             Status::NotFound
         );
     }
+
+    #[test]
+    fn update_room_account_data() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+
+        let room_id = test.create_public_room(&access_token);
+        let user_id = "@carl:ruma.test";
+        let content = r#"{"ui_color": "yellow"}"#;
+        let data_type = "org.matrix.room.config";
+        let path = format!(
+            "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
+            user_id, room_id, data_type, access_token
+        );
+
+        assert_eq!(test.join_room(&access_token, &room_id).status, Status::Ok);
+
+        assert_eq!(test.put(&path, &content).status, Status::Ok);
+
+        let new_content = r#"{"ui_color": "yellow", "show_nicknames": "true"}"#;
+
+        assert_eq!(test.put(&path, &new_content).status, Status::Ok);
+    }
+
+    #[test]
+    fn update_room_account_data_with_invalid_user() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+
+        let room_id = test.create_public_room(&access_token);
+        let user_id = "@mark:ruma.test";
+        let content = r#"{"ui_color": "yellow"}"#;
+        let data_type = "org.matrix.room.config";
+
+        let path = format!(
+            "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
+            user_id, room_id, data_type, access_token
+        );
+
+        assert_eq!(test.join_room(&access_token, &room_id).status, Status::Ok);
+
+        assert_eq!(test.put(&path, &content).status, Status::NotFound);
+
+        assert_eq!(
+            test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
+            format!("No user found with ID: {}", user_id)
+        );
+    }
+
+    #[test]
+    fn update_room_account_data_with_invalid_room() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+
+        let user_id = "@carl:ruma.test";
+        let room_id = "invalid_room_id";
+        let content = r#"{"ui_color": "yellow"}"#;
+        let data_type = "org.matrix.room.config";
+
+        let path = format!(
+            "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
+            user_id, room_id, data_type, access_token
+        );
+
+        assert_eq!(test.put(&path, &content).status, Status::NotFound);
+
+        assert_eq!(
+            test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
+            format!("No room found with ID {}", room_id)
+        );
+
+    }
+
+    #[test]
+    fn update_room_account_data_without_room_access() {
+        let test = Test::new();
+        let carl_token = test.create_access_token();
+        let mark_token = test.create_access_token_with_username("mark");
+
+        let room_id = test.create_private_room(&mark_token);
+        let user_id = "@carl:ruma.test";
+        let content = r#"{"ui_color": "yellow"}"#;
+        let data_type = "org.matrix.room.config";
+
+        let path = format!(
+            "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
+            user_id, room_id, data_type, carl_token
+        );
+
+        assert_eq!(test.put(&path, &content).status, Status::Forbidden);
+
+        assert_eq!(
+            test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
+            "No membership entry was found."
+        );
+    }
 }
+
