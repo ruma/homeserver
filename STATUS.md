@@ -53,7 +53,7 @@ Legend:
     <td>POST /account/password/email/requestToken</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/81">#81</a></td>
     <td>POST /account/deactivate</td>
   </tr>
@@ -115,7 +115,7 @@ Legend:
     <td>GET /rooms/:room_id/state</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/10">#10</a></td>
     <td>GET /rooms/:room_id/members</td>
   </tr>
@@ -200,7 +200,7 @@ Legend:
     <td>POST /join/:room_id_or_alias</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/24">#24</a></td>
     <td>POST /rooms/:room_id/join</td>
   </tr>
@@ -435,7 +435,7 @@ Legend:
     <th align="left" colspan="3">Client config</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/62">#62</a></td>
     <td>PUT /user/:user_id/rooms/:room_id/account_data/:type</td>
   </tr>
