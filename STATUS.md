@@ -440,7 +440,7 @@ Legend:
     <td>PUT /user/:user_id/rooms/:room_id/account_data/:type</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/63">#63</a></td>
     <td>PUT /user/:user_id/account_data/:type</td>
   </tr>
