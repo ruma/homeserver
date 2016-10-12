@@ -27,6 +27,13 @@ CREATE TABLE events (
   created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
+CREATE TABLE profiles (
+    id TEXT NOT NULL PRIMARY KEY,
+    avatar_url TEXT,
+    displayname TEXT,
+    UNIQUE(id)
+);
+
 CREATE TABLE room_aliases (
   alias TEXT NOT NULL PRIMARY KEY,
   room_id TEXT NOT NULL,
@@ -51,7 +58,8 @@ CREATE TABLE room_memberships(
     user_id TEXT NOT NULL,
     sender TEXT NOT NULL,
     membership TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT now()
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    UNIQUE(room_id, user_id)
 );
 
 CREATE TABLE rooms (

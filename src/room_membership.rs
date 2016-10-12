@@ -10,6 +10,7 @@ use diesel::{
     FilterDsl,
     SelectDsl,
     insert,
+    update,
 };
 use diesel::expression::dsl::*;
 use diesel::pg::PgConnection;
@@ -28,6 +29,7 @@ use serde_json::{Error as SerdeJsonError, Value, from_value};
 
 use error::ApiError;
 use event::{NewEvent, Event};
+use profile::Profile;
 use schema::{events, room_memberships};
 
 /// Room membership update or create data.
@@ -119,10 +121,20 @@ impl RoomMembership {
                     let membership_string = Value::String(new_room_membership.clone().membership);
                     let membership: MembershipState = from_value(membership_string)?;
 
+                    let profile = Profile::find_by_user_id(connection, room_membership_options.clone().user_id)?;
+                    let avatar_url = match profile.clone() {
+                        Some(profile) => profile.avatar_url,
+                        None => None,
+                    };
+                    let displayname = match profile {
+                        Some(profile) => profile.displayname,
+                        None => None,
+                    };
+
                     let new_memberstate_event: NewEvent = MemberEvent {
                         content: MemberEventContent {
-                            avatar_url: None,
-                            displayname: None,
+                            avatar_url: avatar_url,
+                            displayname: displayname,
                             membership: membership,
                             third_party_invite: (),
                         },
@@ -149,6 +161,66 @@ impl RoomMembership {
                 }
             }
         }).map_err(ApiError::from)
+    }
+
+    /// Update room membership events.
+    pub fn update_room_membership_events(connection: &PgConnection,
+                                         homeserver_domain: &str,
+                                         room_membership: &mut RoomMembership,
+                                         profile: Profile) -> Result<(), ApiError> {
+        let event_id = EventId::new(&homeserver_domain).map_err(ApiError::from)?;
+
+        let membership_string = Value::String(room_membership.clone().membership);
+        let membership: MembershipState = from_value(membership_string)?;
+
+        let new_memberstate_event: NewEvent = MemberEvent {
+            content: MemberEventContent {
+                avatar_url: profile.avatar_url,
+                displayname: profile.displayname,
+                membership: membership,
+                third_party_invite: (),
+            },
+            event_id: event_id.clone(),
+            event_type: EventType::RoomMember,
+            extra_content: MemberEventExtraContent { invite_room_state: None },
+            prev_content: None,
+            room_id: room_membership.clone().room_id,
+            state_key: "".to_string(),
+            unsigned: None,
+            user_id: room_membership.clone().user_id,
+        }.try_into()?;
+
+        insert(&new_memberstate_event).into(events::table)
+            .execute(connection)
+            .map_err(ApiError::from)?;
+
+        room_membership.update(connection, event_id)?;
+
+        Ok(())
+    }
+
+
+    /// Update a `RoomMembership` entry.
+    fn update(&mut self, connection: &PgConnection, event_id: EventId) -> Result<(), ApiError> {
+        let room_memberships = room_memberships::table
+            .filter(room_memberships::room_id.eq(self.clone().room_id))
+            .filter(room_memberships::user_id.eq(self.clone().user_id));
+        update(room_memberships)
+            .set(room_memberships::event_id.eq(event_id))
+            .execute(connection)?;
+        Ok(())
+    }
+
+    /// Return `RoomMembership`'s for given `UserId`.
+    pub fn find_by_user_id(connection: &PgConnection, user_id: UserId) -> Result<Vec<RoomMembership>, ApiError> {
+        let room_memberships: Vec<RoomMembership> = room_memberships::table
+            .filter(room_memberships::user_id.eq(user_id))
+            .get_results(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => ApiError::not_found(None),
+                _ => ApiError::from(err),
+            })?;
+        Ok(room_memberships)
     }
 
     /// Return `RoomMembership` for given `RoomId` and `UserId`.

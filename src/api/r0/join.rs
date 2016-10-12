@@ -3,8 +3,8 @@
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 
-use db::DB;
 use config::Config;
+use db::DB;
 use middleware::{AccessTokenAuth, JsonRequest, RoomIdParam};
 use modifier::SerializableResponse;
 use room_membership::{RoomMembership, RoomMembershipOptions};
@@ -40,7 +40,6 @@ impl Handler for JoinRoom {
 
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
-
 
         let room_id = request.extensions.get::<RoomIdParam>()
             .expect("Should have been required by RoomIdParam.")
@@ -143,7 +142,6 @@ mod tests {
 
         let response = test.post(&room_join_path, r"{}");
 
-        assert_eq!(response.status, Status::Ok);
         assert!(response.json().find("room_id").unwrap().as_str().is_some());
     }
 }
