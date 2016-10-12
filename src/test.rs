@@ -197,6 +197,18 @@ impl Test {
         self.create_room_with_params(access_token, r#"{"visibility": "private"}"#)
     }
 
+    /// Invite a `User` to a `Room`.
+    pub fn invite(&self, access_token: &str, room_id: &str, invitee_id: &str) -> Response {
+        let body = format!(r#"{{"user_id": "{}"}}"#, invitee_id);
+        let path = format!(
+            "/_matrix/client/r0/rooms/{}/invite?access_token={}",
+            room_id,
+            access_token
+        );
+
+        self.post(&path, &body)
+    }
+
     /// Join an existent room.
     pub fn join_room(&self, access_token: &str, room_id: &str) -> Response {
         let join_path = format!(

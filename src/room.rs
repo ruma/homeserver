@@ -20,12 +20,6 @@ use ruma_events::room::join_rules::{
     JoinRulesEvent,
     JoinRulesEventContent,
 };
-use ruma_events::room::member::{
-    MemberEvent,
-    MemberEventContent,
-    MemberEventExtraContent,
-    MembershipState,
-};
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
@@ -34,6 +28,7 @@ use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 use error::ApiError;
 use event::{Event, NewEvent};
 use room_alias::{NewRoomAlias, RoomAlias};
+use room_membership::{RoomMembership, RoomMembershipOptions};
 use schema::{events, rooms, users};
 use user::User;
 
@@ -233,6 +228,11 @@ impl Room {
                 }
             }
 
+            insert(&new_events)
+                .into(events::table)
+                .execute(connection)
+                .map_err(ApiError::from)?;
+
             if let Some(ref invite_list) = creation_options.invite_list {
                 let mut user_ids = HashSet::with_capacity(invite_list.len());
 
@@ -279,33 +279,16 @@ impl Room {
                 }
 
                 for user in users {
-                    let new_member_event: NewEvent = MemberEvent {
-                        content: MemberEventContent {
-                            avatar_url: None,
-                            displayname: None,
-                            membership: MembershipState::Invite,
-                            third_party_invite: (),
-                        },
-                        event_id: EventId::new(homeserver_domain)?,
-                        event_type: EventType::RoomMember,
-                        extra_content: MemberEventExtraContent {
-                            invite_room_state: None,
-                        },
-                        prev_content: None,
+                    let options = RoomMembershipOptions {
                         room_id: room.id.clone(),
-                        state_key: format!("@{}:{}", user.id, homeserver_domain),
-                        unsigned: None,
-                        user_id: new_room.user_id.clone(),
-                    }.try_into()?;
+                        user_id: user.id.clone(),
+                        sender: room.user_id.clone(),
+                        membership: "invite".to_string(),
+                    };
 
-                    new_events.push(new_member_event);
+                    RoomMembership::create(connection, &homeserver_domain, options)?;
                 }
             }
-
-            insert(&new_events)
-                .into(events::table)
-                .execute(connection)
-                .map_err(ApiError::from)?;
 
             Ok(room)
         }).map_err(ApiError::from)
@@ -343,5 +326,22 @@ impl Room {
                 _ => Err(error.into()),
             },
         }
+    }
+
+    /// Look up a `Room` given the `RoomId`.
+    pub fn find(connection: &PgConnection, room_id: &RoomId)
+    -> Result<Room, ApiError> {
+        rooms::table
+            .filter(rooms::id.eq(room_id))
+            .first(connection)
+            .map(Room::from)
+            .map_err(|err| {
+                match err {
+                    DieselError::NotFound => ApiError::not_found(
+                        Some("The room was not found on this server")
+                    ),
+                    _ => ApiError::from(err)
+                }
+            })
     }
 }

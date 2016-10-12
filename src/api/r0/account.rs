@@ -117,10 +117,9 @@ impl Handler for PutAccountData {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 
-        // Check if the given user_id corresponds to the authenticated user.
         if user_id != user.id {
-            let error = ApiError::not_found(
-                Some(&format!("No user found with ID {}", user_id))
+            let error = ApiError::unauthorized(
+                Some("The given user_id does not correspond to the authenticated user")
             );
 
             return Err(IronError::new(error.clone(), error));
@@ -140,7 +139,7 @@ impl Handler for PutAccountData {
 
         let new_data = NewAccountData {
             user_id: user.id,
-            data_type: String::from(data_type),
+            data_type: data_type.to_string(),
             content: content,
         };
 
@@ -167,10 +166,9 @@ impl Handler for PutRoomAccountData {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 
-        // Check if the given user_id corresponds to the authenticated user.
         if user_id != user.id {
-            let error = ApiError::not_found(
-                Some(&format!("No user found with ID: {}", user_id))
+            let error = ApiError::unauthorized(
+                Some("The given user_id does not correspond to the authenticated user")
             );
 
             return Err(IronError::new(error.clone(), error));
@@ -214,7 +212,7 @@ impl Handler for PutRoomAccountData {
         let new_data = NewRoomAccountData {
             user_id: user.id,
             room_id: room_id,
-            data_type: String::from(data_type),
+            data_type: data_type.to_string(),
             content: content,
         };
 
@@ -336,7 +334,7 @@ mod tests {
 
         assert_eq!(
             test.put(&account_data_path, &content).status,
-            Status::NotFound
+            Status::Forbidden
         );
     }
 
@@ -380,11 +378,11 @@ mod tests {
 
         assert_eq!(test.join_room(&access_token, &room_id).status, Status::Ok);
 
-        assert_eq!(test.put(&path, &content).status, Status::NotFound);
+        assert_eq!(test.put(&path, &content).status, Status::Forbidden);
 
         assert_eq!(
             test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
-            format!("No user found with ID: {}", user_id)
+            "The given user_id does not correspond to the authenticated user"
         );
     }
 

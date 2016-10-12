@@ -15,8 +15,9 @@ use api::r0::{
     DeactivateAccount,
     DeleteRoomAlias,
     GetAvatarUrl,
-    GetDisplayname,
+    GetDisplayName,
     GetRoomAlias,
+    InviteToRoom,
     JoinRoom,
     Login,
     Logout,
@@ -24,7 +25,7 @@ use api::r0::{
     Profile,
     PutAccountData,
     PutAvatarUrl,
-    PutDisplayname,
+    PutDisplayName,
     PutRoomAccountData,
     PutRoomAlias,
     Register,
@@ -86,12 +87,13 @@ impl<'a> Server<'a> {
             StateMessageEvent::chain(),
         );
         r0_router.post("/rooms/:room_id/join", JoinRoom::chain());
+        r0_router.post("/rooms/:room_id/invite", InviteToRoom::chain());
         r0_router.get("/rooms/:room_id/members", Members::chain());
         r0_router.get("/profile/:user_id", Profile::chain());
         r0_router.get("/profile/:user_id/avatar_url", GetAvatarUrl::chain());
-        r0_router.get("/profile/:user_id/displayname", GetDisplayname::chain());
+        r0_router.get("/profile/:user_id/displayname", GetDisplayName::chain());
         r0_router.put("/profile/:user_id/avatar_url", PutAvatarUrl::chain());
-        r0_router.put("/profile/:user_id/displayname", PutDisplayname::chain());
+        r0_router.put("/profile/:user_id/displayname", PutDisplayName::chain());
 
         let mut r0 = Chain::new(r0_router);
 

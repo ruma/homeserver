@@ -53,7 +53,8 @@ CREATE TABLE room_account_data (
 );
 
 CREATE TABLE room_memberships(
-    event_id TEXT NOT NULL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
+    event_id TEXT NOT NULL,
     room_id TEXT NOT NULL,
     user_id TEXT NOT NULL,
     sender TEXT NOT NULL,
