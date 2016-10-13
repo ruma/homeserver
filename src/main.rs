@@ -51,6 +51,7 @@ pub mod error;
 pub mod event;
 pub mod middleware;
 pub mod modifier;
+pub mod profile;
 pub mod room;
 pub mod room_alias;
 pub mod schema;

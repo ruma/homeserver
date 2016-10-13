@@ -16,6 +16,15 @@ table! {
 }
 
 table! {
+    account_data {
+        id -> BigSerial,
+        user_id -> Text,
+        data_type -> Text,
+        content -> Text,
+    }
+}
+
+table! {
     events {
         id -> Text,
         ordering -> BigSerial,
@@ -30,6 +39,14 @@ table! {
 }
 
 table! {
+    profiles {
+        id -> Text,
+        avatar_url -> Nullable<Text>,
+        displayname -> Nullable<Text>,
+    }
+}
+
+table! {
     room_aliases (alias) {
         alias -> Text,
         room_id -> Text,
@@ -37,6 +54,17 @@ table! {
         servers -> Array<Text>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+    }
+}
+
+table! {
+    room_memberships (event_id) {
+        event_id -> Text,
+        room_id -> Text,
+        user_id -> Text,
+        sender -> Text,
+        membership -> Text,
+        created_at -> Timestamp,
     }
 }
 
@@ -56,26 +84,6 @@ table! {
         active -> Bool,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-    }
-}
-
-table! {
-    room_memberships (event_id) {
-        event_id -> Text,
-        room_id -> Text,
-        user_id -> Text,
-        sender -> Text,
-        membership -> Text,
-        created_at -> Timestamp,
-    }
-}
-
-table! {
-    account_data {
-        id -> BigSerial,
-        user_id -> Text,
-        data_type -> Text,
-        content -> Text,
     }
 }
 
