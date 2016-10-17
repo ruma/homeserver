@@ -15,6 +15,7 @@ pub use self::path_params::{
     UserIdParam,
     RoomIdParam,
     RoomAliasIdParam,
+    TagParam,
     TransactionIdParam,
 };
 

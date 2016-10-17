@@ -96,3 +96,13 @@ table! {
         content -> Text,
     }
 }
+
+table! {
+    room_tags {
+        id -> BigSerial,
+        user_id -> Text,
+        room_id -> Text,
+        tag -> Text,
+        content -> Text,
+    }
+}

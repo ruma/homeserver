@@ -76,3 +76,12 @@ CREATE TABLE users (
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
+
+CREATE TABLE room_tags (
+    id BIGSERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    room_id TEXT NOT NULL,
+    tag     TEXT NOT NULL,
+    content TEXT NOT NULL,
+    UNIQUE (user_id, room_id, tag)
+);

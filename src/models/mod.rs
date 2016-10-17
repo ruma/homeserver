@@ -6,3 +6,4 @@ pub mod room;
 pub mod room_alias;
 pub mod room_membership;
 pub mod user;
+pub mod tags;
