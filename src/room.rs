@@ -111,7 +111,7 @@ impl Room {
                     servers: vec![homeserver_domain.to_string()],
                 };
 
-                RoomAlias::create(connection, &new_room_alias)?;
+                RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
             }
 
             let mut new_events = Vec::new();
