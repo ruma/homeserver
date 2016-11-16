@@ -27,6 +27,7 @@ use api::r0::{
     PutDisplayname,
     PutRoomAccountData,
     PutRoomAlias,
+    PublicRooms,
     Register,
     SendMessageEvent,
     StateMessageEvent,
@@ -92,6 +93,8 @@ impl<'a> Server<'a> {
         r0_router.get("/profile/:user_id/displayname", GetDisplayname::chain());
         r0_router.put("/profile/:user_id/avatar_url", PutAvatarUrl::chain());
         r0_router.put("/profile/:user_id/displayname", PutDisplayname::chain());
+
+        r0_router.get("/publicRooms", PublicRooms::new());
 
         let mut r0 = Chain::new(r0_router);
 

@@ -15,6 +15,7 @@ pub use self::members::Members;
 pub use self::profile::{Profile, GetAvatarUrl, PutAvatarUrl, GetDisplayname, PutDisplayname};
 pub use self::registration::Register;
 pub use self::room_creation::CreateRoom;
+pub use self::room_discovery::PublicRooms;
 pub use self::versions::Versions;
 
 mod account;
@@ -27,4 +28,5 @@ mod members;
 mod profile;
 mod registration;
 mod room_creation;
+mod room_discovery;
 mod versions;
