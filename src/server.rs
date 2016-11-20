@@ -36,7 +36,7 @@ use config::Config;
 use embedded_migrations::run as run_pending_migrations;
 use error::{ApiError, CliError};
 use db::DB;
-use middleware::Cors;
+use middleware::{Cors, MiddlewareChain};
 use swagger::mount_swagger;
 
 /// Ruma's web server.

@@ -37,6 +37,8 @@ use config::Config;
 use crypto::generate_macaroon_secret_key;
 use server::Server;
 
+#[macro_use]
+pub mod middleware;
 pub mod access_token;
 /// API endpoints as Iron handlers.
 pub mod api {
@@ -49,7 +51,6 @@ pub mod crypto;
 pub mod db;
 pub mod error;
 pub mod event;
-pub mod middleware;
 pub mod modifier;
 pub mod profile;
 pub mod room;

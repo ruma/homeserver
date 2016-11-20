@@ -5,7 +5,7 @@ use iron::status::Status;
 
 use config::Config;
 use db::DB;
-use middleware::{AccessTokenAuth, JsonRequest, RoomIdParam};
+use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam};
 use modifier::SerializableResponse;
 use room_membership::{RoomMembership, RoomMembershipOptions};
 use user::User;
@@ -18,18 +18,7 @@ struct JoinRoomResponse {
     room_id: String,
 }
 
-impl JoinRoom {
-    /// Create a `JoinRoom` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(JoinRoom);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(RoomIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(JoinRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for JoinRoom {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {

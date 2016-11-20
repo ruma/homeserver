@@ -8,8 +8,9 @@ use db::DB;
 use error::ApiError;
 use middleware::{
     AccessTokenAuth,
-    JsonRequest,
     DataTypeParam,
+    JsonRequest,
+    MiddlewareChain,
     RoomIdParam,
     UserIdParam,
 };
@@ -23,7 +24,7 @@ use account_data::{
     NewRoomAccountData,
 };
 
-/// The /account/password endpoint.
+/// The `/account/password` endpoint.
 #[derive(Debug)]
 pub struct AccountPassword;
 
@@ -32,16 +33,7 @@ struct AccountPasswordRequest {
     pub new_password: String,
 }
 
-impl AccountPassword {
-    /// Create an `AccountPassword` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(AccountPassword);
-
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(AccountPassword, [AccessTokenAuth]);
 
 impl Handler for AccountPassword {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -74,21 +66,11 @@ impl Handler for AccountPassword {
     }
 }
 
-
-/// The /account/deactivate endpoint.
+/// The `/account/deactivate` endpoint.
 #[derive(Debug)]
 pub struct DeactivateAccount;
 
-impl DeactivateAccount {
-    /// Create a `DeactivateAccount` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(DeactivateAccount);
-
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(DeactivateAccount, [AccessTokenAuth]);
 
 impl Handler for DeactivateAccount {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -121,24 +103,11 @@ impl Handler for DeactivateAccount {
     }
 }
 
-
-/// The /user/:user_id/account_data/:type endpoint.
+/// The `/user/:user_id/account_data/:type` endpoint.
 #[derive(Debug)]
 pub struct PutAccountData;
 
-impl PutAccountData {
-    /// Create an `PutAccountData` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(PutAccountData);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(UserIdParam);
-        chain.link_before(DataTypeParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(PutAccountData, [JsonRequest, UserIdParam, DataTypeParam, AccessTokenAuth]);
 
 impl Handler for PutAccountData {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -184,24 +153,11 @@ impl Handler for PutAccountData {
     }
 }
 
-/// The /user/:user_id/rooms/:room_id/account_data/:type endpoint.
+/// The `/user/:user_id/rooms/:room_id/account_data/:type` endpoint.
 #[derive(Debug)]
 pub struct PutRoomAccountData;
 
-impl PutRoomAccountData {
-    /// Create an `PutAccountData` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(PutRoomAccountData);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(UserIdParam);
-        chain.link_before(RoomIdParam);
-        chain.link_before(DataTypeParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(PutRoomAccountData, [JsonRequest, UserIdParam, RoomIdParam, DataTypeParam, AccessTokenAuth]);
 
 impl Handler for PutRoomAccountData {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {

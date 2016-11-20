@@ -11,9 +11,12 @@ use config::Config;
 use crypto::hash_password;
 use db::DB;
 use error::ApiError;
-use middleware::JsonRequest;
+use middleware::{JsonRequest, MiddlewareChain};
 use modifier::SerializableResponse;
 use user::{NewUser, User};
+
+/// The `/register` endpoint.
+pub struct Register;
 
 #[derive(Clone, Debug, Deserialize)]
 struct RegistrationRequest {
@@ -36,8 +39,7 @@ struct RegistrationResponse {
     pub user_id: String,
 }
 
-/// The /register endpoint.
-pub struct Register;
+middleware_chain!(Register, [JsonRequest]);
 
 impl Deserialize for RegistrationKind {
     fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error> where D: Deserializer {
@@ -59,17 +61,6 @@ impl Deserialize for RegistrationKind {
         }
 
         deserializer.deserialize(RegistrationKindVisitor)
-    }
-}
-
-impl Register {
-    /// Create a `Register` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(Register);
-
-        chain.link_before(JsonRequest);
-
-        chain
     }
 }
 

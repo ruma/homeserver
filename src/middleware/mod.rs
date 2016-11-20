@@ -1,4 +1,5 @@
 //! Iron middleware.
+use iron::Chain;
 
 mod authentication;
 mod cors;
@@ -16,3 +17,26 @@ pub use self::path_params::{
     RoomAliasIdParam,
     TransactionIdParam,
 };
+
+/// `middleware_chain!(JoinRoom, []);`
+#[macro_export]
+macro_rules! middleware_chain {
+    ($chain:ident) => {chain_impl!($chain, []);};
+    ($chain:ident, [$($middleware:expr),*]) => {
+        impl MiddlewareChain for $chain {
+            /// Create a `$chain` with all necessary middleware.
+            fn chain() -> Chain {
+                let mut chain = Chain::new($chain);
+                $(chain.link_before($middleware);)*
+
+                chain
+            }
+        }
+    };
+}
+
+/// MiddlewareChain
+pub trait MiddlewareChain {
+    /// Create a `MiddlewareChain` with all necessary middleware.
+    fn chain() -> Chain;
+}

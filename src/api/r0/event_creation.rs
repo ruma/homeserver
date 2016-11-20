@@ -31,8 +31,9 @@ use error::{ApiError, MapApiError};
 use event::NewEvent;
 use middleware::{
     AccessTokenAuth,
-    JsonRequest,
     EventTypeParam,
+    JsonRequest,
+    MiddlewareChain,
     RoomIdParam,
     TransactionIdParam,
 };
@@ -91,41 +92,10 @@ struct EventResponse {
     event_id: String,
 }
 
-/// The /rooms/:room_id/send/:event_type/:transaction_id endpoint.
+/// The `/rooms/:room_id/send/:event_type/:transaction_id` endpoint.
 pub struct SendMessageEvent;
 
-/// The /rooms/:room_id/state/:event_type/:state_key and /rooms/:room_id/state/:event_type
-/// endpoints.
-pub struct StateMessageEvent;
-
-impl SendMessageEvent {
-    /// Create a `SendMessageEvent` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(SendMessageEvent);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(RoomIdParam);
-        chain.link_before(EventTypeParam);
-        chain.link_before(TransactionIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
-
-impl StateMessageEvent {
-    /// Create a `StateMessageEvent` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(StateMessageEvent);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(RoomIdParam);
-        chain.link_before(EventTypeParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(SendMessageEvent, [JsonRequest, RoomIdParam, EventTypeParam, TransactionIdParam, AccessTokenAuth]);
 
 impl Handler for SendMessageEvent {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -219,6 +189,12 @@ impl Handler for SendMessageEvent {
         Ok(Response::with((status::Ok, SerializableResponse(response))))
     }
 }
+
+/// The `/rooms/:room_id/state/:event_type/:state_key and /rooms/:room_id/state/:event_type`
+/// endpoints.
+pub struct StateMessageEvent;
+
+middleware_chain!(StateMessageEvent, [JsonRequest, RoomIdParam, EventTypeParam, AccessTokenAuth]);
 
 impl Handler for StateMessageEvent {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {

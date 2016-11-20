@@ -4,9 +4,12 @@ use access_token::AccessToken;
 use authentication::{AuthType, Flow, InteractiveAuth};
 use config::Config;
 use db::DB;
-use middleware::{JsonRequest, UIAuth};
+use middleware::{JsonRequest, MiddlewareChain, UIAuth};
 use modifier::SerializableResponse;
 use user::User;
+
+/// The `/login` endpoint.
+pub struct Login;
 
 #[derive(Debug, Serialize)]
 struct LoginResponse {
@@ -15,26 +18,7 @@ struct LoginResponse {
     pub user_id: String,
 }
 
-
-/// The /login endpoint.
-pub struct Login;
-
-impl Login {
-    /// Create a `Login` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(Login);
-
-        chain.link_before(JsonRequest);
-
-        let auth_request = UIAuth::new(
-            InteractiveAuth::new(vec![Flow::new(vec![AuthType::Password])])
-        );
-
-        chain.link_before(auth_request);
-
-        chain
-    }
-}
+middleware_chain!(Login, [JsonRequest, UIAuth::new(InteractiveAuth::new(vec![Flow::new(vec![AuthType::Password])]))]);
 
 impl Handler for Login {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {

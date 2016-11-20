@@ -6,7 +6,7 @@ use ruma_events::room::member::MemberEvent;
 
 use db::DB;
 use room_membership::RoomMembership;
-use middleware::{AccessTokenAuth, RoomIdParam};
+use middleware::{AccessTokenAuth, MiddlewareChain, RoomIdParam};
 use modifier::SerializableResponse;
 use user::User;
 
@@ -18,17 +18,7 @@ struct MembersResponse {
     chunk: Vec<MemberEvent>,
 }
 
-impl Members {
-    /// Create a `Members` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(Members);
-
-        chain.link_before(AccessTokenAuth);
-        chain.link_before(RoomIdParam);
-
-        chain
-    }
-}
+middleware_chain!(Members, [RoomIdParam, AccessTokenAuth]);
 
 impl Handler for Members {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
