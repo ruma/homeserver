@@ -1,5 +1,7 @@
 //! Human-readable aliases for room IDs.
 
+use std::convert::TryInto;
+
 use diesel::{
     Connection,
     ExpressionMethods,
@@ -13,11 +15,14 @@ use diesel::{
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::{Error as DieselError, DatabaseErrorKind};
-use ruma_identifiers::{RoomAliasId, RoomId, UserId};
+use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
+use ruma_events::room::aliases::{AliasesEvent, AliasesEventContent};
+use ruma_events::EventType;
 
 use error::ApiError;
+use event::NewEvent;
 use room::Room;
-use schema::{room_aliases, rooms};
+use schema::{events, room_aliases, rooms};
 
 /// A new room alias, not yet saved.
 #[derive(Debug)]
@@ -52,7 +57,7 @@ pub struct RoomAlias {
 
 impl RoomAlias {
     /// Creates a new room alias in the database.
-    pub fn create(connection: &PgConnection, new_room_alias: &NewRoomAlias)
+    pub fn create(connection: &PgConnection, homeserver_domain: &str, new_room_alias: &NewRoomAlias)
     -> Result<RoomAlias, ApiError> {
         connection.transaction(|| {
             let room_result = rooms::table
@@ -68,6 +73,27 @@ impl RoomAlias {
             if room_result.is_err() {
                 return Err(room_result.err().unwrap());
             }
+
+            let aliases = RoomAlias::find_by_room_id(connection, &new_room_alias.room_id)?;
+            let mut ids: Vec<RoomAliasId> = aliases.iter().map(|a| a.alias.clone()).collect();
+            ids.push(new_room_alias.alias.clone());
+
+            let new_room_alias_event: NewEvent = AliasesEvent {
+                content: AliasesEventContent { aliases: ids },
+                event_id: EventId::new(homeserver_domain)?,
+                event_type: EventType::RoomAliases,
+                extra_content: (),
+                prev_content: None,
+                room_id: new_room_alias.room_id.clone(),
+                state_key: homeserver_domain.to_string(),
+                unsigned: None,
+                user_id: new_room_alias.user_id.clone(),
+            }.try_into()?;
+
+            insert(&new_room_alias_event)
+                .into(events::table)
+                .execute(connection)
+                .map_err(ApiError::from)?;
 
             insert(new_room_alias)
                 .into(room_aliases::table)
@@ -90,6 +116,17 @@ impl RoomAlias {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
             })
+    }
+
+    /// Return all aliases associated with the given `RoomId`.
+    fn find_by_room_id(connection: &PgConnection, room_id: &RoomId)
+    -> Result<Vec<RoomAlias>, ApiError> {
+        let aliases: Vec<RoomAlias> = room_aliases::table
+            .filter(room_aliases::room_id.eq(room_id))
+            .get_results(connection)
+            .map_err(ApiError::from)?;
+
+        Ok(aliases)
     }
 
     /// Deletes a room alias in the database.

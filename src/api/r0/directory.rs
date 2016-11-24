@@ -141,7 +141,7 @@ impl Handler for PutRoomAlias {
             servers: vec![config.domain.to_string()],
         };
 
-        RoomAlias::create(&connection, &new_room_alias)?;
+        RoomAlias::create(&connection, &config.domain.to_string(), &new_room_alias)?;
 
         Ok(Response::with(Status::Ok))
     }
