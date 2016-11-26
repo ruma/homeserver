@@ -10,10 +10,13 @@ use ruma_identifiers::RoomId;
 use config::Config;
 use db::DB;
 use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, RoomAliasIdParam};
+use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomAliasIdParam};
 use modifier::SerializableResponse;
 use room_alias::{RoomAlias, NewRoomAlias};
 use user::User;
+
+/// The GET `/directory/room/:room_alias` endpoint.
+pub struct GetRoomAlias;
 
 #[derive(Debug, Serialize)]
 struct GetRoomAliasResponse {
@@ -21,55 +24,7 @@ struct GetRoomAliasResponse {
     servers: Vec<String>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
-struct PutRoomAliasRequest {
-    pub room_id: String,
-}
-
-/// The GET /directory/room/:room_alias endpoint.
-pub struct GetRoomAlias;
-
-/// The DELETE /directory/room/:room_alias endpoint.
-pub struct DeleteRoomAlias;
-
-/// The PUT /directory/room/:room_alias endpoint.
-pub struct PutRoomAlias;
-
-impl GetRoomAlias {
-    /// Create a `GetRoomAlias`.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(GetRoomAlias);
-
-        chain.link_before(RoomAliasIdParam);
-
-        chain
-    }
-}
-
-impl DeleteRoomAlias {
-    /// Create a `DeleteRoomAlias` with necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(DeleteRoomAlias);
-
-        chain.link_before(RoomAliasIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
-
-impl PutRoomAlias {
-    /// Create a `PutRoomAlias` with necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(PutRoomAlias);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(RoomAliasIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(GetRoomAlias, [RoomAliasIdParam]);
 
 impl Handler for GetRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -88,6 +43,11 @@ impl Handler for GetRoomAlias {
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
     }
 }
+
+/// The DELETE `/directory/room/:room_alias` endpoint.
+pub struct DeleteRoomAlias;
+
+middleware_chain!(DeleteRoomAlias, [RoomAliasIdParam, AccessTokenAuth]);
 
 impl Handler for DeleteRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -112,6 +72,16 @@ impl Handler for DeleteRoomAlias {
         }
     }
 }
+
+/// The PUT `/directory/room/:room_alias` endpoint.
+pub struct PutRoomAlias;
+
+#[derive(Clone, Debug, Deserialize)]
+struct PutRoomAliasRequest {
+    pub room_id: String,
+}
+
+middleware_chain!(PutRoomAlias, [JsonRequest, RoomAliasIdParam, AccessTokenAuth]);
 
 impl Handler for PutRoomAlias {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {

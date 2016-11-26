@@ -3,21 +3,12 @@ use iron::status::Status;
 
 use access_token::AccessToken;
 use db::DB;
-use middleware::AccessTokenAuth;
+use middleware::{AccessTokenAuth, MiddlewareChain};
 
-/// The /logout endpoint.
+/// The `/logout` endpoint.
 pub struct Logout;
 
-impl Logout {
-    /// Create a `Logout` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(Logout);
-
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(Logout, [AccessTokenAuth]);
 
 impl Handler for Logout {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {

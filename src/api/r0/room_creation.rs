@@ -11,11 +11,14 @@ use ruma_identifiers::RoomId;
 use config::Config;
 use db::DB;
 use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest};
+use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
 use modifier::SerializableResponse;
 use room::{CreationOptions, NewRoom, Room, RoomPreset};
 use room_membership::{RoomMembership, RoomMembershipOptions};
 use user::User;
+
+/// The `/createRoom` endpoint.
+pub struct CreateRoom;
 
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
@@ -39,8 +42,7 @@ struct CreateRoomResponse {
     room_id: String,
 }
 
-/// The /createRoom endpoint.
-pub struct CreateRoom;
+middleware_chain!(CreateRoom, [JsonRequest, AccessTokenAuth]);
 
 impl CreateRoomRequest {
     pub fn validate(self) -> Result<Self, IronError> {
@@ -53,18 +55,6 @@ impl CreateRoomRequest {
         }
 
         Ok(self)
-    }
-}
-
-impl CreateRoom {
-    /// Create a `CreateRoom` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(CreateRoom);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(AccessTokenAuth);
-
-        chain
     }
 }
 

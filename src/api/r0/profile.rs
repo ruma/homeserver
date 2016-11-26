@@ -7,10 +7,13 @@ use iron::status::Status;
 use config::Config;
 use db::DB;
 use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, UserIdParam};
+use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
 use modifier::SerializableResponse;
 use profile::{Profile as DataProfile};
 use user::User;
+
+/// The `/profile/:user_id` endpoint.
+pub struct Profile;
 
 #[derive(Clone, Debug, Serialize)]
 struct ProfileResponse {
@@ -18,20 +21,7 @@ struct ProfileResponse {
     displayname: Option<String>,
 }
 
-/// The `/profile/:user_id` endpoint.
-pub struct Profile;
-
-impl Profile {
-    /// Create a `Profile` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(Profile);
-
-        chain.link_before(UserIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(Profile, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for Profile {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -65,25 +55,15 @@ impl Handler for Profile {
     }
 }
 
+/// The `/profile/:user_id/avatar_url` endpoint.
+pub struct GetAvatarUrl;
+
 #[derive(Clone, Debug, Serialize)]
 struct GetAvatarUrlResponse {
     avatar_url: String,
 }
 
-/// The `/profile/:user_id/avatar_url` endpoint.
-pub struct GetAvatarUrl;
-
-impl GetAvatarUrl {
-    /// Create a `GetAvatarUrl` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(GetAvatarUrl);
-
-        chain.link_before(UserIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(GetAvatarUrl, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetAvatarUrl {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -127,26 +107,15 @@ impl Handler for GetAvatarUrl {
     }
 }
 
+/// The `/profile/:user_id/avatar_url` endpoint.
+pub struct PutAvatarUrl;
+
 #[derive(Clone, Debug, Deserialize)]
 struct PutAvatarUrlResquest {
     avatar_url: Option<String>,
 }
 
-/// The `/profile/:user_id/avatar_url` endpoint.
-pub struct PutAvatarUrl;
-
-impl PutAvatarUrl {
-    /// Create a `PutAvatarUrl` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(PutAvatarUrl);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(UserIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(PutAvatarUrl, [JsonRequest, UserIdParam, AccessTokenAuth]);
 
 impl Handler for PutAvatarUrl {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -183,25 +152,15 @@ impl Handler for PutAvatarUrl {
     }
 }
 
+/// The `/profile/:user_id/displayname` endpoint.
+pub struct GetDisplayname;
+
 #[derive(Clone, Debug, Serialize)]
 struct GetDisplaynameResponse {
     displayname: String,
 }
 
-/// The `/profile/:user_id/displayname` endpoint.
-pub struct GetDisplayname;
-
-impl GetDisplayname {
-    /// Create a `GetDisplayname` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(GetDisplayname);
-
-        chain.link_before(UserIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(GetDisplayname, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetDisplayname {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
@@ -245,26 +204,15 @@ impl Handler for GetDisplayname {
     }
 }
 
+/// The `/profile/:user_id/displayname` endpoint.
+pub struct PutDisplayname;
+
 #[derive(Clone, Debug, Deserialize)]
 struct PutDisplaynameResquest {
     displayname: Option<String>,
 }
 
-/// The `/profile/:user_id/displayname` endpoint.
-pub struct PutDisplayname;
-
-impl PutDisplayname {
-    /// Create a `PutDisplayname` with all necessary middleware.
-    pub fn chain() -> Chain {
-        let mut chain = Chain::new(PutDisplayname);
-
-        chain.link_before(JsonRequest);
-        chain.link_before(UserIdParam);
-        chain.link_before(AccessTokenAuth);
-
-        chain
-    }
-}
+middleware_chain!(PutDisplayname, [JsonRequest, UserIdParam, AccessTokenAuth]);
 
 impl Handler for PutDisplayname {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
