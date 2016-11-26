@@ -18,12 +18,14 @@ use api::r0::{
     GetAvatarUrl,
     GetDisplayName,
     GetRoomAlias,
+    GetFilter,
     GetTags,
     InviteToRoom,
     JoinRoom,
     Login,
     Logout,
     Members,
+    PostFilter,
     Profile,
     PutAccountData,
     PutAvatarUrl,
@@ -115,6 +117,8 @@ impl<'a> Server<'a> {
         r0_router.get("/user/:user_id/rooms/:room_id/tags", GetTags::chain(), "get_tags");
         r0_router.put("/user/:user_id/rooms/:room_id/tags/:tag", PutTag::chain(), "add_tag");
         r0_router.delete("/user/:user_id/rooms/:room_id/tags/:tag", DeleteTag::chain(), "delete_tag");
+        r0_router.get("/user/:user_id/filter/:filter_id", GetFilter::chain(), "get_filter");
+        r0_router.post("/user/:user_id/filter", PostFilter::chain(), "post_filter");
 
         let mut r0 = Chain::new(r0_router);
 

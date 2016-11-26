@@ -106,3 +106,11 @@ table! {
         content -> Text,
     }
 }
+
+table! {
+    filters {
+        id -> BigSerial,
+        user_id -> Text,
+        content -> Text,
+    }
+}

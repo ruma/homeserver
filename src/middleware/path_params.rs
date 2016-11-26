@@ -87,7 +87,33 @@ impl BeforeMiddleware for DataTypeParam {
     }
 }
 
-/// Extracts `RoomAliasId` from the URL path paramater `room_alias`.
+
+/// Extracts the URL path parameter `filter_id`.
+pub struct FilterIdParam;
+
+impl Key for FilterIdParam {
+    type Value = i64;
+}
+
+impl BeforeMiddleware for FilterIdParam {
+    fn before(&self, request: &mut Request) -> IronResult<()> {
+        let params = request.extensions.get::<Router>()
+            .expect("Params object is missing").clone();
+
+        let filter_id = params.find("filter_id")
+            .ok_or(ApiError::missing_param("filter_id"))
+            .map_err(IronError::from)?;
+        let filter_id: i64 = filter_id.parse()
+            .map_err(|_| ApiError::invalid_param("filter_id", "Parsing failed"))
+            .map_err(IronError::from)?;
+
+        request.extensions.insert::<FilterIdParam>(filter_id);
+
+        Ok(())
+    }
+}
+
+/// Extracts `RoomAliasId` from the URL path parameter `room_alias`.
 pub struct RoomAliasIdParam;
 
 impl Key for RoomAliasIdParam {
@@ -124,7 +150,7 @@ impl BeforeMiddleware for RoomAliasIdParam {
     }
 }
 
-/// Extracts `EventType` from the URL path paramater `event_type`.
+/// Extracts `EventType` from the URL path parameter `event_type`.
 pub struct EventTypeParam;
 
 impl Key for EventTypeParam {
