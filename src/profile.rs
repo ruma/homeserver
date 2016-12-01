@@ -15,10 +15,21 @@ use error::ApiError;
 use room_membership::{RoomMembership, RoomMembershipOptions};
 use schema::profiles;
 
+/// A new Matrix profile, not yet saved.
+#[derive(Debug, Clone, Insertable)]
+#[table_name = "profiles"]
+pub struct NewProfile {
+    /// The user's ID.
+    pub id: UserId,
+    /// The avatar url.
+    pub avatar_url: Option<String>,
+    /// The display name.
+    pub displayname: Option<String>,
+}
+
 /// A Matrix profile.
-#[derive(Debug, Clone, Identifiable, Queryable)]
-#[changeset_for(profiles)]
-#[insertable_into(profiles)]
+#[derive(AsChangeset, Debug, Clone, Identifiable, Queryable)]
+#[table_name = "profiles"]
 pub struct Profile {
     /// The user's ID.
     pub id: UserId,

@@ -20,8 +20,8 @@ use error::ApiError;
 use schema::users;
 
 /// A Matrix user.
-#[derive(Debug, Clone, Identifiable, Queryable)]
-#[changeset_for(users)]
+#[derive(AsChangeset, Debug, Clone, Identifiable, Queryable)]
+#[table_name = "users"]
 pub struct User {
     /// The user's unique ID.
     pub id: UserId,
@@ -36,8 +36,8 @@ pub struct User {
 }
 
 /// A new Matrix user, not yet saved.
-#[derive(Debug)]
-#[insertable_into(users)]
+#[derive(Debug, Insertable)]
+#[table_name = "users"]
 pub struct NewUser {
     /// The user's unique ID.
     pub id: UserId,

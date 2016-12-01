@@ -26,7 +26,6 @@ use ruma_events::room::member::{
     MemberEvent,
     MembershipState,
     MemberEventContent,
-    MemberEventExtraContent
 };
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde_json::{Error as SerdeJsonError, Value, from_value};
@@ -51,8 +50,8 @@ pub struct RoomMembershipOptions {
 }
 
 /// A new Matrix room membership, not yet saved.
-#[derive(Debug, Clone)]
-#[insertable_into(room_memberships)]
+#[derive(Debug, Clone, Insertable)]
+#[table_name = "room_memberships"]
 pub struct NewRoomMembership {
     /// The eventID.
     pub event_id: EventId,
@@ -67,8 +66,8 @@ pub struct NewRoomMembership {
 }
 
 /// A Matrix room membership.
-#[derive(Debug, Clone, Queryable)]
-#[changeset_for(room_memberships)]
+#[derive(AsChangeset, Debug, Clone, Queryable)]
+#[table_name = "room_memberships"]
 pub struct RoomMembership {
     /// The eventID.
     pub event_id: EventId,

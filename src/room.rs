@@ -20,6 +20,11 @@ use ruma_events::room::join_rules::{
     JoinRulesEvent,
     JoinRulesEventContent,
 };
+use ruma_events::room::member::{
+    MemberEvent,
+    MemberEventContent,
+    MembershipState,
+};
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
@@ -49,8 +54,8 @@ pub struct CreationOptions {
 }
 
 /// A new Matrix room, not yet saved.
-#[derive(Debug)]
-#[insertable_into(rooms)]
+#[derive(Debug, Insertable)]
+#[table_name = "rooms"]
 pub struct NewRoom {
     /// The room's unique ID.
     pub id: RoomId,
@@ -118,7 +123,6 @@ impl Room {
                 },
                 event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomCreate,
-                extra_content: (),
                 prev_content: None,
                 room_id: room.id.clone(),
                 state_key: "".to_string(),
@@ -135,7 +139,6 @@ impl Room {
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomName,
-                    extra_content: (),
                     prev_content: None,
                     room_id: room.id.clone(),
                     state_key: "".to_string(),
@@ -153,7 +156,6 @@ impl Room {
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomTopic,
-                    extra_content: (),
                     prev_content: None,
                     room_id: room.id.clone(),
                     state_key: "".to_string(),
@@ -170,7 +172,6 @@ impl Room {
                 },
                 event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomHistoryVisibility,
-                extra_content: (),
                 prev_content: None,
                 room_id: room.id.clone(),
                 state_key: "".to_string(),
@@ -186,7 +187,6 @@ impl Room {
                         content: JoinRulesEventContent { join_rule: JoinRule::Invite },
                         event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomJoinRules,
-                        extra_content: (),
                         prev_content: None,
                         room_id: room.id.clone(),
                         state_key: "".to_string(),
@@ -201,7 +201,6 @@ impl Room {
                         content: JoinRulesEventContent { join_rule: JoinRule::Public },
                         event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomJoinRules,
-                        extra_content: (),
                         prev_content: None,
                         room_id: room.id.clone(),
                         state_key: "".to_string(),
@@ -216,7 +215,6 @@ impl Room {
                         content: JoinRulesEventContent { join_rule: JoinRule::Invite },
                         event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomJoinRules,
-                        extra_content: (),
                         prev_content: None,
                         room_id: room.id.clone(),
                         state_key: "".to_string(),

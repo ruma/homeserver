@@ -18,9 +18,8 @@ use error::ApiError;
 use schema::{account_data, room_account_data};
 
 /// Holds personal information/configuration for a user.
-#[derive(Debug, Clone, Identifiable, Queryable)]
-#[changeset_for(account_data)]
-#[table_name="account_data"]
+#[derive(AsChangeset, Debug, Clone, Identifiable, Queryable)]
+#[table_name = "account_data"]
 pub struct AccountData {
     /// Entry ID
     pub id: i64,
@@ -33,8 +32,8 @@ pub struct AccountData {
 }
 
 /// New account data, not yet saved.
-#[derive(Debug)]
-#[insertable_into(account_data)]
+#[derive(Debug, Insertable)]
+#[table_name = "account_data"]
 pub struct NewAccountData {
     /// The ID of the user who owns the data.
     pub user_id: UserId,
@@ -117,9 +116,8 @@ impl Key for AccountData {
 }
 
 /// Holds user's information/configuration per room.
-#[derive(Clone, Debug, Identifiable, Queryable)]
-#[changeset_for(room_account_data)]
-#[table_name="room_account_data"]
+#[derive(AsChangeset, Clone, Debug, Identifiable, Queryable)]
+#[table_name = "room_account_data"]
 pub struct RoomAccountData {
     /// Entry ID
     pub id: i64,
@@ -134,8 +132,8 @@ pub struct RoomAccountData {
 }
 
 /// New room account data, not yet saved.
-#[derive(Debug)]
-#[insertable_into(room_account_data)]
+#[derive(Debug, Insertable)]
+#[table_name = "room_account_data"]
 pub struct NewRoomAccountData {
     /// The ID of the user who owns the data.
     pub user_id: UserId,

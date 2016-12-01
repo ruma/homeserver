@@ -1,7 +1,6 @@
 //! Ruma is a Matrix homeserver client API.
 
-#![feature(custom_attribute, custom_derive, plugin, question_mark, specialization, try_from)]
-#![plugin(diesel_codegen, serde_macros)]
+#![feature(proc_macro, question_mark, specialization, try_from)]
 #![deny(missing_docs)]
 
 extern crate argon2rs;
@@ -11,6 +10,7 @@ extern crate chrono;
 extern crate clap;
 extern crate env_logger;
 #[macro_use] extern crate diesel;
+#[macro_use] extern crate diesel_codegen;
 #[macro_use] extern crate iron;
 #[cfg(test)] extern crate iron_test;
 #[macro_use] extern crate log;
@@ -26,6 +26,7 @@ extern crate ruma_events;
 extern crate ruma_identifiers;
 extern crate rustc_serialize;
 extern crate serde;
+#[macro_use] extern crate serde_derive;
 extern crate serde_json;
 extern crate serde_yaml;
 extern crate toml;

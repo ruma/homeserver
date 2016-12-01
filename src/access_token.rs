@@ -15,8 +15,8 @@ use error::ApiError;
 use schema::access_tokens;
 
 /// A User access token.
-#[derive(Debug, Identifiable, Queryable)]
-#[changeset_for(access_tokens)]
+#[derive(AsChangeset, Debug, Identifiable, Queryable)]
+#[table_name = "access_tokens"]
 pub struct AccessToken {
     /// The access token's ID.
     pub id: i64,
@@ -33,8 +33,8 @@ pub struct AccessToken {
 }
 
 /// A new access token, not yet saved.
-#[derive(Debug)]
-#[insertable_into(access_tokens)]
+#[derive(Debug, Insertable)]
+#[table_name = "access_tokens"]
 pub struct NewAccessToken {
     /// The ID of the user who owns the access token.
     pub user_id: UserId,
