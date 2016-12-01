@@ -58,8 +58,7 @@ table! {
 }
 
 table! {
-    room_memberships {
-        id -> BigSerial,
+    room_memberships (event_id) {
         event_id -> Text,
         room_id -> Text,
         user_id -> Text,

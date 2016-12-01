@@ -9,10 +9,13 @@ use diesel::{
     ExecuteDsl,
     LoadDsl,
     FilterDsl,
+    FindDsl,
     SaveChangesDsl,
     SelectDsl,
     insert,
+    update,
 };
+use diesel::associations::Identifiable;
 use diesel::expression::dsl::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
@@ -64,11 +67,9 @@ pub struct NewRoomMembership {
 }
 
 /// A Matrix room membership.
-#[derive(Debug, Clone, Identifiable, Queryable)]
+#[derive(Debug, Clone, Queryable)]
 #[changeset_for(room_memberships)]
 pub struct RoomMembership {
-    /// Entry ID.
-    pub id: i64,
     /// The eventID.
     pub event_id: EventId,
     /// The room's ID.
@@ -81,6 +82,19 @@ pub struct RoomMembership {
     pub membership: String,
     /// The time the room was created.
     pub created_at: PgTimestamp,
+}
+
+impl Identifiable for RoomMembership {
+    type Id = EventId;
+    type Table = room_memberships::table;
+
+    fn id(&self) -> &Self::Id {
+        &self.event_id
+    }
+
+    fn table() -> Self::Table {
+        room_memberships::table
+    }
 }
 
 impl RoomMembership {
@@ -205,7 +219,6 @@ impl RoomMembership {
 
         self.membership = options.membership.clone();
         self.sender = options.sender.clone();
-        self.event_id = event.id.clone();
 
         connection.transaction::<RoomMembership, ApiError, _>(|| {
             insert(&event)
@@ -214,6 +227,12 @@ impl RoomMembership {
                 .map_err(ApiError::from)?;
 
             self.save_changes::<RoomMembership>(connection)
+                .map_err(ApiError::from)?;
+
+            // Use the new `EventId` as primary key.
+            update(room_memberships::table.find(self.event_id.clone()))
+                .set(room_memberships::event_id.eq(event.id.clone()))
+                .get_result(connection)
                 .map_err(ApiError::from)
         }).map_err(ApiError::from)
     }
