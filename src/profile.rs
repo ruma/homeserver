@@ -16,9 +16,8 @@ use room_membership::{RoomMembership, RoomMembershipOptions};
 use schema::profiles;
 
 /// A Matrix profile.
-#[derive(Debug, Clone, Identifiable, Queryable)]
-#[changeset_for(profiles)]
-#[insertable_into(profiles)]
+#[derive(AsChangeset, Debug, Clone, Identifiable, Insertable, Queryable)]
+#[table_name = "profiles"]
 pub struct Profile {
     /// The user's ID.
     pub id: UserId,

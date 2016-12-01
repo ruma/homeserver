@@ -26,10 +26,9 @@ use ruma_events::room::member::{
     MemberEvent,
     MembershipState,
     MemberEventContent,
-    MemberEventExtraContent
 };
 use ruma_identifiers::{EventId, RoomId, UserId};
-use serde_json::{Error as SerdeJsonError, Value, from_value};
+use serde_json::{Value, from_value};
 
 use error::ApiError;
 use event::{NewEvent, Event};
@@ -51,8 +50,8 @@ pub struct RoomMembershipOptions {
 }
 
 /// A new Matrix room membership, not yet saved.
-#[derive(Debug, Clone)]
-#[insertable_into(room_memberships)]
+#[derive(Debug, Clone, Insertable)]
+#[table_name = "room_memberships"]
 pub struct NewRoomMembership {
     /// The eventID.
     pub event_id: EventId,
@@ -67,8 +66,8 @@ pub struct NewRoomMembership {
 }
 
 /// A Matrix room membership.
-#[derive(Debug, Clone, Queryable)]
-#[changeset_for(room_memberships)]
+#[derive(AsChangeset, Debug, Clone, Queryable)]
+#[table_name = "room_memberships"]
 pub struct RoomMembership {
     /// The eventID.
     pub event_id: EventId,
@@ -253,11 +252,11 @@ impl RoomMembership {
                 avatar_url: avatar_url,
                 displayname: displayname,
                 membership: membership,
-                third_party_invite: (),
+                third_party_invite: None,
             },
             event_id: event_id.clone(),
             event_type: EventType::RoomMember,
-            extra_content: MemberEventExtraContent { invite_room_state: None },
+            invite_room_state: None,
             prev_content: None,
             room_id: options.room_id.clone(),
             state_key: format!("@{}:{}", options.user_id.clone(), &homeserver_domain),
@@ -268,7 +267,7 @@ impl RoomMembership {
         Ok(new_member_event)
     }
 
-    /// Return member event's for given `room_id`.
+    /// Return member events for given `room_id`.
     pub fn get_events_by_room(connection: &PgConnection, room_id: RoomId) -> Result<Vec<MemberEvent>, ApiError> {
         let event_ids = room_memberships::table
             .filter(room_memberships::room_id.eq(room_id))
@@ -282,9 +281,6 @@ impl RoomMembership {
                 _ => ApiError::from(err),
             })?;
 
-        let member_events: Result<Vec<MemberEvent>, SerdeJsonError> = events.into_iter()
-                                                                        .map(TryInto::try_into)
-                                                                        .collect();
-        member_events.map_err(ApiError::from)
+        events.into_iter() .map(TryInto::try_into). collect()
     }
 }

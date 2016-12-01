@@ -62,38 +62,53 @@ impl<'a> Server<'a> {
     ) -> Result<Server, CliError> {
         let mut r0_router = Router::new();
 
-        r0_router.post("/account/password", AccountPassword::chain());
-        r0_router.post("/account/deactivate", DeactivateAccount::chain());
-        r0_router.post("/createRoom", CreateRoom::chain());
-        r0_router.get("/directory/room/:room_alias", GetRoomAlias::chain());
-        r0_router.delete("/directory/room/:room_alias", DeleteRoomAlias::chain());
-        r0_router.put("/directory/room/:room_alias", PutRoomAlias::chain());
-        r0_router.post("/login", Login::chain());
-        r0_router.post("/logout", Logout::chain());
-        r0_router.post("/register", Register::chain());
-        r0_router.post("/tokenrefresh", unimplemented);
-        r0_router.put("/user/:user_id/account_data/:type", PutAccountData::chain());
-        r0_router.put("/user/:user_id/rooms/:room_id/account_data/:type", PutRoomAccountData::chain());
+        r0_router.post("/account/password", AccountPassword::chain(), "account_password");
+        r0_router.post("/account/deactivate", DeactivateAccount::chain(), "deactivate_account");
+        r0_router.post("/createRoom", CreateRoom::chain(), "create_room");
+        r0_router.get("/directory/room/:room_alias", GetRoomAlias::chain(), "get_room_alias");
+        r0_router.delete(
+            "/directory/room/:room_alias",
+            DeleteRoomAlias::chain(),
+            "delete_room_alias",
+        );
+        r0_router.put("/directory/room/:room_alias", PutRoomAlias::chain(), "put_room_alias");
+        r0_router.post("/login", Login::chain(), "login");
+        r0_router.post("/logout", Logout::chain(), "logout");
+        r0_router.post("/register", Register::chain(), "register");
+        r0_router.post("/tokenrefresh", unimplemented, "token_refresh");
+        r0_router.put(
+            "/user/:user_id/account_data/:type",
+            PutAccountData::chain(),
+            "put_account_data",
+        );
+        r0_router.put(
+            "/user/:user_id/rooms/:room_id/account_data/:type",
+            PutRoomAccountData::chain(),
+            "put_room_account_data",
+        );
         r0_router.put(
             "/rooms/:room_id/send/:event_type/:transaction_id",
             SendMessageEvent::chain(),
+            "send_message_event",
         );
         r0_router.put(
             "/rooms/:room_id/state/:event_type",
             StateMessageEvent::chain(),
+            "state_message_event",
         );
         r0_router.put(
             "/rooms/:room_id/state/:event_type/:state_key",
             StateMessageEvent::chain(),
+            "state_message_event_with_key",
         );
-        r0_router.post("/rooms/:room_id/join", JoinRoom::chain());
-        r0_router.post("/rooms/:room_id/invite", InviteToRoom::chain());
-        r0_router.get("/rooms/:room_id/members", Members::chain());
-        r0_router.get("/profile/:user_id", Profile::chain());
-        r0_router.get("/profile/:user_id/avatar_url", GetAvatarUrl::chain());
-        r0_router.get("/profile/:user_id/displayname", GetDisplayName::chain());
-        r0_router.put("/profile/:user_id/avatar_url", PutAvatarUrl::chain());
-        r0_router.put("/profile/:user_id/displayname", PutDisplayName::chain());
+        r0_router.post("/rooms/:room_id/join", JoinRoom::chain(), "join_room");
+        r0_router.post("/rooms/:room_id/invite", InviteToRoom::chain(), "invite_to_room");
+        r0_router.get("/rooms/:room_id/members", Members::chain(), "members");
+        r0_router.get("/profile/:user_id", Profile::chain(), "profile");
+        r0_router.get("/profile/:user_id/avatar_url", GetAvatarUrl::chain(), "get_avatar_url");
+        r0_router.get("/profile/:user_id/displayname", GetDisplayName::chain(), "get_display_name");
+        r0_router.put("/profile/:user_id/avatar_url", PutAvatarUrl::chain(), "put_avatar_url");
+        r0_router.put("/profile/:user_id/displayname", PutDisplayName::chain(), "put_display_name");
 
         let mut r0 = Chain::new(r0_router);
 
@@ -119,7 +134,7 @@ impl<'a> Server<'a> {
 
         let mut versions_router = Router::new();
 
-        versions_router.get("/versions", Versions::new(vec!["r0.0.1"]));
+        versions_router.get("/versions", Versions::new(vec!["r0.0.1"]), "versions");
 
         let mut versions = Chain::new(versions_router);
 

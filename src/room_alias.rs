@@ -25,8 +25,8 @@ use room::Room;
 use schema::{events, room_aliases, rooms};
 
 /// A new room alias, not yet saved.
-#[derive(Debug)]
-#[insertable_into(room_aliases)]
+#[derive(Debug, Insertable)]
+#[table_name = "room_aliases"]
 pub struct NewRoomAlias {
     /// The human-readable alias.
     pub alias: RoomAliasId,
@@ -82,7 +82,6 @@ impl RoomAlias {
                 content: AliasesEventContent { aliases: ids },
                 event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomAliases,
-                extra_content: (),
                 prev_content: None,
                 room_id: new_room_alias.room_id.clone(),
                 state_key: homeserver_domain.to_string(),

@@ -54,7 +54,6 @@ macro_rules! room_event {
         $ty {
             content: extract_event_content($event_content, &$event_type)?,
             event_id: $event_id.clone(),
-            extra_content: (),
             event_type: $event_type.clone(),
             room_id: $room_id.clone(),
             unsigned: None,
@@ -76,7 +75,6 @@ macro_rules! state_event {
         $ty {
             content: extract_event_content($event_content, &$event_type)?,
             event_id: $event_id.clone(),
-            extra_content: (),
             event_type: $event_type.clone(),
             prev_content: None,
             room_id: $room_id.clone(),
@@ -140,7 +138,6 @@ impl Handler for SendMessageEvent {
                 CustomRoomEvent {
                     content: event_content,
                     event_id: event_id.clone(),
-                    extra_content: (),
                     event_type: EventType::Custom(custom_event_type.clone()),
                     room_id: room_id.clone(),
                     unsigned: None,
@@ -343,7 +340,6 @@ impl Handler for StateMessageEvent {
                 CustomStateEvent {
                     content: event_content,
                     event_id: event_id.clone(),
-                    extra_content: (),
                     event_type: EventType::Custom(custom_event_type.clone()),
                     prev_content: None,
                     room_id: room_id.clone(),
