@@ -28,7 +28,7 @@ use ruma_events::room::member::{
     MemberEventContent,
 };
 use ruma_identifiers::{EventId, RoomId, UserId};
-use serde_json::{Error as SerdeJsonError, Value, from_value};
+use serde_json::{Value, from_value};
 
 use error::ApiError;
 use event::{NewEvent, Event};
@@ -267,7 +267,7 @@ impl RoomMembership {
         Ok(new_member_event)
     }
 
-    /// Return member event's for given `room_id`.
+    /// Return member events for given `room_id`.
     pub fn get_events_by_room(connection: &PgConnection, room_id: RoomId) -> Result<Vec<MemberEvent>, ApiError> {
         let event_ids = room_memberships::table
             .filter(room_memberships::room_id.eq(room_id))
@@ -281,9 +281,12 @@ impl RoomMembership {
                 _ => ApiError::from(err),
             })?;
 
-        let member_events: Result<Vec<MemberEvent>, SerdeJsonError> = events.into_iter()
-                                                                        .map(TryInto::try_into)
-                                                                        .collect();
+        let member_events: Result<Vec<MemberEvent>, SerdeJsonError> =
+            events
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect();
+
         member_events.map_err(ApiError::from)
     }
 }

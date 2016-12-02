@@ -1,18 +1,37 @@
 //! Matrix events.
 
 use std::convert::{TryInto, TryFrom};
-use std::fmt::Debug;
 
 use diesel::{ExpressionMethods, FilterDsl, LoadDsl};
 use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::PgConnection;
-use ruma_events::{RoomEvent, StateEvent, EventType};
-use ruma_events::room::join_rules::{JoinRulesEvent};
+use ruma_events::{
+    CustomRoomEvent,
+    CustomStateEvent,
+    Event as RumaEventsEvent,
+    EventType,
+    RoomEvent,
+    StateEvent,
+};
+use ruma_events::call::answer::AnswerEvent;
+use ruma_events::call::candidates::CandidatesEvent;
+use ruma_events::call::hangup::HangupEvent;
+use ruma_events::call::invite::InviteEvent;
+use ruma_events::room::avatar::AvatarEvent;
+use ruma_events::room::canonical_alias::CanonicalAliasEvent;
+use ruma_events::room::create::CreateEvent;
+use ruma_events::room::guest_access::GuestAccessEvent;
+use ruma_events::room::history_visibility::HistoryVisibilityEvent;
+use ruma_events::room::join_rules::JoinRulesEvent;
 use ruma_events::room::member::MemberEvent;
+use ruma_events::room::message::MessageEvent;
+use ruma_events::room::name::NameEvent;
+use ruma_events::room::power_levels::PowerLevelsEvent;
+use ruma_events::room::third_party_invite::ThirdPartyInviteEvent;
+use ruma_events::room::topic::TopicEvent;
 use ruma_identifiers::{EventId, RoomId, UserId};
-use serde::{Serialize, Deserialize};
-use serde_json::{Error as SerdeJsonError, from_str, to_string};
+use serde_json::{Value, from_str, from_value, to_string};
 
 use error::ApiError;
 use schema::events;
@@ -77,123 +96,77 @@ impl Event {
     }
 }
 
-impl<T> TryFrom<T> for NewEvent where T: RoomEvent {
-    default type Err = SerdeJsonError;
+macro_rules! impl_try_from_room_event_for_new_event {
+    ($ty:ty) => {
+        impl TryFrom<$ty> for NewEvent {
+            type Err = ApiError;
 
-    default fn try_from(event: T) -> Result<Self, Self::Err> {
-        Ok(NewEvent {
-            content: to_string(event.content())?,
-            event_type: event.event_type().to_string(),
-            extra_content: match event.extra_content() {
-                Some(extra_content) => Some(to_string(&extra_content)?),
-                None => None,
-            },
-            id: event.event_id().clone(),
-            room_id: event.room_id().clone(),
-            state_key: None,
-            user_id: event.user_id().clone(),
-        })
+            fn try_from(event: $ty) -> Result<Self, Self::Err> {
+                Ok(NewEvent {
+                    content: to_string(event.content()).map_err(ApiError::from)?,
+                    event_type: event.event_type().to_string(),
+                    extra_content: None,
+                    id: event.event_id().clone(),
+                    room_id: event.room_id().clone(),
+                    state_key: None,
+                    user_id: event.user_id().clone(),
+                })
+            }
+        }
     }
 }
 
-impl<T> TryFrom<T> for NewEvent where T: StateEvent {
-    type Err = SerdeJsonError;
+macro_rules! impl_try_from_state_event_for_new_event {
+    ($ty:ty) => {
+        impl TryFrom<$ty> for NewEvent {
+            type Err = ApiError;
 
-    fn try_from(event: T) -> Result<Self, Self::Err> {
-        Ok(NewEvent {
-            content: to_string(event.content())?,
-            event_type: event.event_type().to_string(),
-            extra_content: match event.extra_content() {
-                Some(extra_content) => Some(to_string(&extra_content)?),
-                None => None,
-            },
-            id: event.event_id().clone(),
-            room_id: event.room_id().clone(),
-            state_key: Some(event.state_key().to_string()),
-            user_id: event.user_id().clone(),
-        })
+            fn try_from(event: $ty) -> Result<Self, Self::Err> {
+                Ok(NewEvent {
+                    content: to_string(event.content()).map_err(ApiError::from)?,
+                    event_type: event.event_type().to_string(),
+                    extra_content: match event.extra_content() {
+                        Some(extra_content) => Some(
+                            to_string(&extra_content).map_err(ApiError::from)?
+                        ),
+                        None => None,
+                    },
+                    id: event.event_id().clone(),
+                    room_id: event.room_id().clone(),
+                    state_key: Some(event.state_key().to_string()),
+                    user_id: event.user_id().clone(),
+                })
+            }
+        }
     }
 }
 
-// impl<C> TryInto<RoomEvent<C, ()>> for Event where C: Deserialize + Serialize {
-//     fn try_into(self) -> Result<RoomEvent<C, ()>, Self::Err> {
-//         Ok(RoomEvent {
-//             content: from_str(&self.content)?,
-//             event_id: self.id,
-//             extra_content: (),
-//             event_type: from_str(&self.event_type)?,
-//             room_id: self.room_id,
-//             unsigned: None,
-//             user_id: self.user_id,
-//         })
-//     }
-// }
+impl_try_from_room_event_for_new_event!(AnswerEvent);
+impl_try_from_room_event_for_new_event!(CandidatesEvent);
+impl_try_from_room_event_for_new_event!(HangupEvent);
+impl_try_from_room_event_for_new_event!(InviteEvent);
+impl_try_from_room_event_for_new_event!(MessageEvent);
+impl_try_from_room_event_for_new_event!(CustomRoomEvent);
 
-// impl<T> TryInto<T> for Event where T: RoomEvent {
-//     type Err = SerdeJsonError;
-
-//     default fn try_into(self) -> Result<T, Self::Err> {
-//         Ok(T {
-//             content: from_str(&self.content)?,
-//             event_id: self.id,
-//             extra_content: from_str(&self.extra_content.expect(
-//                 "failed to deserialize extra event content from the DB record"
-//             ))?,
-//             event_type: from_str(&self.event_type)?,
-//             room_id: self.room_id,
-//             unsigned: None,
-//             user_id: self.user_id,
-//         })
-//     }
-// }
-
-// impl<C> TryInto<StateEvent<C, ()>> for Event where C: Deserialize + Serialize {
-//     default fn try_into(self) -> Result<StateEvent<C, ()>, Self::Err> {
-//         Ok(StateEvent {
-//             content: from_str(&self.content)?,
-//             event_id: self.id,
-//             extra_content: (),
-//             event_type: from_str(&self.event_type)?,
-//             prev_content: None,
-//             room_id: self.room_id,
-//             state_key: from_str(&self.state_key.expect(
-//                 "failed to deserialize extra event content from the DB record"
-//             ))?,
-//             unsigned: None,
-//             user_id: self.user_id,
-//         })
-//     }
-// }
-
-// impl<C, E> TryInto<StateEvent<C, E>> for Event
-// where C: Deserialize + Serialize, E: Deserialize + Serialize {
-//     type Err = SerdeJsonError;
-
-//     default fn try_into(self) -> Result<StateEvent<C, E>, Self::Err> {
-//         Ok(StateEvent {
-//             content: from_str(&self.content)?,
-//             event_id: self.id,
-//             extra_content: from_str(&self.extra_content.expect(
-//                 "failed to deserialize extra event content from the DB record"
-//             ))?,
-//             event_type: from_str(&self.event_type)?,
-//             prev_content: None,
-//             room_id: self.room_id,
-//             state_key: from_str(&self.state_key.expect(
-//                 "failed to deserialize extra event content from the DB record"
-//             ))?,
-//             unsigned: None,
-//             user_id: self.user_id,
-//         })
-//     }
-// }
+impl_try_from_state_event_for_new_event!(AvatarEvent);
+impl_try_from_state_event_for_new_event!(CanonicalAliasEvent);
+impl_try_from_state_event_for_new_event!(CreateEvent);
+impl_try_from_state_event_for_new_event!(GuestAccessEvent);
+impl_try_from_state_event_for_new_event!(HistoryVisibilityEvent);
+impl_try_from_state_event_for_new_event!(JoinRulesEvent);
+impl_try_from_state_event_for_new_event!(MemberEvent);
+impl_try_from_state_event_for_new_event!(NameEvent);
+impl_try_from_state_event_for_new_event!(PowerLevelsEvent);
+impl_try_from_state_event_for_new_event!(ThirdPartyInviteEvent);
+impl_try_from_state_event_for_new_event!(TopicEvent);
+impl_try_from_state_event_for_new_event!(CustomStateEvent);
 
 impl TryInto<JoinRulesEvent> for Event {
-    type Err = SerdeJsonError;
+    type Err = ApiError;
 
     fn try_into(self) -> Result<JoinRulesEvent, Self::Err> {
         Ok(JoinRulesEvent {
-            content: from_str(&self.content)?,
+            content: from_str(&self.content).map_err(ApiError::from)?,
             event_id: self.id,
             event_type: EventType::RoomJoinRules,
             prev_content: None,
@@ -206,13 +179,28 @@ impl TryInto<JoinRulesEvent> for Event {
 }
 
 impl TryInto<MemberEvent> for Event {
-    type Err = SerdeJsonError;
+    type Err = ApiError;
 
     fn try_into(self) -> Result<MemberEvent, Self::Err> {
         Ok(MemberEvent {
             content: from_str(&self.content)?,
             event_id: self.id,
-            invite_room_state: from_str(self.extra_content)?,
+            invite_room_state: match self.extra_content {
+                Some(extra_content) => {
+                    let object: Value = from_str(&extra_content).map_err(ApiError::from)?;
+
+                    let field: &Value = object.find("invite_room_state").ok_or(
+                        ApiError::unknown(
+                            Some("Data for member event was missing invite_room_state")
+                        )
+                    )?;
+
+                    from_value(field.clone()).map_err(ApiError::from)?
+                },
+                None => return Err(
+                    ApiError::unknown(Some("Data for member event was missing invite_room_state"))
+                ),
+            },
             prev_content: None,
             state_key: "".to_string(),
             event_type: EventType::RoomMember,
@@ -222,3 +210,21 @@ impl TryInto<MemberEvent> for Event {
         })
     }
 }
+
+impl TryInto<PowerLevelsEvent> for Event {
+    type Err = ApiError;
+
+    fn try_into(self) -> Result<PowerLevelsEvent, Self::Err> {
+        Ok(PowerLevelsEvent {
+            content: from_str(&self.content).map_err(ApiError::from)?,
+            event_id: self.id,
+            event_type: EventType::RoomPowerLevels,
+            prev_content: None,
+            room_id: self.room_id,
+            state_key: "".to_string(),
+            unsigned: None,
+            user_id: self.user_id,
+        })
+    }
+}
+
