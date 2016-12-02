@@ -1,6 +1,6 @@
 //! Ruma is a Matrix homeserver client API.
 
-#![feature(proc_macro, specialization, try_from)]
+#![feature(proc_macro, try_from)]
 #![deny(missing_docs)]
 
 extern crate argon2rs;
