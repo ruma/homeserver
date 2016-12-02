@@ -101,52 +101,49 @@ impl RoomMembership {
     /// Creates a new `RoomMembership` in the database.
     pub fn create(connection: &PgConnection, homeserver_domain: &str, options: RoomMembershipOptions)
     -> Result<RoomMembership, ApiError> {
-        connection.transaction::<RoomMembership, ApiError, _>(|| {
-            let join_rules_event = Event::find_room_join_rules_by_room_id(
-                &connection,
-                options.clone().room_id
-            )?;
+        let join_rules_event = Event::find_room_join_rules_by_room_id(
+            &connection,
+            options.clone().room_id,
+        )?;
 
-            let room = Room::find(connection, &options.room_id)?;
+        let room = Room::find(connection, &options.room_id)?;
 
-            // Only the creator of the room can join an invite-only room,
-            // without an invite.
-            if options.sender != room.user_id {
-                if options.membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
-                    return Err(ApiError::unauthorized(Some("You are not invited to this room")));
-                }
-
-                let power_levels = room.current_power_levels(connection)?;
-                let user_power_level = power_levels
-                    .users
-                    .get(&options.sender)
-                    .unwrap_or(&power_levels.users_default);
-
-                if options.membership == "invite" {
-                    if power_levels.invite > *user_power_level {
-                        return Err(
-                            ApiError::unauthorized(Some("Insufficient power level to invite"))
-                        );
-                    }
-                }
+        // Only the creator of the room can join an invite-only room, without an invite.
+        if options.sender != room.user_id {
+            if options.membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
+                return Err(ApiError::unauthorized(Some("You are not invited to this room")));
             }
 
-            let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
+            let power_levels = room.current_power_levels(connection)?;
+            let user_power_level = power_levels
+                .users
+                .get(&options.sender)
+                .unwrap_or(&power_levels.users_default);
 
-            let new_member_event = RoomMembership::create_new_room_member_event(
-                homeserver_domain,
-                &options,
-                profile
-            )?;
+            if options.membership == "invite" {
+                if power_levels.invite > *user_power_level {
+                    return Err(ApiError::unauthorized(Some("Insufficient power level to invite")));
+                }
+            }
+        }
 
-            let new_room_membership = NewRoomMembership {
-                event_id: new_member_event.id.clone(),
-                room_id: options.room_id.clone(),
-                user_id: options.user_id.clone(),
-                sender: options.sender.clone(),
-                membership: options.membership.clone(),
-            };
+        let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
 
+        let new_member_event = RoomMembership::create_new_room_member_event(
+            homeserver_domain,
+            &options,
+            profile,
+        )?;
+
+        let new_room_membership = NewRoomMembership {
+            event_id: new_member_event.id.clone(),
+            room_id: options.room_id.clone(),
+            user_id: options.user_id.clone(),
+            sender: options.sender.clone(),
+            membership: options.membership.clone(),
+        };
+
+        connection.transaction::<RoomMembership, ApiError, _>(|| {
             insert(&new_member_event)
                 .into(events::table)
                 .execute(connection)
@@ -156,7 +153,6 @@ impl RoomMembership {
                                                     .into(room_memberships::table)
                                                     .get_result(connection)
                                                     .map_err(ApiError::from)?;
-
             Ok(room_membership)
         }).map_err(ApiError::from)
     }
