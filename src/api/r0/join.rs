@@ -4,8 +4,9 @@ use std::convert::TryFrom;
 use std::error::Error;
 
 use bodyparser;
+use diesel::Connection;
 use iron::status::Status;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_identifiers::UserId;
 
 use config::Config;
@@ -89,29 +90,32 @@ impl Handler for InviteToRoom {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        // Check if the invitee exists.
-        User::find_by_uid(&connection, &invitee_id)
-            .map_err(IronError::from)?;
+        let invitee_membership = connection.transaction::<Option<RoomMembership>, ApiError, _>(|| {
+            // Check if the invitee exists.
+            User::find_by_uid(&connection, &invitee_id)?;
 
-        // Check if the room exists.
-        Room::find(&connection, &room_id)
-            .map_err(IronError::from)?;
+            // Check if the room exists.
+            Room::find(&connection, &room_id)?;
 
-        // Check if the inviter has joined the room.
-        let unauthorized_err = ApiError::unauthorized(
-            Some("The inviter hasn't joined the room yet")
-        );
+            let unauthorized_err = ApiError::unauthorized(
+                Some("The inviter hasn't joined the room yet")
+            );
 
-        RoomMembership::find(&connection, &room_id, &inviter.id)
-            .and_then(|membership| match membership {
-                Some(entry) => match entry.membership.as_ref() {
-                    "join" => Ok(()),
-                    _ => Err(unauthorized_err)
-                },
-                None => Err(unauthorized_err)
-            })?;
+            // Check if the inviter has joined the room.
+            RoomMembership::find(&connection, &room_id, &inviter.id)
+                .and_then(|membership| match membership {
+                    Some(entry) => match entry.membership.as_ref() {
+                        "join" => Ok(()),
+                        _ => Err(unauthorized_err)
+                    },
+                    None => Err(unauthorized_err)
+                })?;
 
-        let invitee_membership = RoomMembership::find(&connection, &room_id, &invitee_id)?;
+            let membership = RoomMembership::find(&connection, &room_id, &invitee_id)?;
+
+            Ok(membership)
+        }).map_err(ApiError::from)?;
+
         let new_membership_options = RoomMembershipOptions {
             room_id: room_id,
             user_id: invitee_id,
