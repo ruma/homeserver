@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
 
-use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl, OrderDsl, insert};
+use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, FindDsl, LoadDsl, OrderDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::expression::dsl::any;
@@ -325,8 +325,8 @@ impl Room {
     pub fn find(connection: &PgConnection, room_id: &RoomId)
     -> Result<Room, ApiError> {
         rooms::table
-            .filter(rooms::id.eq(room_id))
-            .first(connection)
+            .find(room_id)
+            .get_result(connection)
             .map(Room::from)
             .map_err(|err| {
                 match err {

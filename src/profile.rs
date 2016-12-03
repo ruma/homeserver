@@ -3,7 +3,7 @@
 use diesel::{
     ExpressionMethods,
     LoadDsl,
-    FilterDsl,
+    FindDsl,
     SaveChangesDsl,
     insert,
 };
@@ -118,8 +118,8 @@ impl Profile {
     /// Return `Profile` for given `UserId`.
     pub fn find_by_uid(connection: &PgConnection, user_id: UserId) -> Result<Option<Profile>, ApiError> {
         let profile = profiles::table
-            .filter(profiles::id.eq(user_id))
-            .first(connection);
+            .find(user_id)
+            .get_result(connection);
 
         match profile {
             Ok(profile) => Ok(Some(profile)),

@@ -105,12 +105,12 @@ impl RoomAlias {
         }).map_err(ApiError::from)
     }
 
-    /// Return room ID for given room alias.
+    /// Return the `RoomAlias` entry for given `RoomAliasId`.
     pub fn find_by_alias(connection: &PgConnection, alias: &RoomAliasId)
     -> Result<RoomAlias, ApiError> {
         room_aliases::table
-            .filter(room_aliases::alias.eq(&alias.to_string()))
-            .first(connection)
+            .find(alias)
+            .get_result(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
