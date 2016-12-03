@@ -109,7 +109,7 @@ impl Handler for CreateRoom {
                 room_id: room.id.clone(),
                 user_id: room.user_id.clone(),
                 sender: room.user_id.clone(),
-                membership: String::from("join")
+                membership: "join".to_string(),
             };
 
             RoomMembership::create(&connection, &config.domain, options)

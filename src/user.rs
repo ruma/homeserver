@@ -10,6 +10,7 @@ use diesel::{
 };
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::result::Error as DieselError;
 use iron::typemap::Key;
 use ruma_identifiers::UserId;
 
@@ -74,25 +75,36 @@ impl User {
             .map_err(ApiError::from)
     }
 
-    /// Look up a user using the given user ID and plaintext password.
-    pub fn find_by_uid_and_password(
+    /// Verify that a `User` with the given `UserId` and plaintext password exists.
+    pub fn verify(
         connection: &PgConnection,
         id: &UserId,
         plaintext_password: &str,
     ) -> Result<User, ApiError> {
-        match users::table
+        let user = User::find_by_uid(connection, id)?;
+
+        if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
+            Ok(user)
+        } else {
+            Err(ApiError::unauthorized(None))
+        }
+    }
+
+    /// Look up a `User` using the given `UserId`.
+    pub fn find_by_uid(connection: &PgConnection, id: &UserId) -> Result<User, ApiError> {
+        users::table
             .filter(users::id.eq(id))
             .filter(users::active.eq(true))
-            .first(connection).map(User::from) {
-            Ok(user) => {
-                if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
-                    Ok(user)
-                } else {
-                    Err(ApiError::unauthorized(None))
+            .first(connection)
+            .map(User::from)
+            .map_err(|err| {
+                match err {
+                    DieselError::NotFound => ApiError::not_found(Some(
+                        &format!("The user {} was not found on this server", id)
+                    )),
+                    _ => ApiError::from(err)
                 }
-            }
-            Err(error) => Err(ApiError::from(error)),
-        }
+            })
     }
 
     /// Remove the user's ability to login.

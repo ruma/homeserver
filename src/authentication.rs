@@ -85,6 +85,6 @@ impl AuthParams {
     pub fn authenticate(&self, connection: &PgConnection) -> Result<User, ApiError> {
         let &AuthParams::Password(ref credentials) = self;
 
-        User::find_by_uid_and_password(connection, &credentials.user_id, &credentials.password)
+        User::verify(connection, &credentials.user_id, &credentials.password)
     }
 }

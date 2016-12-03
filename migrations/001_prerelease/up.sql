@@ -52,7 +52,7 @@ CREATE TABLE room_account_data (
     UNIQUE (user_id, room_id, data_type)
 );
 
-CREATE TABLE room_memberships(
+CREATE TABLE room_memberships (
     event_id TEXT NOT NULL PRIMARY KEY,
     room_id TEXT NOT NULL,
     user_id TEXT NOT NULL,
