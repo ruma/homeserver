@@ -106,9 +106,9 @@ impl<'a> Server<'a> {
         r0_router.get("/rooms/:room_id/members", Members::chain(), "members");
         r0_router.get("/profile/:user_id", Profile::chain(), "profile");
         r0_router.get("/profile/:user_id/avatar_url", GetAvatarUrl::chain(), "get_avatar_url");
-        r0_router.get("/profile/:user_id/displayname", GetDisplayname::chain(), "get_displayname");
+        r0_router.get("/profile/:user_id/displayname", GetDisplayName::chain(), "get_display_name");
         r0_router.put("/profile/:user_id/avatar_url", PutAvatarUrl::chain(), "put_avatar_url");
-        r0_router.put("/profile/:user_id/displayname", PutDisplayname::chain(), "put_displayname");
+        r0_router.put("/profile/:user_id/displayname", PutDisplayName::chain(), "put_display_name");
 
         let mut r0 = Chain::new(r0_router);
 

@@ -20,11 +20,6 @@ use ruma_events::room::join_rules::{
     JoinRulesEvent,
     JoinRulesEventContent,
 };
-use ruma_events::room::member::{
-    MemberEvent,
-    MemberEventContent,
-    MembershipState,
-};
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};

@@ -18,6 +18,7 @@ use ruma_events::call::answer::AnswerEvent;
 use ruma_events::call::candidates::CandidatesEvent;
 use ruma_events::call::hangup::HangupEvent;
 use ruma_events::call::invite::InviteEvent;
+use ruma_events::room::aliases::AliasesEvent;
 use ruma_events::room::avatar::AvatarEvent;
 use ruma_events::room::canonical_alias::CanonicalAliasEvent;
 use ruma_events::room::create::CreateEvent;
@@ -148,6 +149,7 @@ impl_try_from_room_event_for_new_event!(InviteEvent);
 impl_try_from_room_event_for_new_event!(MessageEvent);
 impl_try_from_room_event_for_new_event!(CustomRoomEvent);
 
+impl_try_from_state_event_for_new_event!(AliasesEvent);
 impl_try_from_state_event_for_new_event!(AvatarEvent);
 impl_try_from_state_event_for_new_event!(CanonicalAliasEvent);
 impl_try_from_state_event_for_new_event!(CreateEvent);
