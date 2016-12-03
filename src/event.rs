@@ -197,9 +197,7 @@ impl TryInto<MemberEvent> for Event {
 
                     from_value(field.clone()).map_err(ApiError::from)?
                 },
-                None => return Err(
-                    ApiError::unknown(Some("Data for member event was missing invite_room_state"))
-                ),
+                None => None,
             },
             prev_content: None,
             state_key: "".to_string(),
