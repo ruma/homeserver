@@ -31,9 +31,9 @@ use ruma_identifiers::{EventId, RoomId, UserId};
 use serde_json::{Value, from_value};
 
 use error::ApiError;
-use event::{NewEvent, Event};
-use profile::Profile;
-use room::Room;
+use models::event::{NewEvent, Event};
+use models::profile::Profile;
+use models::room::Room;
 use schema::{events, room_memberships};
 
 /// Room membership update or create data.

@@ -40,28 +40,22 @@ use server::Server;
 
 #[macro_use]
 pub mod middleware;
-pub mod access_token;
 /// API endpoints as Iron handlers.
 pub mod api {
     pub mod r0;
 }
-pub mod account_data;
 pub mod authentication;
 pub mod config;
 pub mod crypto;
 pub mod db;
 pub mod error;
-pub mod event;
+/// Models for the API's domain objects.
+pub mod models;
 pub mod modifier;
-pub mod profile;
-pub mod room;
-pub mod room_alias;
 pub mod schema;
 pub mod server;
 pub mod swagger;
-pub mod room_membership;
 #[cfg(test)] pub mod test;
-pub mod user;
 
 embed_migrations!();
 

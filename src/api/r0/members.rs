@@ -5,10 +5,10 @@ use iron::status::Status;
 use ruma_events::room::member::MemberEvent;
 
 use db::DB;
-use room_membership::RoomMembership;
 use middleware::{AccessTokenAuth, MiddlewareChain, RoomIdParam};
+use models::room_membership::RoomMembership;
+use models::user::User;
 use modifier::SerializableResponse;
-use user::User;
 
 /// The `/rooms/:room_id/members` endpoint.
 pub struct Members;

@@ -14,9 +14,9 @@ use db::DB;
 use error::{ApiError, MapApiError};
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam};
 use modifier::SerializableResponse;
-use room::Room;
-use room_membership::{RoomMembership, RoomMembershipOptions};
-use user::User;
+use models::room::Room;
+use models::room_membership::{RoomMembership, RoomMembershipOptions};
+use models::user::User;
 
 /// The `/rooms/:room_id/join` endpoint.
 pub struct JoinRoom;

@@ -20,8 +20,8 @@ use ruma_events::room::aliases::{AliasesEvent, AliasesEventContent};
 use ruma_events::EventType;
 
 use error::ApiError;
-use event::NewEvent;
-use room::Room;
+use models::event::NewEvent;
+use models::room::Room;
 use schema::{events, room_aliases, rooms};
 
 /// A new room alias, not yet saved.

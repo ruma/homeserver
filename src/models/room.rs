@@ -26,11 +26,11 @@ use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 
 use error::ApiError;
-use event::{Event, NewEvent};
-use room_alias::{NewRoomAlias, RoomAlias};
-use room_membership::{RoomMembership, RoomMembershipOptions};
+use models::event::{Event, NewEvent};
+use models::room_alias::{NewRoomAlias, RoomAlias};
+use models::room_membership::{RoomMembership, RoomMembershipOptions};
+use models::user::User;
 use schema::{events, rooms, users};
-use user::User;
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {

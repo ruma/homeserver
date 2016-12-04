@@ -12,10 +12,10 @@ use config::Config;
 use db::DB;
 use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
+use models::room::{CreationOptions, NewRoom, Room, RoomPreset};
+use models::room_membership::{RoomMembership, RoomMembershipOptions};
+use models::user::User;
 use modifier::SerializableResponse;
-use room::{CreationOptions, NewRoom, Room, RoomPreset};
-use room_membership::{RoomMembership, RoomMembershipOptions};
-use user::User;
 
 /// The `/createRoom` endpoint.
 pub struct CreateRoom;

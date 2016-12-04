@@ -28,7 +28,6 @@ use serde_json::{Value, from_value};
 use db::DB;
 use config::Config;
 use error::{ApiError, MapApiError};
-use event::NewEvent;
 use middleware::{
     AccessTokenAuth,
     EventTypeParam,
@@ -37,10 +36,11 @@ use middleware::{
     RoomIdParam,
     TransactionIdParam,
 };
+use models::event::NewEvent;
+use models::room::Room;
+use models::user::User;
 use modifier::SerializableResponse;
-use room::Room;
 use schema::{events, rooms};
-use user::User;
 
 macro_rules! room_event {
     (

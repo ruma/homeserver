@@ -8,9 +8,9 @@ use config::Config;
 use db::DB;
 use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
+use models::profile::{Profile as DataProfile};
+use models::user::User;
 use modifier::SerializableResponse;
-use profile::{Profile as DataProfile};
-use user::User;
 
 /// The `/profile/:user_id` endpoint.
 pub struct Profile;

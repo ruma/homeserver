@@ -12,8 +12,8 @@ use crypto::hash_password;
 use db::DB;
 use error::ApiError;
 use middleware::{JsonRequest, MiddlewareChain};
+use models::user::{NewUser, User};
 use modifier::SerializableResponse;
-use user::{NewUser, User};
 
 /// The `/register` endpoint.
 pub struct Register;

@@ -1,9 +1,9 @@
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 
-use access_token::AccessToken;
 use db::DB;
 use middleware::{AccessTokenAuth, MiddlewareChain};
+use models::access_token::AccessToken;
 
 /// The `/logout` endpoint.
 pub struct Logout;

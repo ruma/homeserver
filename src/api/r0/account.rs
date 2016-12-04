@@ -14,15 +14,15 @@ use middleware::{
     RoomIdParam,
     UserIdParam,
 };
-use user::User;
-use access_token::AccessToken;
-use room_membership::RoomMembership;
-use account_data::{
+use models::access_token::AccessToken;
+use models::account_data::{
     AccountData,
     NewAccountData,
     RoomAccountData,
     NewRoomAccountData,
 };
+use models::room_membership::RoomMembership;
+use models::user::User;
 
 /// The `/account/password` endpoint.
 #[derive(Debug)]

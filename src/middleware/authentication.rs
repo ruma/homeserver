@@ -5,12 +5,12 @@ use iron::{BeforeMiddleware, IronError, IronResult, Plugin, Request};
 use ruma_identifiers::UserId;
 use serde_json::Value;
 
-use access_token::AccessToken;
 use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
 use config::Config;
 use db::DB;
 use error::ApiError;
-use user::User;
+use models::access_token::AccessToken;
+use models::user::User;
 
 /// Handles access token authentication for all API endpoints that require it.
 #[derive(Debug)]

@@ -14,9 +14,9 @@ use diesel::result::Error as DieselError;
 use iron::typemap::Key;
 use ruma_identifiers::UserId;
 
-use access_token::AccessToken;
 use crypto::verify_password;
 use error::ApiError;
+use models::access_token::AccessToken;
 use schema::users;
 
 /// A Matrix user.

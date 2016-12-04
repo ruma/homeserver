@@ -1,12 +1,12 @@
 use iron::{Chain, Handler, IronResult, Request, Response, status};
 
-use access_token::AccessToken;
 use authentication::{AuthType, Flow, InteractiveAuth};
 use config::Config;
 use db::DB;
 use middleware::{JsonRequest, MiddlewareChain, UIAuth};
+use models::access_token::AccessToken;
+use models::user::User;
 use modifier::SerializableResponse;
-use user::User;
 
 /// The `/login` endpoint.
 pub struct Login;

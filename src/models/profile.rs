@@ -12,7 +12,7 @@ use diesel::result::Error as DieselError;
 use ruma_identifiers::UserId;
 
 use error::ApiError;
-use room_membership::{RoomMembership, RoomMembershipOptions};
+use models::room_membership::{RoomMembership, RoomMembershipOptions};
 use schema::profiles;
 
 /// A Matrix profile.

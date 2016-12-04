@@ -11,9 +11,9 @@ use config::Config;
 use db::DB;
 use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomAliasIdParam};
+use models::room_alias::{RoomAlias, NewRoomAlias};
+use models::user::User;
 use modifier::SerializableResponse;
-use room_alias::{RoomAlias, NewRoomAlias};
-use user::User;
 
 /// The GET `/directory/room/:room_alias` endpoint.
 pub struct GetRoomAlias;

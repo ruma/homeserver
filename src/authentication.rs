@@ -7,7 +7,7 @@ use ruma_identifiers::UserId;
 use serde::{Serialize, Serializer};
 
 use error::{ApiError, ApiErrorCode};
-use user::User;
+use models::user::User;
 
 /// A set of authorization flows the user can follow to authenticate a request.
 #[derive(Debug, Serialize)]
