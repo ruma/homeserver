@@ -260,7 +260,7 @@ impl Room {
 
                 if missing_user_ids.len() > 0 {
                     return Err(
-                        ApiError::unknown(Some(&format!(
+                        ApiError::bad_json(Some(&format!(
                             "Unknown users in invite list: {}",
                             &missing_user_ids
                                 .iter()

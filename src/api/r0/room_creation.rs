@@ -153,8 +153,16 @@ mod tests {
                                        access_token);
 
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
+        let room_id = response.json().find("room_id").unwrap().as_str();
 
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(room_id.is_some());
+
+        let alias_response = test.get("/_matrix/client/r0/directory/room/my_room");
+
+        assert_eq!(
+            alias_response.json().find("room_id").unwrap().as_str().unwrap(),
+            room_id.unwrap()
+        );
     }
 
     #[test]
@@ -197,5 +205,55 @@ mod tests {
             response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_BAD_JSON"
         );
+    }
+
+    #[test]
+    fn with_invited_users() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+        let carl_token = test.create_access_token_with_username("carl");
+
+        let room_options = r#"{"visibility": "private",
+                               "invite": [
+                                   "@bob:ruma.test",
+                                   "@carl:ruma.test"
+                               ]}"#;
+
+        let room_id = test.create_room_with_params(&alice_token, room_options);
+
+        assert!(test.join_room(&alice_token, &room_id).status.is_success());
+        assert!(test.join_room(&bob_token, &room_id).status.is_success());
+        assert!(test.join_room(&carl_token, &room_id).status.is_success());
+    }
+
+    #[test]
+    fn with_unknown_invited_users() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        test.create_access_token_with_username("bob");
+
+        let room_options = r#"{"visibility": "private",
+                               "invite": [
+                                   "@bob:ruma.test",
+                                   "@carl:ruma.test",
+                                   "@dan:ruma.test"
+                               ]}"#;
+
+        let response = test.post(
+            &format!( "/_matrix/client/r0/createRoom?access_token={}", alice_token),
+            room_options
+        );
+
+        assert_eq!(
+            response.json().find("errcode").unwrap().as_str().unwrap(),
+            "M_BAD_JSON"
+        );
+
+        let error = response.json().find("error").unwrap().as_str().unwrap().to_string();
+
+        assert!(error.starts_with("Unknown users in invite list:"));
+        assert!(error.contains("@carl:ruma.test"));
+        assert!(error.contains("@dan:ruma.test"));
     }
 }
