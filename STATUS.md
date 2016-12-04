@@ -190,7 +190,7 @@ Legend:
     <th align="left" colspan="3">Joining rooms</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/22">#22</a></td>
     <td>POST /rooms/:room_id/invite</td>
   </tr>
@@ -244,27 +244,27 @@ Legend:
     <th align="left" colspan="3">Profiles</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/31">#31</a></td>
     <td>PUT /profile/:user_id/displayname</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/32">#32</a></td>
     <td>GET /profile/:user_id/displayname</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/33">#33</a></td>
     <td>PUT /profile/:user_id/avatar_url</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/34">#34</a></td>
     <td>GET /profile/:user_id/avatar_url</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/35">#35</a></td>
     <td>GET /profile/:user_id</td>
   </tr>
