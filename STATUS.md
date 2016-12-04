@@ -190,7 +190,7 @@ Legend:
     <th align="left" colspan="3">Joining rooms</th>
   </tr>
   <tr>
-    <td align="center">:construction:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/22">#22</a></td>
     <td>POST /rooms/:room_id/invite</td>
   </tr>
