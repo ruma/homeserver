@@ -10,6 +10,7 @@ use diesel::pg::expression::dsl::any;
 use diesel::result::Error as DieselError;
 use ruma_events::EventType;
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
+use ruma_events::room::canonical_alias::{CanonicalAliasEvent, CanonicalAliasEventContent};
 use ruma_events::room::history_visibility::{
     HistoryVisibility,
     HistoryVisibilityEvent,
@@ -97,17 +98,6 @@ impl Room {
                 .into(rooms::table)
                 .get_result(connection)
                 .map_err(ApiError::from)?;
-
-            if let Some(ref alias) = creation_options.alias {
-                let new_room_alias = NewRoomAlias {
-                    alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?,
-                    room_id: room.id.clone(),
-                    user_id: new_room.user_id.clone(),
-                    servers: vec![homeserver_domain.to_string()],
-                };
-
-                RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
-            }
 
             let mut new_events = Vec::new();
 
@@ -221,10 +211,39 @@ impl Room {
                 }
             }
 
+            // TODO: Check also for an existing canonical alias event in initial_state
+            if let Some(ref alias) = creation_options.alias {
+                let new_canonical_alias_event: NewEvent = CanonicalAliasEvent {
+                    content: CanonicalAliasEventContent {
+                        alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?
+                    },
+                    event_id: EventId::new(homeserver_domain)?,
+                    event_type: EventType::RoomCanonicalAlias,
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: new_room.user_id.clone(),
+                }.try_into()?;
+
+                new_events.push(new_canonical_alias_event);
+            }
+
             insert(&new_events)
                 .into(events::table)
                 .execute(connection)
                 .map_err(ApiError::from)?;
+
+            if let Some(ref alias) = creation_options.alias {
+                let new_room_alias = NewRoomAlias {
+                    alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?,
+                    room_id: room.id.clone(),
+                    user_id: new_room.user_id.clone(),
+                    servers: vec![homeserver_domain.to_string()],
+                };
+
+                RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
+            }
 
             if let Some(ref invite_list) = creation_options.invite_list {
                 let mut user_ids = HashSet::with_capacity(invite_list.len());
