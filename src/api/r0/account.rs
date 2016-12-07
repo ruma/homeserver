@@ -119,7 +119,7 @@ impl Handler for PutAccountData {
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                Some("The given user_id does not correspond to the authenticated user")
+                "The given user_id does not correspond to the authenticated user".to_string()
             );
 
             return Err(IronError::new(error.clone(), error));
@@ -168,7 +168,7 @@ impl Handler for PutRoomAccountData {
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                Some("The given user_id does not correspond to the authenticated user")
+                "The given user_id does not correspond to the authenticated user".to_string()
             );
 
             return Err(IronError::new(error.clone(), error));
@@ -185,14 +185,14 @@ impl Handler for PutRoomAccountData {
 
         if entry.is_none() {
             let err = ApiError::unauthorized(
-                Some("No membership entry was found.")
+                "No membership entry was found.".to_string()
             );
 
             return Err(IronError::new(err.clone(), err));
         }
 
         if entry.unwrap().membership != "join" {
-            let err = ApiError::unauthorized(Some("The room is not accesible."));
+            let err = ApiError::unauthorized("The room is not accesible.".to_string());
 
             return Err(IronError::new(err.clone(), err));
         }

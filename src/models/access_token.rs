@@ -92,7 +92,7 @@ fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &UserId) -> Result<St
     let expiration = match UTC::now().checked_add(Duration::hours(1)) {
         Some(datetime) => datetime,
         None => return Err(
-            ApiError::unknown(Some("Failed to generate access token expiration datetime."))
+            ApiError::unknown("Failed to generate access token expiration datetime.".to_string())
         ),
     };
 

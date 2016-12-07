@@ -115,7 +115,7 @@ impl Handler for SendMessageEvent {
             .expect("JsonRequest verifies the Option is Some");
         let config = Config::from_request(request)?;
         let event_id = EventId::new(&config.domain).map_api_err(|_| {
-            ApiError::unknown(Some("Failed to generated event ID for the new event."))
+            ApiError::unknown("Failed to generated event ID for the new event.".to_string())
         })?;
 
         let room_event: NewEvent = match event_type {
@@ -146,7 +146,7 @@ impl Handler for SendMessageEvent {
             }
             _ => {
                 let error = ApiError::bad_event(
-                    Some(&format!("Events of type {} cannot be created with this API.", event_type))
+                    format!("Events of type {} cannot be created with this API.", event_type)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -169,7 +169,7 @@ impl Handler for SendMessageEvent {
 
             if required_power_level > user_power_level {
                 return Err(
-                    ApiError::unauthorized(Some("Insufficient power level to create this event."))
+                    ApiError::unauthorized("Insufficient power level to create this event.".to_string())
                 );
             }
 
@@ -217,7 +217,7 @@ impl Handler for StateMessageEvent {
             .expect("JsonRequest verifies the Option is Some");
         let config = Config::from_request(request)?;
         let event_id = EventId::new(&config.domain).map_api_err(|_| {
-            ApiError::unknown(Some("Failed to generated event ID for the new event."))
+            ApiError::unknown("Failed to generated event ID for the new event.".to_string())
         })?;
 
         let state_event: NewEvent = match event_type {
@@ -350,7 +350,7 @@ impl Handler for StateMessageEvent {
             }
             _ => {
                 let error = ApiError::bad_event(
-                    Some(&format!("Events of type {} cannot be created with this API.", event_type))
+                    format!("Events of type {} cannot be created with this API.", event_type)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -373,7 +373,7 @@ impl Handler for StateMessageEvent {
 
             if required_power_level > user_power_level {
                 return Err(
-                    ApiError::unauthorized(Some("Insufficient power level to create this event."))
+                    ApiError::unauthorized("Insufficient power level to create this event.".to_string())
                 );
             }
 
@@ -396,7 +396,7 @@ fn ensure_empty_state_key(state_key: &str) -> Result<(), IronError> {
     if state_key == "" {
         Ok(())
     } else {
-        let error = ApiError::bad_event(Some("Events of type {} must have an empty state key."));
+        let error = ApiError::bad_event("Events of type {} must have an empty state key.".to_string());
 
         Err(IronError::new(error.clone(), error))
     }
@@ -407,11 +407,9 @@ fn extract_event_content<T: Deserialize>(event_content: Value, event_type: &Even
 -> Result<T, ApiError> {
     from_value(event_content).map_api_err(|_| {
         ApiError::bad_event(
-            Some(
-                &format!(
-                    "Event content did not match expected structure for event of type {}.",
-                    event_type
-                )
+            format!(
+                "Event content did not match expected structure for event of type {}.",
+                event_type
             )
         )
     })

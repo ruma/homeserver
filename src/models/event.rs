@@ -193,7 +193,7 @@ impl TryInto<MemberEvent> for Event {
 
                     let field: &Value = object.find("invite_room_state").ok_or(
                         ApiError::unknown(
-                            Some("Data for member event was missing invite_room_state")
+                            "Data for member event was missing invite_room_state".to_string()
                         )
                     )?;
 

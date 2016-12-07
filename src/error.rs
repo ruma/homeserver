@@ -81,34 +81,38 @@ pub trait MapApiError {
 
 impl ApiError {
     /// Create an error for requests that try to create a room alias that is already taken.
-    pub fn alias_taken(message: Option<&str>) -> ApiError {
+    pub fn alias_taken<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::AliasTaken,
-            error: message.unwrap_or("Alias already taken.").to_string(),
+            error: message.unwrap_or("Alias already taken.".to_string()),
         }
     }
 
     /// Create an error for invalid or incomplete input to event creation API endpoints.
-    pub fn bad_event(message: Option<&str>) -> ApiError {
+    pub fn bad_event<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::BadEvent,
-            error: message.unwrap_or("Invalid event data.").to_string(),
+            error: message.unwrap_or("Invalid event data.".to_string()),
         }
     }
 
     /// Create an error for invalid or incomplete JSON in request bodies.
-    pub fn bad_json(message: Option<&str>) -> ApiError {
+    pub fn bad_json<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::BadJson,
-            error: message.unwrap_or("Invalid or missing key-value pairs in JSON.").to_string(),
+            error: message.unwrap_or("Invalid or missing key-value pairs in JSON.".to_string()),
         }
     }
 
     /// Create an error for endpoints where guest accounts are not supported.
-    pub fn guest_forbidden(message: Option<&str>) -> ApiError {
+    pub fn guest_forbidden<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::GuestAccessForbidden,
-            error: message.unwrap_or("Guest accounts are forbidden.").to_string(),
+            error: message.unwrap_or("Guest accounts are forbidden.".to_string()),
         }
     }
 
@@ -129,60 +133,67 @@ impl ApiError {
     }
 
     /// Create an error for requests that do not map to a resource.
-    pub fn not_found(message: Option<&str>) -> ApiError {
+    pub fn not_found<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::NotFound,
-            error: message.unwrap_or("No resource was found for this request.").to_string(),
+            error: message.unwrap_or("No resource was found for this request.".to_string()),
         }
     }
 
     /// Create an error for requests without JSON bodies.
-    pub fn not_json(message: Option<&str>) -> ApiError {
+    pub fn not_json<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::NotJson,
-            error: message.unwrap_or("No JSON found in request body.").to_string(),
+            error: message.unwrap_or("No JSON found in request body.".to_string()),
         }
     }
 
     /// Create an error for requests that are not marked as containing JSON.
-    pub fn wrong_content_type(message: Option<&str>) -> ApiError {
+    pub fn wrong_content_type<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::NotJson,
             error: message.unwrap_or(
-                "Request's Content-Type header must be application/json."
-            ).to_string(),
+                "Request's Content-Type header must be application/json.".to_string()
+            ),
         }
     }
 
     /// Create an error for requests that did not provide required authentication parameters.
-    pub fn unauthorized(message: Option<&str>) -> ApiError {
+    pub fn unauthorized<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Forbidden,
-            error: message.unwrap_or("Authentication is required.").to_string(),
+            error: message.unwrap_or("Authentication is required.".to_string()),
         }
     }
 
     /// Create an error for Matrix APIs that Ruma intentionally does not implement.
-    pub fn unimplemented(message: Option<&str>) -> ApiError {
+    pub fn unimplemented<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Unimplemented,
-            error: message.unwrap_or("The homeserver does not implement this API.").to_string(),
+            error: message.unwrap_or("The homeserver does not implement this API.".to_string()),
         }
     }
 
     /// Create an error for Matrix APIs that Ruma intentionally does not implement.
-    pub fn limited_rate(message: Option<&str>) -> ApiError {
+    pub fn limited_rate<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::LimitExceeded,
-            error: message.unwrap_or("Too many retry!").to_string(),
+            error: message.unwrap_or("Too many retry!".to_string()),
         }
     }
 
     /// Create a generic error for anything not specifically covered by the Matrix spec.
-    pub fn unknown(message: Option<&str>) -> ApiError {
+    pub fn unknown<T: Into<Option<String>>>(message: T) -> ApiError {
+        let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Unknown,
-            error: message.unwrap_or("An unknown server-side error occurred.").to_string(),
+            error: message.unwrap_or("An unknown server-side error occurred.".to_string()),
         }
     }
 }

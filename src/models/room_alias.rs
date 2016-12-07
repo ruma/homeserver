@@ -65,7 +65,7 @@ impl RoomAlias {
                 .first::<Room>(&*connection)
                 .map_err(|err| {
                    match err {
-                       DieselError::NotFound => ApiError::bad_json(Some("Room not found.")),
+                       DieselError::NotFound => ApiError::bad_json("Room not found.".to_string()),
                        _ => ApiError::from(err),
                    }
                });

@@ -98,7 +98,7 @@ impl Handler for InviteToRoom {
             Room::find(&connection, &room_id)?;
 
             let unauthorized_err = ApiError::unauthorized(
-                Some("The inviter hasn't joined the room yet")
+                "The inviter hasn't joined the room yet".to_string()
             );
 
             // Check if the inviter has joined the room.
@@ -127,10 +127,10 @@ impl Handler for InviteToRoom {
             Some(mut entry) => match entry.membership.as_ref() {
                 "invite" => Ok(()),
                 "ban" => Err(ApiError::unauthorized(
-                    Some("The invited user is banned from the room")
+                    "The invited user is banned from the room".to_string()
                 )),
                 "join" => Err(ApiError::unauthorized(
-                    Some("The invited user has already joined")
+                    "The invited user has already joined".to_string()
                 )),
                 _ => {
                     entry.update(
