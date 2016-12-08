@@ -222,7 +222,7 @@ impl Handler for StateMessageEvent {
 
         let state_event: NewEvent = match event_type {
             EventType::RoomAvatar => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     AvatarEvent,
@@ -235,7 +235,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomCanonicalAlias => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     CanonicalAliasEvent,
@@ -248,7 +248,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomGuestAccess => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     GuestAccessEvent,
@@ -261,7 +261,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomHistoryVisibility => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     HistoryVisibilityEvent,
@@ -274,7 +274,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomJoinRules => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     JoinRulesEvent,
@@ -287,7 +287,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomName => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     NameEvent,
@@ -300,7 +300,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomPowerLevels => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     PowerLevelsEvent,
@@ -324,7 +324,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomTopic => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     TopicEvent,
@@ -392,11 +392,11 @@ impl Handler for StateMessageEvent {
 }
 
 /// Enforces an empty state key for an event type that requires it.
-fn ensure_empty_state_key(state_key: &str) -> Result<(), IronError> {
+fn ensure_empty_state_key(state_key: &str, event_type: &EventType) -> Result<(), IronError> {
     if state_key == "" {
         Ok(())
     } else {
-        let error = ApiError::bad_event("Events of type {} must have an empty state key.".to_string());
+        let error = ApiError::bad_event(format!("Events of type {} must have an empty state key.", event_type));
 
         Err(IronError::new(error.clone(), error))
     }
