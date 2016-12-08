@@ -99,9 +99,9 @@ impl User {
             .map(User::from)
             .map_err(|err| {
                 match err {
-                    DieselError::NotFound => ApiError::not_found(Some(
-                        &format!("The user {} was not found on this server", id)
-                    )),
+                    DieselError::NotFound => ApiError::not_found(
+                        format!("The user {} was not found on this server", id)
+                    ),
                     _ => ApiError::from(err)
                 }
             })

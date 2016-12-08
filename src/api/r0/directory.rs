@@ -64,9 +64,9 @@ impl Handler for DeleteRoomAlias {
         if affected_rows > 0 {
             Ok(Response::with((Status::Ok, "{}")))
         } else {
-            let error = ApiError::not_found(Some(
-                "Provided room alias did not exist or you do not have access to delete it."
-            ));
+            let error = ApiError::not_found(
+                "Provided room alias did not exist or you do not have access to delete it.".to_string()
+            );
 
             Err(IronError::new(error.clone(), error))
         }

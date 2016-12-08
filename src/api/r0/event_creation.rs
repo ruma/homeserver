@@ -115,7 +115,7 @@ impl Handler for SendMessageEvent {
             .expect("JsonRequest verifies the Option is Some");
         let config = Config::from_request(request)?;
         let event_id = EventId::new(&config.domain).map_api_err(|_| {
-            ApiError::unknown(Some("Failed to generated event ID for the new event."))
+            ApiError::unknown("Failed to generated event ID for the new event.".to_string())
         })?;
 
         let room_event: NewEvent = match event_type {
@@ -146,7 +146,7 @@ impl Handler for SendMessageEvent {
             }
             _ => {
                 let error = ApiError::bad_event(
-                    Some(&format!("Events of type {} cannot be created with this API.", event_type))
+                    format!("Events of type {} cannot be created with this API.", event_type)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -169,7 +169,7 @@ impl Handler for SendMessageEvent {
 
             if required_power_level > user_power_level {
                 return Err(
-                    ApiError::unauthorized(Some("Insufficient power level to create this event."))
+                    ApiError::unauthorized("Insufficient power level to create this event.".to_string())
                 );
             }
 
@@ -217,12 +217,12 @@ impl Handler for StateMessageEvent {
             .expect("JsonRequest verifies the Option is Some");
         let config = Config::from_request(request)?;
         let event_id = EventId::new(&config.domain).map_api_err(|_| {
-            ApiError::unknown(Some("Failed to generated event ID for the new event."))
+            ApiError::unknown("Failed to generated event ID for the new event.".to_string())
         })?;
 
         let state_event: NewEvent = match event_type {
             EventType::RoomAvatar => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     AvatarEvent,
@@ -235,7 +235,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomCanonicalAlias => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     CanonicalAliasEvent,
@@ -248,7 +248,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomGuestAccess => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     GuestAccessEvent,
@@ -261,7 +261,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomHistoryVisibility => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     HistoryVisibilityEvent,
@@ -274,7 +274,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomJoinRules => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     JoinRulesEvent,
@@ -287,7 +287,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomName => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     NameEvent,
@@ -300,7 +300,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomPowerLevels => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     PowerLevelsEvent,
@@ -324,7 +324,7 @@ impl Handler for StateMessageEvent {
                 )
             }
             EventType::RoomTopic => {
-                ensure_empty_state_key(state_key)?;
+                ensure_empty_state_key(state_key, &event_type)?;
 
                 state_event!(
                     TopicEvent,
@@ -350,7 +350,7 @@ impl Handler for StateMessageEvent {
             }
             _ => {
                 let error = ApiError::bad_event(
-                    Some(&format!("Events of type {} cannot be created with this API.", event_type))
+                    format!("Events of type {} cannot be created with this API.", event_type)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -373,7 +373,7 @@ impl Handler for StateMessageEvent {
 
             if required_power_level > user_power_level {
                 return Err(
-                    ApiError::unauthorized(Some("Insufficient power level to create this event."))
+                    ApiError::unauthorized("Insufficient power level to create this event.".to_string())
                 );
             }
 
@@ -392,11 +392,11 @@ impl Handler for StateMessageEvent {
 }
 
 /// Enforces an empty state key for an event type that requires it.
-fn ensure_empty_state_key(state_key: &str) -> Result<(), IronError> {
+fn ensure_empty_state_key(state_key: &str, event_type: &EventType) -> Result<(), IronError> {
     if state_key == "" {
         Ok(())
     } else {
-        let error = ApiError::bad_event(Some("Events of type {} must have an empty state key."));
+        let error = ApiError::bad_event(format!("Events of type {} must have an empty state key.", event_type));
 
         Err(IronError::new(error.clone(), error))
     }
@@ -407,11 +407,9 @@ fn extract_event_content<T: Deserialize>(event_content: Value, event_type: &Even
 -> Result<T, ApiError> {
     from_value(event_content).map_api_err(|_| {
         ApiError::bad_event(
-            Some(
-                &format!(
-                    "Event content did not match expected structure for event of type {}.",
-                    event_type
-                )
+            format!(
+                "Event content did not match expected structure for event of type {}.",
+                event_type
             )
         )
     })

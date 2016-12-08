@@ -234,7 +234,7 @@ impl Room {
 
                     if user_id.hostname().to_string() != homeserver_domain {
                         return Err(
-                            ApiError::unimplemented(Some("Federation is not yet supported."))
+                            ApiError::unimplemented("Federation is not yet supported.".to_string())
                         );
                     }
 
@@ -260,14 +260,14 @@ impl Room {
 
                 if missing_user_ids.len() > 0 {
                     return Err(
-                        ApiError::bad_json(Some(&format!(
+                        ApiError::bad_json(format!(
                             "Unknown users in invite list: {}",
                             &missing_user_ids
                                 .iter()
                                 .map(|user_id| user_id.to_string())
                                 .collect::<Vec<String>>()
                                 .join(", ")
-                        )))
+                        ))
                     )
                 }
 
@@ -331,7 +331,7 @@ impl Room {
             .map_err(|err| {
                 match err {
                     DieselError::NotFound => ApiError::not_found(
-                        Some("The room was not found on this server")
+                        "The room was not found on this server".to_string()
                     ),
                     _ => ApiError::from(err)
                 }

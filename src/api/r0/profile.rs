@@ -44,7 +44,7 @@ impl Handler for Profile {
             }
             None => {
                 let error = ApiError::not_found(
-                    Some(&format!("No profile found for {}", user_id))
+                    format!("No profile found for {}", user_id)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -87,7 +87,7 @@ impl Handler for GetAvatarUrl {
                     },
                     None => {
                         let error = ApiError::not_found(
-                            Some(&format!("No avatar_url found for {}", user_id))
+                            format!("No avatar_url found for {}", user_id)
                         );
 
                         return Err(IronError::new(error.clone(), error));
@@ -96,7 +96,7 @@ impl Handler for GetAvatarUrl {
             }
             None => {
                 let error = ApiError::not_found(
-                    Some(&format!("No profile found for {}", user_id))
+                    format!("No profile found for {}", user_id)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -139,7 +139,7 @@ impl Handler for PutAvatarUrl {
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                Some("The given user_id does not correspond to the authenticated user")
+                "The given user_id does not correspond to the authenticated user".to_string()
             );
 
             return Err(IronError::new(error.clone(), error));
@@ -189,7 +189,7 @@ impl Handler for GetDisplayName {
                     },
                     None => {
                         let error = ApiError::not_found(
-                            Some(&format!("No displayname found for {}", user_id))
+                            format!("No displayname found for {}", user_id)
                         );
 
                         return Err(IronError::new(error.clone(), error));
@@ -198,7 +198,7 @@ impl Handler for GetDisplayName {
             }
             None => {
                 let error = ApiError::not_found(
-                    Some(&format!("No profile found for {}", user_id))
+                    format!("No profile found for {}", user_id)
                 );
 
                 return Err(IronError::new(error.clone(), error));
@@ -241,7 +241,7 @@ impl Handler for PutDisplayName {
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                Some("The given user_id does not correspond to the authenticated user")
+                "The given user_id does not correspond to the authenticated user".to_string()
             );
 
             return Err(IronError::new(error.clone(), error));
