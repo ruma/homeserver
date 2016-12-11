@@ -134,7 +134,7 @@ impl<'a> Server<'a> {
 
         let mut versions_router = Router::new();
 
-        versions_router.get("/versions", Versions::new(vec!["r0.0.1"]), "versions");
+        versions_router.get("/versions", Versions::supported(), "versions");
 
         let mut versions = Chain::new(versions_router);
 
