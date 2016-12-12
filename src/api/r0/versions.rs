@@ -5,21 +5,24 @@ use iron::{Handler, IronResult, Request, Response, status};
 use modifier::SerializableResponse;
 
 /// The /versions endpoint.
+#[derive(Serialize)]
 pub struct Versions {
     versions: Vec<&'static str>,
 }
 
 impl Versions {
-    /// Create a `Versions` offering support for the specified versions of the Matrix spec.
-    pub fn new(versions: Vec<&'static str>) -> Versions {
+    /// Returns the list of supported `Versions` of the Matrix spec.
+    pub fn supported() -> Self {
         Versions {
-            versions: versions,
+            versions: vec![
+                "r0.2.0"
+            ]
         }
     }
 }
 
 impl Handler for Versions {
     fn handle(&self, _request: &mut Request) -> IronResult<Response> {
-        Ok(Response::with((status::Ok, SerializableResponse(&self.versions))))
+        Ok(Response::with((status::Ok, SerializableResponse(&self))))
     }
 }
