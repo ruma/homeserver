@@ -62,9 +62,9 @@ embed_migrations!();
 fn main() {
     env_logger::init().expect("Failed to initialize logger.");
 
-    let matches = App::new("ruma")
+    let matches = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A Matrix homeserver client API")
+        .about(env!("CARGO_PKG_DESCRIPTION"))
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
