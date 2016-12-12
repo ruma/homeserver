@@ -37,7 +37,7 @@ use config::Config;
 use embedded_migrations::run as run_pending_migrations;
 use error::{ApiError, CliError};
 use db::DB;
-use middleware::{Cors, MiddlewareChain};
+use middleware::{ResponseHeaders, MiddlewareChain};
 use swagger::mount_swagger;
 
 /// Ruma's web server.
@@ -130,15 +130,14 @@ impl<'a> Server<'a> {
 
         r0.link_before(Read::<Config>::one(ruma_config.clone()));
         r0.link_before(Write::<DB>::one(connection_pool));
-        r0.link_after(Cors);
+        r0.link_after(ResponseHeaders);
 
         let mut versions_router = Router::new();
 
         versions_router.get("/versions", Versions::supported(), "versions");
 
         let mut versions = Chain::new(versions_router);
-
-        versions.link_after(Cors);
+        versions.link_after(ResponseHeaders);
 
         let mut mount = Mount::new();
 

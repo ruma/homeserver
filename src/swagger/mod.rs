@@ -5,7 +5,7 @@ use iron::headers::ContentType;
 use iron::modifiers::Header;
 use mount::Mount;
 
-use middleware::Cors;
+use middleware::ResponseHeaders;
 
 /// Stub for the Swagger endpoint. Enable with the Cargo feature "swagger".
 #[cfg(not(feature = "swagger"))]
@@ -30,7 +30,7 @@ pub fn mount_swagger(mount: &mut Mount) {
 
     let mut swagger = Chain::new(Swagger);
 
-    swagger.link_after(Cors);
+    swagger.link_after(ResponseHeaders);
 
     mount.mount("/ruma/swagger.json", swagger);
 }
