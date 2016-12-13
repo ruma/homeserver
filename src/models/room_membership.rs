@@ -15,7 +15,6 @@ use diesel::{
     insert,
     update,
 };
-use diesel::associations::Identifiable;
 use diesel::expression::dsl::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
@@ -66,8 +65,9 @@ pub struct NewRoomMembership {
 }
 
 /// A Matrix room membership.
-#[derive(AsChangeset, Debug, Clone, Queryable)]
+#[derive(AsChangeset, Debug, Clone, Identifiable, Queryable)]
 #[table_name = "room_memberships"]
+#[primary_key(event_id)]
 pub struct RoomMembership {
     /// The eventID.
     pub event_id: EventId,
@@ -81,19 +81,6 @@ pub struct RoomMembership {
     pub membership: String,
     /// The time the room was created.
     pub created_at: PgTimestamp,
-}
-
-impl Identifiable for RoomMembership {
-    type Id = EventId;
-    type Table = room_memberships::table;
-
-    fn id(&self) -> &Self::Id {
-        &self.event_id
-    }
-
-    fn table() -> Self::Table {
-        room_memberships::table
-    }
 }
 
 impl RoomMembership {
