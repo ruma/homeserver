@@ -98,17 +98,6 @@ impl Room {
                 .get_result(connection)
                 .map_err(ApiError::from)?;
 
-            if let Some(ref alias) = creation_options.alias {
-                let new_room_alias = NewRoomAlias {
-                    alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?,
-                    room_id: room.id.clone(),
-                    user_id: new_room.user_id.clone(),
-                    servers: vec![homeserver_domain.to_string()],
-                };
-
-                RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
-            }
-
             let mut new_events = Vec::new();
 
             let new_create_event: NewEvent = CreateEvent {
@@ -225,6 +214,17 @@ impl Room {
                 .into(events::table)
                 .execute(connection)
                 .map_err(ApiError::from)?;
+
+            if let Some(ref alias) = creation_options.alias {
+                let new_room_alias = NewRoomAlias {
+                    alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?,
+                    room_id: room.id.clone(),
+                    user_id: new_room.user_id.clone(),
+                    servers: vec![homeserver_domain.to_string()],
+                };
+
+                RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
+            }
 
             if let Some(ref invite_list) = creation_options.invite_list {
                 room.create_memberships(connection, &invite_list, homeserver_domain)?;
