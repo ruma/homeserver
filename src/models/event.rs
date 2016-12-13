@@ -92,8 +92,9 @@ impl Event {
         -> Result<JoinRulesEvent, ApiError>
     {
         let event: Event = events::table
-            .filter(events::event_type.eq((&EventType::RoomJoinRules).to_string()))
+            .filter(events::event_type.eq(EventType::RoomJoinRules.to_string()))
             .filter(events::room_id.eq(room_id))
+            .order(events::ordering.desc())
             .first(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),

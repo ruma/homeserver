@@ -1,14 +1,16 @@
 //! Matrix rooms.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
 use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, FindDsl, LoadDsl, OrderDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
-use diesel::pg::expression::dsl::any;
 use diesel::result::Error as DieselError;
 use ruma_events::EventType;
+use ruma_events::stripped::StrippedState;
+use ruma_events::room::avatar::AvatarEvent;
+use ruma_events::room::canonical_alias::{CanonicalAliasEvent, CanonicalAliasEventContent};
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
 use ruma_events::room::history_visibility::{
     HistoryVisibility,
@@ -28,9 +30,8 @@ use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 use error::ApiError;
 use models::event::{Event, NewEvent};
 use models::room_alias::{NewRoomAlias, RoomAlias};
-use models::room_membership::{RoomMembership, RoomMembershipOptions};
-use models::user::User;
-use schema::{events, rooms, users};
+use models::room_membership::RoomMembership;
+use schema::{events, rooms};
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {
@@ -38,6 +39,8 @@ pub struct CreationOptions {
     pub alias: Option<String>,
     /// Whether or not the room should be federated.
     pub federate: bool,
+    /// A list of state events to set in the new room.
+    pub initial_state: Option<Vec<Box<StrippedState>>>,
     /// A list of users to invite to the room.
     pub invite_list: Option<Vec<String>>,
     /// An initial name for the room.
@@ -150,70 +153,260 @@ impl Room {
                 new_events.push(new_topic_event);
             }
 
-            let new_history_visibility_event: NewEvent = HistoryVisibilityEvent {
-                content: HistoryVisibilityEventContent {
-                    history_visibility: HistoryVisibility::Shared,
-                },
-                event_id: EventId::new(homeserver_domain)?,
-                event_type: EventType::RoomHistoryVisibility,
-                prev_content: None,
-                room_id: room.id.clone(),
-                state_key: "".to_string(),
-                unsigned: None,
-                user_id: new_room.user_id.clone(),
-            }.try_into()?;
+            let mut is_canonical_alias_set = false;
+            let mut is_history_visibility_set = false;
+            let mut is_join_rules_set = false;
+            let mut new_room_aliases = Vec::new();
 
-            new_events.push(new_history_visibility_event);
+            if creation_options.initial_state.is_some() {
+                let initial_events = creation_options.initial_state.clone().unwrap();
 
-            match creation_options.preset {
-                RoomPreset::PrivateChat => {
-                    let new_join_rules_event: NewEvent = JoinRulesEvent {
-                        content: JoinRulesEventContent { join_rule: JoinRule::Invite },
-                        event_id: EventId::new(homeserver_domain)?,
-                        event_type: EventType::RoomJoinRules,
-                        prev_content: None,
-                        room_id: room.id.clone(),
-                        state_key: "".to_string(),
-                        unsigned: None,
-                        user_id: new_room.user_id.clone(),
-                    }.try_into()?;
+                for state_event in initial_events {
+                    match *state_event {
+                        StrippedState::RoomAliases(event) => {
+                            for alias in event.content.aliases {
+                                if alias.hostname().to_string() != homeserver_domain {
+                                    return Err(
+                                        ApiError::unimplemented("Federation is not yet supported".to_string())
+                                    );
+                                }
 
-                    new_events.push(new_join_rules_event);
+                                let new_room_alias = NewRoomAlias {
+                                    alias: alias,
+                                    room_id: room.id.clone(),
+                                    user_id: new_room.user_id.clone(),
+                                    servers: vec![homeserver_domain.to_string()],
+                                };
+
+                                new_room_aliases.push(new_room_alias);
+                            }
+                        },
+                        StrippedState::RoomAvatar(event) => {
+                            let new_avatar_event: NewEvent = AvatarEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomAvatar,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_avatar_event);
+                        },
+                        StrippedState::RoomCanonicalAlias(event) => {
+                            if event.content.alias.hostname().to_string() != homeserver_domain {
+                                return Err(ApiError::unimplemented("Federation is not yet supported".to_string()));
+                            }
+
+                            is_canonical_alias_set = true;
+
+                            let new_canonical_alias_event: NewEvent = CanonicalAliasEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomCanonicalAlias,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_canonical_alias_event);
+                        },
+                        StrippedState::RoomGuestAccess(_) => {
+                            return Err(ApiError::unimplemented("Guests are not yet supported".to_string()));
+                        },
+                        StrippedState::RoomHistoryVisibility(event) => {
+                            is_history_visibility_set = true;
+
+                            let new_history_visibility_event: NewEvent = HistoryVisibilityEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomHistoryVisibility,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_history_visibility_event);
+                        },
+                        StrippedState::RoomJoinRules(event) => {
+                            is_join_rules_set = true;
+
+                            let new_join_rules_event: NewEvent = JoinRulesEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomJoinRules,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_join_rules_event);
+                        },
+                        StrippedState::RoomName(event) => {
+                            if creation_options.name.is_some() {
+                                continue;
+                            }
+
+                            let new_name_event: NewEvent = NameEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomName,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_name_event);
+                        },
+                        StrippedState::RoomPowerLevels(event) => {
+                            let new_power_levels_event: NewEvent = PowerLevelsEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomPowerLevels,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_power_levels_event);
+                        },
+                        StrippedState::RoomThirdPartyInvite(_) => {
+                            return Err(
+                                ApiError::unimplemented("Third party invites are not yet supported".to_string())
+                            );
+                        },
+                        StrippedState::RoomTopic(event) => {
+                            if creation_options.topic.is_some() {
+                                continue;
+                            }
+
+                            let new_topic_event: NewEvent = TopicEvent {
+                                content: event.content.clone(),
+                                event_id: EventId::new(homeserver_domain)?,
+                                event_type: EventType::RoomTopic,
+                                prev_content: None,
+                                room_id: room.id.clone(),
+                                state_key: event.state_key.to_string(),
+                                unsigned: None,
+                                user_id: room.user_id.clone(),
+                            }.try_into()?;
+
+                            new_events.push(new_topic_event);
+                        }
+                        StrippedState::RoomCreate(_) | StrippedState::RoomMember(_) => {
+                            return Err(
+                                ApiError::bad_json(
+                                    "m.room.create and m.room.member are not supported by 'initial_state'".to_string()
+                                )
+                            );
+                        }
+                    }
                 }
-                RoomPreset::PublicChat => {
-                    let new_join_rules_event: NewEvent = JoinRulesEvent {
-                        content: JoinRulesEventContent { join_rule: JoinRule::Public },
-                        event_id: EventId::new(homeserver_domain)?,
-                        event_type: EventType::RoomJoinRules,
-                        prev_content: None,
-                        room_id: room.id.clone(),
-                        state_key: "".to_string(),
-                        unsigned: None,
-                        user_id: new_room.user_id.clone(),
-                    }.try_into()?;
+            }
 
-                    new_events.push(new_join_rules_event);
-                }
-                RoomPreset::TrustedPrivateChat => {
-                    let new_join_rules_event: NewEvent = JoinRulesEvent {
-                        content: JoinRulesEventContent { join_rule: JoinRule::Invite },
-                        event_id: EventId::new(homeserver_domain)?,
-                        event_type: EventType::RoomJoinRules,
-                        prev_content: None,
-                        room_id: room.id.clone(),
-                        state_key: "".to_string(),
-                        unsigned: None,
-                        user_id: new_room.user_id.clone(),
-                    }.try_into()?;
+            if !is_history_visibility_set {
+                let new_history_visibility_event: NewEvent = HistoryVisibilityEvent {
+                    content: HistoryVisibilityEventContent {
+                        history_visibility: HistoryVisibility::Shared,
+                    },
+                    event_id: EventId::new(homeserver_domain)?,
+                    event_type: EventType::RoomHistoryVisibility,
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: new_room.user_id.clone(),
+                }.try_into()?;
 
-                    new_events.push(new_join_rules_event);
+                new_events.push(new_history_visibility_event);
+            }
+
+            if !is_join_rules_set {
+                match creation_options.preset {
+                    RoomPreset::PrivateChat => {
+                        let new_join_rules_event: NewEvent = JoinRulesEvent {
+                            content: JoinRulesEventContent { join_rule: JoinRule::Invite },
+                            event_id: EventId::new(homeserver_domain)?,
+                            event_type: EventType::RoomJoinRules,
+                            prev_content: None,
+                            room_id: room.id.clone(),
+                            state_key: "".to_string(),
+                            unsigned: None,
+                            user_id: new_room.user_id.clone(),
+                        }.try_into()?;
+
+                        new_events.push(new_join_rules_event);
+                    }
+                    RoomPreset::PublicChat => {
+                        let new_join_rules_event: NewEvent = JoinRulesEvent {
+                            content: JoinRulesEventContent { join_rule: JoinRule::Public },
+                            event_id: EventId::new(homeserver_domain)?,
+                            event_type: EventType::RoomJoinRules,
+                            prev_content: None,
+                            room_id: room.id.clone(),
+                            state_key: "".to_string(),
+                            unsigned: None,
+                            user_id: new_room.user_id.clone(),
+                        }.try_into()?;
+
+                        new_events.push(new_join_rules_event);
+                    }
+                    RoomPreset::TrustedPrivateChat => {
+                        let new_join_rules_event: NewEvent = JoinRulesEvent {
+                            content: JoinRulesEventContent { join_rule: JoinRule::Invite },
+                            event_id: EventId::new(homeserver_domain)?,
+                            event_type: EventType::RoomJoinRules,
+                            prev_content: None,
+                            room_id: room.id.clone(),
+                            state_key: "".to_string(),
+                            unsigned: None,
+                            user_id: new_room.user_id.clone(),
+                        }.try_into()?;
+
+                        new_events.push(new_join_rules_event);
+                    }
                 }
+            }
+
+            if creation_options.alias.is_some() && !is_canonical_alias_set {
+                let new_canonical_alias_event: NewEvent = CanonicalAliasEvent {
+                    content: CanonicalAliasEventContent {
+                        alias: RoomAliasId::try_from(
+                            &format!("#{}:{}", creation_options.alias.clone().unwrap(), homeserver_domain)
+                        )?
+                    },
+                    event_id: EventId::new(homeserver_domain)?,
+                    event_type: EventType::RoomCanonicalAlias,
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: room.user_id.clone(),
+                }.try_into()?;
+
+                new_events.push(new_canonical_alias_event);
             }
 
             insert(&new_events)
                 .into(events::table)
                 .execute(connection)
                 .map_err(ApiError::from)?;
+
+            for alias in new_room_aliases {
+                RoomAlias::create(connection, homeserver_domain, &alias)?;
+            }
 
             if let Some(ref alias) = creation_options.alias {
                 let new_room_alias = NewRoomAlias {
@@ -227,7 +420,7 @@ impl Room {
             }
 
             if let Some(ref invite_list) = creation_options.invite_list {
-                room.create_memberships(connection, &invite_list, homeserver_domain)?;
+                RoomMembership::create_memberships(connection, &room, &invite_list, homeserver_domain)?;
             }
 
             Ok(room)
@@ -283,66 +476,5 @@ impl Room {
                     _ => ApiError::from(err)
                 }
             })
-    }
-
-    /// Given a list of invited users create the appropriate `m.room.member` events.
-    fn create_memberships(&self, connection: &PgConnection, invite_list: &Vec<String>, homeserver_domain: &str)
-    -> Result<(), ApiError> {
-        let mut user_ids = HashSet::with_capacity(invite_list.len());
-
-        for invitee in invite_list {
-            let user_id = UserId::try_from(invitee)?;
-
-            if user_id.hostname().to_string() != homeserver_domain {
-                return Err(
-                    ApiError::unimplemented("Federation is not yet supported.".to_string())
-                );
-            }
-
-            user_ids.insert(user_id);
-        }
-
-        let users: Vec<User> = users::table
-            .filter(users::id.eq(any(
-                user_ids.iter().cloned().collect::<Vec<UserId>>()))
-            )
-            .get_results(connection)
-            .map_err(ApiError::from)?;
-
-        let loaded_user_ids: HashSet<UserId> = users
-            .iter()
-            .map(|user| user.id.clone())
-            .collect();
-
-        let missing_user_ids: Vec<UserId> = user_ids
-            .difference(&loaded_user_ids)
-            .cloned()
-            .collect();
-
-        if missing_user_ids.len() > 0 {
-            return Err(
-                ApiError::bad_json(format!(
-                    "Unknown users in invite list: {}",
-                    &missing_user_ids
-                        .iter()
-                        .map(|user_id| user_id.to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                ))
-            )
-        }
-
-        for user in users {
-            let options = RoomMembershipOptions {
-                room_id: self.id.clone(),
-                user_id: user.id.clone(),
-                sender: self.user_id.clone(),
-                membership: "invite".to_string(),
-            };
-
-            RoomMembership::create(connection, &homeserver_domain, options)?;
-        }
-
-        Ok(())
     }
 }

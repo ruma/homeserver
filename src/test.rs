@@ -212,6 +212,11 @@ impl Test {
         self.post(&path, &body)
     }
 
+    /// Look up a `RoomId` using an alias.
+    pub fn get_room_by_alias(&self, alias: &str) -> Response {
+        self.get(&format!("/_matrix/client/r0/directory/room/{}", alias))
+    }
+
     /// Join an existent room.
     pub fn join_room(&self, access_token: &str, room_id: &str) -> Response {
         let join_path = format!(
