@@ -36,7 +36,7 @@ use schema::{events, rooms, users};
 pub struct CreationOptions {
     /// An initial alias for the room.
     pub alias: Option<String>,
-    /// Whehter or not the room should be federated.
+    /// Whether or not the room should be federated.
     pub federate: bool,
     /// A list of users to invite to the room.
     pub invite_list: Option<Vec<String>>,
@@ -227,60 +227,7 @@ impl Room {
                 .map_err(ApiError::from)?;
 
             if let Some(ref invite_list) = creation_options.invite_list {
-                let mut user_ids = HashSet::with_capacity(invite_list.len());
-
-                for invitee in invite_list {
-                    let user_id = UserId::try_from(invitee)?;
-
-                    if user_id.hostname().to_string() != homeserver_domain {
-                        return Err(
-                            ApiError::unimplemented("Federation is not yet supported.".to_string())
-                        );
-                    }
-
-                    user_ids.insert(user_id);
-                }
-
-                let users: Vec<User> = users::table
-                    .filter(users::id.eq(any(
-                        user_ids.iter().cloned().collect::<Vec<UserId>>()))
-                    )
-                    .get_results(connection)
-                    .map_err(ApiError::from)?;
-
-                let loaded_user_ids: HashSet<UserId> = users
-                    .iter()
-                    .map(|user| user.id.clone())
-                    .collect();
-
-                let missing_user_ids: Vec<UserId> = user_ids
-                    .difference(&loaded_user_ids)
-                    .cloned()
-                    .collect();
-
-                if missing_user_ids.len() > 0 {
-                    return Err(
-                        ApiError::bad_json(format!(
-                            "Unknown users in invite list: {}",
-                            &missing_user_ids
-                                .iter()
-                                .map(|user_id| user_id.to_string())
-                                .collect::<Vec<String>>()
-                                .join(", ")
-                        ))
-                    )
-                }
-
-                for user in users {
-                    let options = RoomMembershipOptions {
-                        room_id: room.id.clone(),
-                        user_id: user.id.clone(),
-                        sender: room.user_id.clone(),
-                        membership: "invite".to_string(),
-                    };
-
-                    RoomMembership::create(connection, &homeserver_domain, options)?;
-                }
+                room.create_memberships(connection, &invite_list, homeserver_domain)?;
             }
 
             Ok(room)
@@ -336,5 +283,66 @@ impl Room {
                     _ => ApiError::from(err)
                 }
             })
+    }
+
+    /// Given a list of invited users create the appropriate `m.room.member` events.
+    fn create_memberships(&self, connection: &PgConnection, invite_list: &Vec<String>, homeserver_domain: &str)
+    -> Result<(), ApiError> {
+        let mut user_ids = HashSet::with_capacity(invite_list.len());
+
+        for invitee in invite_list {
+            let user_id = UserId::try_from(invitee)?;
+
+            if user_id.hostname().to_string() != homeserver_domain {
+                return Err(
+                    ApiError::unimplemented("Federation is not yet supported.".to_string())
+                );
+            }
+
+            user_ids.insert(user_id);
+        }
+
+        let users: Vec<User> = users::table
+            .filter(users::id.eq(any(
+                user_ids.iter().cloned().collect::<Vec<UserId>>()))
+            )
+            .get_results(connection)
+            .map_err(ApiError::from)?;
+
+        let loaded_user_ids: HashSet<UserId> = users
+            .iter()
+            .map(|user| user.id.clone())
+            .collect();
+
+        let missing_user_ids: Vec<UserId> = user_ids
+            .difference(&loaded_user_ids)
+            .cloned()
+            .collect();
+
+        if missing_user_ids.len() > 0 {
+            return Err(
+                ApiError::bad_json(format!(
+                    "Unknown users in invite list: {}",
+                    &missing_user_ids
+                        .iter()
+                        .map(|user_id| user_id.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                ))
+            )
+        }
+
+        for user in users {
+            let options = RoomMembershipOptions {
+                room_id: self.id.clone(),
+                user_id: user.id.clone(),
+                sender: self.user_id.clone(),
+                membership: "invite".to_string(),
+            };
+
+            RoomMembership::create(connection, &homeserver_domain, options)?;
+        }
+
+        Ok(())
     }
 }
