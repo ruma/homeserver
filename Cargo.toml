@@ -28,6 +28,7 @@ r2d2 = "0.7.1"
 r2d2-diesel = "0.9.0"
 rand = "0.3.15"
 router = "0.4.0"
+ruma-events = "0.1.0"
 rustc-serialize = "0.3.21"
 serde = "0.8.19"
 serde_derive = "0.8.19"
@@ -40,9 +41,6 @@ unicase = "1.4.0"
 default-features = false
 features = ["postgres"]
 version = "0.9.0"
-
-[dependencies.ruma-events]
-git = "https://github.com/ruma/ruma-events"
 
 [dependencies.ruma-identifiers]
 features = ["diesel"]
