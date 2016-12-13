@@ -1,7 +1,6 @@
 //! Matrix profile.
 
 use diesel::{
-    ExpressionMethods,
     LoadDsl,
     FindDsl,
     SaveChangesDsl,
