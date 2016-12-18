@@ -69,18 +69,14 @@ impl Handler for Register {
         let registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
             Ok(Some(registration_request)) => registration_request,
             Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::bad_json(None)));
             }
         };
 
         if let Some(kind) = registration_request.kind {
             match kind {
                 RegistrationKind::Guest => {
-                    let error = ApiError::guest_forbidden(None);
-
-                    return Err(IronError::new(error.clone(), error));
+                    return Err(IronError::from(ApiError::guest_forbidden(None)));
                 }
                 _ => {},
             }

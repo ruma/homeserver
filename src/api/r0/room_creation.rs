@@ -48,9 +48,7 @@ impl CreateRoomRequest {
     pub fn validate(self) -> Result<Self, IronError> {
         if let Some(ref visibility) = self.visibility {
             if visibility != "public" && visibility != "private" {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::bad_json(None)));
             }
         }
 
@@ -65,9 +63,7 @@ impl Handler for CreateRoom {
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
             Ok(Some(create_room_request)) => create_room_request.validate()?,
             Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::bad_json(None)));
             }
         };
 

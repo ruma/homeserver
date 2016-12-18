@@ -47,7 +47,7 @@ impl Handler for Profile {
                     format!("No profile found for {}", user_id)
                 );
 
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             }
         };
 
@@ -90,7 +90,7 @@ impl Handler for GetAvatarUrl {
                             format!("No avatar_url found for {}", user_id)
                         );
 
-                        return Err(IronError::new(error.clone(), error));
+                        return Err(IronError::from(error));
                     }
                 }
             }
@@ -99,7 +99,7 @@ impl Handler for GetAvatarUrl {
                     format!("No profile found for {}", user_id)
                 );
 
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             }
         };
 
@@ -122,9 +122,7 @@ impl Handler for PutAvatarUrl {
         let avatar_url_request = match request.get::<bodyparser::Struct<PutAvatarUrlResquest>>() {
             Ok(Some(avatar_url_request)) => avatar_url_request,
             Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::bad_json(None)));
             }
         };
 
@@ -142,7 +140,7 @@ impl Handler for PutAvatarUrl {
                 "The given user_id does not correspond to the authenticated user".to_string()
             );
 
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(error));
         }
 
         DataProfile::update_avatar_url(
@@ -192,7 +190,7 @@ impl Handler for GetDisplayName {
                             format!("No displayname found for {}", user_id)
                         );
 
-                        return Err(IronError::new(error.clone(), error));
+                        return Err(IronError::from(error));
                     }
                 }
             }
@@ -201,7 +199,7 @@ impl Handler for GetDisplayName {
                     format!("No profile found for {}", user_id)
                 );
 
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             }
         };
 
@@ -224,9 +222,7 @@ impl Handler for PutDisplayName {
         let displayname_request = match request.get::<bodyparser::Struct<PutDisplayNameRequest>>() {
             Ok(Some(displayname_request)) => displayname_request,
             Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::bad_json(None)));
             }
         };
 
@@ -244,7 +240,7 @@ impl Handler for PutDisplayName {
                 "The given user_id does not correspond to the authenticated user".to_string()
             );
 
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(error));
         }
 
         DataProfile::update_displayname(

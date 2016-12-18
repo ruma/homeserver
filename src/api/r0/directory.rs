@@ -68,7 +68,7 @@ impl Handler for DeleteRoomAlias {
                 "Provided room alias did not exist or you do not have access to delete it.".to_string()
             );
 
-            Err(IronError::new(error.clone(), error))
+            Err(IronError::from(error))
         }
     }
 }
@@ -94,9 +94,7 @@ impl Handler for PutRoomAlias {
         let room_id = if let Ok(Some(api_request)) = parsed_request {
             RoomId::try_from(&api_request.room_id).map_err(ApiError::from)?
         } else {
-            let error = ApiError::bad_json(None);
-
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(ApiError::bad_json(None)));
         };
 
         let user = request.extensions.get::<User>()
