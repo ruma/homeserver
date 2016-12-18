@@ -149,7 +149,7 @@ impl Handler for SendMessageEvent {
                     format!("Events of type {} cannot be created with this API.", event_type)
                 );
 
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             }
         };
 
@@ -353,7 +353,7 @@ impl Handler for StateMessageEvent {
                     format!("Events of type {} cannot be created with this API.", event_type)
                 );
 
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             }
         };
 
@@ -398,7 +398,7 @@ fn ensure_empty_state_key(state_key: &str, event_type: &EventType) -> Result<(),
     } else {
         let error = ApiError::bad_event(format!("Events of type {} must have an empty state key.", event_type));
 
-        Err(IronError::new(error.clone(), error))
+        Err(IronError::from(error))
     }
 }
 

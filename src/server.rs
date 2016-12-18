@@ -171,7 +171,5 @@ impl<'a> Server<'a> {
 }
 
 fn unimplemented(_request: &mut Request) -> IronResult<Response> {
-    let error = ApiError::unimplemented(None);
-
-    Err(IronError::new(error.clone(), error))
+    Err(IronError::from(ApiError::unimplemented(None)))
 }

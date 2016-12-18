@@ -20,17 +20,13 @@ impl BeforeMiddleware for JsonRequest {
             Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
             _ => None,
         }).is_none() {
-            let error = ApiError::wrong_content_type(None);
-
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(ApiError::wrong_content_type(None)));
         }
 
         match request.get::<bodyparser::Json>() {
             Ok(Some(_)) => Ok(()),
             Ok(_) | Err(_) => {
-                let error = ApiError::not_json(None);
-
-                Err(IronError::new(error.clone(), error))
+                Err(IronError::from(ApiError::not_json(None)))
             },
         }
     }

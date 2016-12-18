@@ -11,6 +11,7 @@ use argon2rs::verifier::DecodeError;
 use base64::Base64Error;
 use diesel::result::{TransactionError, Error as DieselError};
 use iron::{IronError, Response};
+use iron::headers::ContentType;
 use iron::modifier::Modifier;
 use iron::status::Status;
 use macaroons::error::Error as MacaroonsError;
@@ -318,6 +319,7 @@ impl From<ApiError> for IronError {
 
 impl Modifier<Response> for ApiError {
     fn modify(self, response: &mut Response) {
+        response.headers.set(ContentType::json());
         response.status = Some(self.errcode.status_code());
         response.body = Some(Box::new(to_string(&self).expect("ApiError should always serialize")));
     }
@@ -401,5 +403,25 @@ impl<T, E> MapApiError for Result<T, E> where E: Debug {
                 Err(op(e))
             }
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use iron::Response;
+    use iron::headers::ContentType;
+    use iron::modifier::Modifier;
+    use iron::status::Status;
+    use error::ApiError;
+
+    #[test]
+    fn test_api_error_modifier_status_and_headers() {
+        let mut response = Response::new();
+        let error = ApiError::unauthorized(None);
+        error.modify(&mut response);
+
+        assert_eq!(response.headers.get::<ContentType>().unwrap(), &ContentType::json());
+        assert_eq!(response.status.unwrap(), Status::Forbidden);
     }
 }
