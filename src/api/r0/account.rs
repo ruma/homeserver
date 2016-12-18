@@ -42,9 +42,7 @@ impl Handler for AccountPassword {
         {
             Ok(Some(account_password_request)) => account_password_request,
             Ok(None) | Err(_) => {
-                let error = ApiError::not_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::not_json(None)));
             }
         };
 
@@ -57,9 +55,7 @@ impl Handler for AccountPassword {
         let connection = DB::from_request(request)?;
 
         if let Err(_) = user.save_changes::<User>(&*connection) {
-            let error = ApiError::unauthorized(None);
-
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(ApiError::unauthorized(None)));
         }
 
         Ok(Response::with(Status::Ok))
@@ -81,7 +77,7 @@ impl Handler for DeactivateAccount {
                 .expect("AccessTokenAuth should ensure an access token");
 
             if let Err(error) = token.revoke(&connection) {
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             };
         }
 
@@ -89,7 +85,7 @@ impl Handler for DeactivateAccount {
             .expect("AccessTokenAuth should ensure a user");
 
         if let Err(error) = user.deactivate(&connection) {
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(error));
         };
 
         // Delete all the account data associated with the user.
@@ -122,7 +118,7 @@ impl Handler for PutAccountData {
                 "The given user_id does not correspond to the authenticated user".to_string()
             );
 
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(error));
         }
 
         let data_type = request.extensions.get::<DataTypeParam>()
@@ -133,7 +129,7 @@ impl Handler for PutAccountData {
             Ok(None) | Err(_) => {
                 let error = ApiError::bad_json(None);
 
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(error));
             }
         };
 
@@ -171,7 +167,7 @@ impl Handler for PutRoomAccountData {
                 "The given user_id does not correspond to the authenticated user".to_string()
             );
 
-            return Err(IronError::new(error.clone(), error));
+            return Err(IronError::from(error));
         }
 
         let room_id = request.extensions.get::<RoomIdParam>()
@@ -184,17 +180,17 @@ impl Handler for PutRoomAccountData {
             .map_err(IronError::from)?;
 
         if entry.is_none() {
-            let err = ApiError::unauthorized(
+            let error = ApiError::unauthorized(
                 "No membership entry was found.".to_string()
             );
 
-            return Err(IronError::new(err.clone(), err));
+            return Err(IronError::from(error));
         }
 
         if entry.unwrap().membership != "join" {
-            let err = ApiError::unauthorized("The room is not accesible.".to_string());
+            let error = ApiError::unauthorized("The room is not accesible.".to_string());
 
-            return Err(IronError::new(err.clone(), err));
+            return Err(IronError::from(error));
         }
 
         let data_type = request.extensions.get::<DataTypeParam>()
@@ -203,9 +199,7 @@ impl Handler for PutRoomAccountData {
         let content = match request.get::<bodyparser::Json>() {
             Ok(Some(content)) => content.to_string().clone(),
             Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::bad_json(None)));
             }
         };
 
