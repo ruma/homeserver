@@ -48,7 +48,7 @@ impl BeforeMiddleware for AccessTokenAuth {
             }
         }
 
-        Err(IronError::new(ApiError::unauthorized(None), ApiError::unauthorized(None)))
+        Err(IronError::from(ApiError::unauthorized(None)))
     }
 }
 
@@ -79,7 +79,7 @@ impl BeforeMiddleware for UIAuth {
             }
         }
 
-        Err(IronError::new(ApiError::unauthorized(None), ApiError::unauthorized(None)))
+        Err(IronError::from(ApiError::unauthorized(None)))
     }
 }
 

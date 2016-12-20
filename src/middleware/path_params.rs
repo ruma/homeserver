@@ -114,9 +114,7 @@ impl BeforeMiddleware for RoomAliasIdParam {
                 room_alias_id
             }
             None => {
-                let error = ApiError::missing_param("room_alias");
-
-                return Err(IronError::new(error.clone(), error));
+                return Err(IronError::from(ApiError::missing_param("room_alias")));
             }
         };
 
