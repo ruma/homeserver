@@ -295,7 +295,7 @@ impl Room {
     -> Result<PowerLevelsEventContent, ApiError> {
         match events::table
             .filter(events::room_id.eq(self.id.clone()))
-            .filter(events::state_key.eq(EventType::RoomPowerLevels.to_string()))
+            .filter(events::event_type.eq(EventType::RoomPowerLevels.to_string()))
             .order(events::ordering.desc())
             .first::<Event>(connection)
         {
