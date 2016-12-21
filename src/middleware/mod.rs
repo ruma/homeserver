@@ -2,12 +2,12 @@
 use iron::Chain;
 
 mod authentication;
-mod cors;
 mod json;
 mod path_params;
+mod response_headers;
 
 pub use self::authentication::{AccessTokenAuth, UIAuth};
-pub use self::cors::Cors;
+pub use self::response_headers::ResponseHeaders;
 pub use self::json::JsonRequest;
 pub use self::path_params::{
     DataTypeParam,
