@@ -147,6 +147,29 @@ impl BeforeMiddleware for EventTypeParam {
     }
 }
 
+/// Extracts the URL path paramater `tag`.
+pub struct TagParam;
+
+impl Key for TagParam {
+    type Value = String;
+}
+
+impl BeforeMiddleware for TagParam {
+    fn before(&self, request: &mut Request) -> IronResult<()> {
+        let params = request.extensions.get::<Router>()
+            .expect("Params object is missing").clone();
+
+        let tag = params.find("tag")
+            .ok_or(ApiError::missing_param("tag"))
+            .map_err(IronError::from)?;
+
+        request.extensions.insert::<TagParam>(tag.to_string().clone());
+
+        Ok(())
+    }
+}
+
+
 /// Extracts the URL path paramater `transaction_id`.
 pub struct TransactionIdParam;
 

@@ -7,3 +7,4 @@ DROP TABLE room_aliases;
 DROP TABLE room_memberships;
 DROP TABLE rooms;
 DROP TABLE users;
+DROP TABLE room_tags;

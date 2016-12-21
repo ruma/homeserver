@@ -219,6 +219,20 @@ impl Test {
 
         self.post(&join_path, r"{}")
     }
+
+    /// Create tag
+    pub fn create_tag(&self, access_token: &str, room_id: &str, user_id: &str, tag: &str, content: &str) {
+        let put_tag_path = format!(
+            "/_matrix/client/r0/user/{}/rooms/{}/tags/{}?access_token={}",
+            user_id,
+            room_id,
+            tag,
+            access_token
+        );
+
+        let response = self.put(&put_tag_path, content);
+        assert_eq!(response.status, Status::Ok);
+    }
 }
 
 impl Response {
