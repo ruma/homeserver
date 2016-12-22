@@ -89,12 +89,12 @@ Legend:
     <th align="left" colspan="3">Filtering</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/6">#6</a></td>
     <td>GET /user/:user_id/filter/:filter_id</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/7">#7</a></td>
     <td>POST /user/:user_id/filter</td>
   </tr>

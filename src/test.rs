@@ -233,6 +233,25 @@ impl Test {
         let response = self.put(&put_tag_path, content);
         assert_eq!(response.status, Status::Ok);
     }
+
+    /// Create a filter
+    pub fn create_filter(&self, access_token: &str, user_id: &str, content: &str) -> String {
+        let filter_path = format!(
+            "/_matrix/client/r0/user/{}/filter?access_token={}",
+            user_id,
+            access_token
+        );
+
+        let response = self.post(&filter_path, content);
+        assert_eq!(response.status, Status::Ok);
+        response
+            .json()
+            .find("filter_id")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string()
+    }
 }
 
 impl Response {

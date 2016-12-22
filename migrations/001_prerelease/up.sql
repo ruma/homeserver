@@ -85,3 +85,10 @@ CREATE TABLE room_tags (
     content TEXT NOT NULL,
     UNIQUE (user_id, room_id, tag)
 );
+
+CREATE TABLE filters (
+    id BIGSERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    UNIQUE (id, user_id)
+);

@@ -1,6 +1,7 @@
 pub mod access_token;
 pub mod account_data;
 pub mod event;
+pub mod filter;
 pub mod profile;
 pub mod room;
 pub mod room_alias;

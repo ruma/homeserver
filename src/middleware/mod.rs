@@ -12,9 +12,10 @@ pub use self::json::JsonRequest;
 pub use self::path_params::{
     DataTypeParam,
     EventTypeParam,
-    UserIdParam,
+    FilterIdParam,
     RoomIdParam,
     RoomAliasIdParam,
+    UserIdParam,
     TagParam,
     TransactionIdParam,
 };
