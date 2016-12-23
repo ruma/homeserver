@@ -7,10 +7,177 @@ use diesel::{
 };
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
-use ruma_identifiers::UserId;
+use ruma_identifiers::{RoomId, UserId};
 
 use error::ApiError;
 use schema::filters;
+
+/// Defines the default format of `Filter` for `account_data` and `presence`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventFilter {
+    /// A list of event types to exclude.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub not_types: Vec<String>,
+    /// The maximum number of events to return.
+    pub limit: usize,
+    /// A list of senders IDs to include.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_user_id")]
+    pub senders: Vec<UserId>,
+    /// A list of event types to include.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub types: Vec<String>,
+    /// A list of sender IDs to exclude.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_user_id")]
+    pub not_senders: Vec<UserId>,
+}
+
+/// Defines the default format of a `RoomEventFilter`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoomEventFilter {
+    /// A list of event types to exclude.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub not_types: Vec<String>,
+    /// A list of event types to include.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub types: Vec<String>,
+    /// A list of room IDs to exclude.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_room_id")]
+    pub not_rooms: Vec<RoomId>,
+    /// A list of room IDs to include.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_room_id")]
+    pub rooms: Vec<RoomId>,
+    /// The maximum number of events to return.
+    pub limit: usize,
+    /// A list of sender IDs to exclude.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_user_id")]
+    pub not_senders: Vec<UserId>,
+    /// A list of senders IDs to include.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_user_id")]
+    pub senders: Vec<UserId>,
+}
+
+fn default_include_leave() -> bool {
+    false
+}
+
+fn default_vec_room_id() -> Vec<RoomId> {
+    Vec::new()
+}
+
+fn default_vec_user_id() -> Vec<UserId> {
+    Vec::new()
+}
+
+fn is_false(test: &bool) -> bool {
+    !test
+}
+
+/// `RoomFilter`'s to be applied to room data.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoomFilter {
+    /// Include rooms that the user has left in the sync, default false
+    #[serde(default = "default_include_leave")]
+    #[serde(skip_serializing_if = "is_false")]
+    pub include_leave: bool,
+    /// The per user account data to include for rooms.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account_data: Option<RoomEventFilter>,
+    /// The message and state update events to include for rooms.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeline: Option<RoomEventFilter>,
+    /// The events that aren't recorded in the room history, e.g. typing and receipts, to include for rooms.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ephemeral: Option<RoomEventFilter>,
+    /// The state events to include for rooms.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<RoomEventFilter>,
+    /// A list of room IDs to exclude.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_room_id")]
+    pub not_rooms: Vec<RoomId>,
+    /// A list of room IDs to include.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default = "default_vec_room_id")]
+    pub rooms: Vec<RoomId>,
+}
+
+/// Predefined `EventFormat` types.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EventFormat {
+    /// 'client' will return the events in a format suitable for clients.
+    Client,
+    /// 'federation' will return the raw event as received over federation.
+    Federation,
+}
+
+impl ::serde::Serialize for EventFormat {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: ::serde::Serializer,
+    {
+        // Serialize the enum as a string.
+        serializer.serialize_str(match *self {
+            EventFormat::Client => "client",
+            EventFormat::Federation => "federation",
+        })
+    }
+}
+
+impl ::serde::Deserialize for EventFormat {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: ::serde::Deserializer,
+    {
+        struct Visitor;
+
+        impl ::serde::de::Visitor for Visitor {
+            type Value = EventFormat;
+
+            fn visit_str<E>(&mut self, value: &str) -> Result<EventFormat, E>
+                where E: ::serde::de::Error,
+            {
+                match value {
+                    "client" => Ok(EventFormat::Client),
+                    "federation" => Ok(EventFormat::Federation),
+                    _ => Err(E::invalid_value(&format!("unknown {} variant: {}",
+                                                       stringify!( EventFormat), value))),
+                }
+            }
+        }
+
+        // Deserialize the enum from a string.
+        deserializer.deserialize_str(Visitor)
+    }
+}
+
+/// `ContentFilter` contains all information to filter request like `sync`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContentFilter {
+    /// Filters to be applied to room data.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub room: Option<RoomFilter>,
+    /// The presence updates to include.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub presence: Option<EventFilter>,
+    /// The user account data that isn't associated with rooms to include.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub account_data: Option<EventFilter>,
+    /// The format to use for events. 'client' will return the events in a format suitable for clients. 'federation' will return the raw event as received over federation. The default is 'client'. One of: "client", "federation"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_format: Option<EventFormat>,
+    /// List of event fields to include. If this list is absent then all fields are included. The entries may include '.' charaters to indicate sub-fields. So ['content.body'] will include the 'body' field of the 'content' object. A literal '.' character in a field name may be escaped using a '\'. A server may include more fields than were requested.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub event_fields: Vec<String>,
+}
 
 /// A new Matrix filter, not yet saved.
 #[derive(Debug, Insertable)]

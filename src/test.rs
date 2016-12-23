@@ -12,13 +12,16 @@ use iron_test::{request, response};
 use mount::Mount;
 use r2d2::{Config as R2D2Config, CustomizeConnection};
 use r2d2_diesel::Error as R2D2DieselError;
-use serde_json::{Value, from_str};
+use serde_json::{Value, from_str, to_string};
+use ruma_events::presence::PresenceState;
 
 use config::Config;
 use embedded_migrations::run as run_pending_migrations;
+use query::{SyncOptions, Batch};
 use server::Server;
 
 static START: Once = ONCE_INIT;
+
 const DATABASE_URL: &'static str = "postgres://postgres:test@postgres:5432/ruma_test";
 const POSTGRES_URL: &'static str = "postgres://postgres:test@postgres:5432";
 
@@ -144,7 +147,7 @@ impl Test {
             &self.mount,
         ) {
             Ok(response) => response,
-            Err(error)  => error.response,
+            Err(error) => error.response,
         };
 
         Response::from_iron_response(response)
@@ -251,6 +254,68 @@ impl Test {
             .as_str()
             .unwrap()
             .to_string()
+    }
+
+    /// Send a message to room.
+    pub fn send_message(&self, access_token: &str, room_id: &str, message: &str) -> Response {
+        let create_event_path = format!(
+            "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
+            room_id,
+            access_token
+        );
+        let body = format!(r#"{{"body":"{}","msgtype":"m.text"}}"#, message);
+        let response = self.put(&create_event_path, &body);
+        assert_eq!(response.status, Status::Ok);
+        response
+    }
+
+    /// Create a User and Room.
+    pub fn initial_fixtures(&self, username: &str, body: &str) -> (String, String) {
+        let access_token = self.create_access_token_with_username(username);
+        let room_id = self.create_room_with_params(&access_token, body);
+        (access_token, room_id)
+    }
+
+    /// Try to find a batch in a Response.
+    pub fn get_next_batch(response: &Response) -> Batch {
+        response
+            .json()
+            .find("next_batch")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .parse()
+            .unwrap()
+    }
+
+    /// Query sync with query parameter.
+    pub fn sync(&self, access_token: &str, options: SyncOptions) -> Response {
+        let mut path = match options.filter {
+            Some(ref filter) => format!("/_matrix/client/r0/sync?filter={}&access_token={}", to_string(filter).unwrap(), access_token),
+            None => format!("/_matrix/client/r0/sync?&access_token={}", access_token),
+        };
+        path = if options.full_state { format!("{}&full_state=true", path) } else { path };
+        path = match options.set_presence {
+            PresenceState::Offline => path,
+            PresenceState::Online => format!("{}&set_presence=online", path),
+            PresenceState::Unavailable => format!("{}&set_presence=unavailable", path),
+        };
+        path = match options.since {
+            Some(batch) => format!("{}&since={}", path, batch.to_string()),
+            None => path,
+        };
+        path = format!("{}&timeout={}", path, options.timeout);
+
+        let response = self.get(&path);
+        assert_eq!(response.status, Status::Ok);
+        response
+    }
+
+    /// Test existent of keys in json.
+    pub fn assert_json_keys(json: &Value, keys: Vec<&str>) {
+        for key in keys.into_iter() {
+            assert!(json.find(key).is_some());
+        }
     }
 }
 

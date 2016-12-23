@@ -167,8 +167,7 @@ mod tests {
     #[test]
     fn join_own_public_room() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_public_room(&access_token);
+        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
@@ -185,10 +184,8 @@ mod tests {
     #[test]
     fn join_other_public_room() {
         let test = Test::new();
-        let carl_token = test.create_access_token_with_username("carl");
+        let (_, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
         let mark_token = test.create_access_token_with_username("mark");
-
-        let room_id = test.create_public_room(&carl_token);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
@@ -205,8 +202,7 @@ mod tests {
     #[test]
     fn join_own_private_room() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_private_room(&access_token);
+        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
@@ -244,10 +240,8 @@ mod tests {
     #[test]
     fn join_other_private_room_without_invite() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
+        let (_, room_id) = test.initial_fixtures("bob", r#"{"visibility": "private"}"#);
         let alice_token = test.create_access_token_with_username("alice");
-
-        let room_id = test.create_private_room(&bob_token);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
@@ -263,10 +257,8 @@ mod tests {
     #[test]
     fn invite_to_room() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
+        let (bob_token, room_id) = test.initial_fixtures("bob", r#"{"visibility": "private"}"#);
         let alice_token = test.create_access_token_with_username("alice");
-
-        let room_id = test.create_private_room(&bob_token);
 
         let response = test.invite(&bob_token, &room_id, "@alice:ruma.test");
 
@@ -300,9 +292,8 @@ mod tests {
     #[test]
     fn invite_without_user_id() {
         let test = Test::new();
-        let carl_token = test.create_access_token_with_username("carl");
+        let (carl_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
 
-        let room_id = test.create_private_room(&carl_token);
         let invite_path = format!(
             "/_matrix/client/r0/rooms/{}/invite?access_token={}",
             room_id,
@@ -326,9 +317,7 @@ mod tests {
     #[test]
     fn invitee_does_not_exist() {
         let test = Test::new();
-        let carl_token = test.create_access_token_with_username("carl");
-
-        let room_id = test.create_private_room(&carl_token);
+        let (carl_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
 
         // User 'mark' does not exist.
         let response = test.invite(&carl_token, &room_id, "@mark:ruma.test");
@@ -343,8 +332,7 @@ mod tests {
     #[test]
     fn invitee_is_invalid() {
         let test = Test::new();
-        let carl_token = test.create_access_token();
-        let room_id = test.create_private_room(&carl_token);
+        let (carl_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
 
         let response = test.invite(&carl_token, &room_id, "mark.ruma.test");
 
