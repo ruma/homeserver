@@ -21,8 +21,8 @@ dependencies = [
  "r2d2-diesel 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "router 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ruma-events 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ruma-identifiers 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruma-events 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruma-identifiers 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.8.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 0.8.19 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -595,10 +595,10 @@ dependencies = [
 
 [[package]]
 name = "ruma-events"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "ruma-identifiers 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruma-identifiers 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruma-signatures 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.8.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 0.8.19 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "ruma-identifiers"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "diesel 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1006,8 +1006,8 @@ dependencies = [
 "checksum ring 0.6.0-alpha1 (registry+https://github.com/rust-lang/crates.io-index)" = "0c9d14fdd6779c80311183b64598d57e640993fd1732119ce2cedb3234217532"
 "checksum route-recognizer 0.1.11 (registry+https://github.com/rust-lang/crates.io-index)" = "4f0a750d020adb1978f5964ea7bca830585899b09da7cbb3f04961fc2400122d"
 "checksum router 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b94397bfa5b772b4375be4da12560a7c1c1e74b2e35c46ed312958aad56df726"
-"checksum ruma-events 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9651cb4c3f129ae3d861762b1857bbd0fc15f67cb5ecb740da10d6df53b3d5d8"
-"checksum ruma-identifiers 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6a7e7acb9d0255beea27ed6388206b09d1f0c294051134bc89fe79d7b3e848de"
+"checksum ruma-events 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6548570e6319fb9cee395ce2946d7bfb7c95d502c83b4ec75d4b0fb4a0556bdf"
+"checksum ruma-identifiers 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2c4f56d6c5372a78da0764ccf54de0d34cd36dc1f97b5d6b27bd46b9c6529ce5"
 "checksum ruma-signatures 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8a6aba46742e40247cdc2205e207f41230d2e427e4c573834772f270d0b3fb39"
 "checksum rustc-serialize 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)" = "237546c689f20bb44980270c73c3b9edd0891c1be49cc1274406134a66d3957b"
 "checksum rustc_version 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "c5f5376ea5e30ce23c03eb77cbe4962b988deead10910c372b226388b594c084"
