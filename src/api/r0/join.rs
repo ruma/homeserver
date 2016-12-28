@@ -5,18 +5,21 @@ use std::error::Error;
 
 use bodyparser;
 use diesel::Connection;
+use diesel::pg::PgConnection;
 use iron::status::Status;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
-use ruma_identifiers::UserId;
+use ruma_identifiers::{UserId, RoomId, RoomIdOrAliasId};
 
 use config::Config;
 use db::DB;
 use error::{ApiError, MapApiError};
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam};
+use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, RoomIdOrAliasParam};
 use modifier::SerializableResponse;
 use models::room::Room;
+use models::room_alias::RoomAlias;
 use models::room_membership::{RoomMembership, RoomMembershipOptions};
 use models::user::User;
+
 
 /// The `/rooms/:room_id/join` endpoint.
 pub struct JoinRoom;
@@ -42,24 +45,62 @@ impl Handler for JoinRoom {
             .expect("Should have been required by RoomIdParam.")
             .clone();
 
-        let room_membership_options = RoomMembershipOptions {
-            room_id: room_id.clone(),
-            user_id: user.id.clone(),
-            sender: user.id,
-            membership: "join".to_string(),
-        };
-
-        let room_membership = RoomMembership::upsert(
-            &connection,
-            &config.domain,
-            room_membership_options
-        )?;
-
-        let response = JoinRoomResponse { room_id: room_membership.room_id.to_string() };
-
-        Ok(Response::with((Status::Ok, SerializableResponse(response))))
+        join_room(room_id, user, &connection, &config)
     }
 }
+
+/// The `/join/:room_id_or_alias` endpoint.
+pub struct JoinRoomWithIdOrAlias;
+
+middleware_chain!(JoinRoomWithIdOrAlias, [JsonRequest, RoomIdOrAliasParam, AccessTokenAuth]);
+
+impl Handler for JoinRoomWithIdOrAlias {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        let user = request.extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
+
+        let connection = DB::from_request(request)?;
+        let config = Config::from_request(request)?;
+
+        let room_id_or_alias = request.extensions.get::<RoomIdOrAliasParam>()
+            .expect("Should have been required by RoomIdOrAliasParam.")
+            .clone();
+
+        let room_id = match room_id_or_alias {
+            RoomIdOrAliasId::RoomId(id) => id,
+            RoomIdOrAliasId::RoomAliasId(alias) => {
+                let room_alias = RoomAlias::find_by_alias(&connection, &alias)?;
+                room_alias.room_id
+            }
+        };
+
+        join_room(room_id, user, &connection, &config)
+    }
+}
+
+/// Handles the work of actually saving the user to the room membership table
+fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Config
+    ) -> IronResult<Response> {
+    let room_membership_options = RoomMembershipOptions {
+        room_id: room_id.clone(),
+        user_id: user.id.clone(),
+        sender: user.id,
+        membership: "join".to_string(),
+    };
+
+    let room_membership = RoomMembership::upsert(
+        connection,
+        &config.domain,
+        room_membership_options
+    )?;
+
+    let response = JoinRoomResponse { room_id: room_membership.room_id.to_string() };
+
+    Ok(Response::with((Status::Ok, SerializableResponse(response))))
+}
+
 
 /// The `/rooms/:room_id/invite` endpoint.
 #[derive(Debug)]
@@ -158,11 +199,47 @@ impl Handler for InviteToRoom {
 }
 
 
-
 #[cfg(test)]
 mod tests {
     use test::Test;
     use iron::status::Status;
+
+    #[test]
+    fn join_own_public_room_via_join_endpoint() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+        let room_id = test.create_public_room(&access_token);
+
+        let room_join_path = format!(
+            "/_matrix/client/r0/join/{}?access_token={}",
+            room_id,
+            access_token
+        );
+
+        let response = test.post(&room_join_path, r"{}");
+        assert_eq!(response.status, Status::Ok);
+        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap().to_string(), room_id);
+    }
+
+    #[test]
+    fn join_own_public_room_via_join_endpoint_alias() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+        let room_id = test.create_room_with_params(
+            &access_token,
+            r#"{"room_alias_name":"thepub", "visibility": "public"}"#
+        );
+
+        let room_join_path = format!(
+            "/_matrix/client/r0/join/{}?access_token={}",
+            "%23thepub:ruma.test", // Hash symbols need to be urlencoded
+            access_token
+        );
+
+        let response = test.post(&room_join_path, r"{}");
+        assert_eq!(response.status, Status::Ok);
+        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap().to_string(), room_id);
+    }
 
     #[test]
     fn join_own_public_room() {

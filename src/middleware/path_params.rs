@@ -10,10 +10,12 @@ use ruma_identifiers::{
     UserId,
     RoomAliasId,
     RoomId,
+    RoomIdOrAliasId
 };
 
 use config::Config;
 use error::{ApiError, MapApiError};
+use url::percent_encoding::percent_decode;
 
 /// Extracts a `RoomId` from the URL path parameter `room_id`.
 pub struct RoomIdParam;
@@ -34,6 +36,36 @@ impl BeforeMiddleware for RoomIdParam {
             }
         }?;
         request.extensions.insert::<RoomIdParam>(room_id);
+        Ok(())
+    }
+}
+
+/// Extracts a `RoomIdOrAlias` from the URL path parameter `room_id_or_alias`.
+pub struct RoomIdOrAliasParam;
+
+impl Key for RoomIdOrAliasParam {
+    type Value = RoomIdOrAliasId;
+}
+
+impl BeforeMiddleware for RoomIdOrAliasParam {
+    fn before(&self, request: &mut Request) -> IronResult<()> {
+        let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
+        let room_id_or_alias = match params.find("room_id_or_alias") {
+            Some(room_id_or_alias) => {
+                let decoded_room_id_or_alias = percent_decode(room_id_or_alias.as_bytes())
+                    .decode_utf8()
+                    .map_err(|_| {
+                        ApiError::invalid_param("room_id_or_alias", "Unable to be url decoded.")
+                    })?;
+                RoomIdOrAliasId::try_from(&decoded_room_id_or_alias).map_api_err(|err| {
+                    ApiError::invalid_param("room_id_or_alias", err.description())
+                })
+            },
+            None => {
+                Err(ApiError::missing_param("room_id_or_alias"))
+            }
+        }?;
+        request.extensions.insert::<RoomIdOrAliasParam>(room_id_or_alias);
         Ok(())
     }
 }
