@@ -31,6 +31,7 @@ extern crate serde_json;
 extern crate serde_yaml;
 extern crate toml;
 extern crate unicase;
+extern crate url;
 
 use clap::{App, AppSettings, SubCommand};
 

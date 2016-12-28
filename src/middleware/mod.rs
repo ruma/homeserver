@@ -15,6 +15,7 @@ pub use self::path_params::{
     FilterIdParam,
     RoomIdParam,
     RoomAliasIdParam,
+    RoomIdOrAliasParam,
     UserIdParam,
     TagParam,
     TransactionIdParam,

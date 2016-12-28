@@ -22,6 +22,7 @@ use api::r0::{
     GetTags,
     InviteToRoom,
     JoinRoom,
+    JoinRoomWithIdOrAlias,
     Login,
     Logout,
     Members,
@@ -107,8 +108,12 @@ impl<'a> Server<'a> {
             StateMessageEvent::chain(),
             "state_message_event_with_key",
         );
+
+        /// Joining rooms
         r0_router.post("/rooms/:room_id/join", JoinRoom::chain(), "join_room");
         r0_router.post("/rooms/:room_id/invite", InviteToRoom::chain(), "invite_to_room");
+        r0_router.post("/join/:room_id_or_alias", JoinRoomWithIdOrAlias::chain(), "join_room_with_alias");
+
         r0_router.get("/rooms/:room_id/members", Members::chain(), "members");
         r0_router.get("/profile/:user_id", Profile::chain(), "profile");
         r0_router.get("/profile/:user_id/avatar_url", GetAvatarUrl::chain(), "get_avatar_url");

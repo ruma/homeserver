@@ -36,6 +36,7 @@ serde_json = "0.8.3"
 serde_yaml = "0.5.0"
 toml = "0.2.1"
 unicase = "1.4.0"
+url = "1.2.3"
 
 [dependencies.diesel_codegen]
 default-features = false
