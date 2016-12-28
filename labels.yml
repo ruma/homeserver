@@ -82,9 +82,13 @@
   color: fef2c0
 - name: type/bug
   color: f7c6c7
+- name: type/discussion
+  color: f7c6c7
 - name: type/feature
   color: f7c6c7
 - name: type/improvement
+  color: f7c6c7
+- name: type/meta
   color: f7c6c7
 - name: type/question
   color: f7c6c7
