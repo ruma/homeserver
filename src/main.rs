@@ -54,6 +54,7 @@ pub mod models;
 pub mod modifier;
 pub mod schema;
 pub mod server;
+pub mod query;
 pub mod swagger;
 #[cfg(test)] pub mod test;
 

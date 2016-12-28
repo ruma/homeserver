@@ -103,7 +103,7 @@ impl Handler for SendMessageEvent {
         let event_type = request.extensions.get::<EventTypeParam>()
             .expect("EventTypeParam should ensure an EventType").clone();
 
-        let transaction_id = request.extensions.get::<TransactionIdParam>()
+        request.extensions.get::<TransactionIdParam>()
             .expect("TransactionIdParam should ensure a TransactionId").clone();
 
         let user = request.extensions.get::<User>()

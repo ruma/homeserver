@@ -16,6 +16,7 @@ pub use self::profile::{Profile, GetAvatarUrl, PutAvatarUrl, GetDisplayName, Put
 pub use self::registration::Register;
 pub use self::room_creation::CreateRoom;
 pub use self::tags::{DeleteTag, GetTags, PutTag};
+pub use self::sync::Sync;
 pub use self::versions::Versions;
 pub use self::filter::{GetFilter, PostFilter};
 
@@ -31,4 +32,5 @@ mod profile;
 mod registration;
 mod room_creation;
 mod tags;
+mod sync;
 mod versions;

@@ -207,8 +207,7 @@ mod tests {
     #[test]
     fn put_room_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_room(&access_token);
+        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
 
         let put_room_alias_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token

@@ -6,6 +6,7 @@ use std::fmt::Error as FmtError;
 use std::io::Error as IoError;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
+use std::time::SystemTimeError;
 
 use argon2rs::verifier::DecodeError;
 use base64::Base64Error;
@@ -238,6 +239,14 @@ impl From<Base64Error> for ApiError {
 
 impl From<DieselError> for ApiError {
     fn from(error: DieselError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
+    }
+}
+
+impl From<SystemTimeError> for ApiError {
+    fn from(error: SystemTimeError) -> ApiError {
         debug!("Converting to ApiError from: {:?}", error);
 
         ApiError::unknown(None)

@@ -37,7 +37,7 @@ macro_rules! middleware_chain {
     };
 }
 
-/// MiddlewareChain
+/// `MiddlewareChain` ensures that endpoints have a chain function.
 pub trait MiddlewareChain {
     /// Create a `MiddlewareChain` with all necessary middleware.
     fn chain() -> Chain;

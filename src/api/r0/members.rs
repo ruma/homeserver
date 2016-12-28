@@ -48,8 +48,7 @@ mod tests {
     #[test]
     fn room_members() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_public_room(&access_token);
+        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",

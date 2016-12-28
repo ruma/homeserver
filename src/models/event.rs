@@ -2,7 +2,13 @@
 
 use std::convert::{TryInto, TryFrom};
 
-use diesel::{ExpressionMethods, FilterDsl, LoadDsl};
+use diesel::{
+    ExpressionMethods,
+    FilterDsl,
+    LoadDsl,
+    OrderDsl,
+    TextExpressionMethods
+};
 use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::PgConnection;
@@ -38,7 +44,7 @@ use error::ApiError;
 use schema::events;
 
 /// A new event, not yet saved.
-#[derive(Debug, Insertable)]
+#[derive(Debug, Clone, Insertable)]
 #[table_name = "events"]
 pub struct NewEvent {
     /// The type of the event, e.g. *m.room.create*.
@@ -95,6 +101,21 @@ impl Event {
             })?;
         TryInto::try_into(event).map_err(ApiError::from)
     }
+
+    /// Return `RoomEvent`'s by `RoomId` and since.
+    pub fn find_room_events(connection: &PgConnection, room_id: &RoomId, since: i64) -> Result<Vec<Event>, ApiError> {
+        let events: Vec<Event> = events::table
+            .filter(events::event_type.like("m.room.%"))
+            .filter(events::ordering.gt(since))
+            .filter(events::room_id.eq(room_id))
+            .order(events::room_id)
+            .get_results(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => ApiError::not_found(None),
+                _ => ApiError::from(err),
+            })?;
+        Ok(events)
+    }
 }
 
 macro_rules! impl_try_from_room_event_for_new_event {
@@ -142,6 +163,65 @@ macro_rules! impl_try_from_state_event_for_new_event {
     }
 }
 
+macro_rules! impl_try_into_room_event_for_event {
+    ($ty:ident) => {
+        impl TryInto<$ty> for Event {
+            type Err = ApiError;
+
+            fn try_into(self) -> Result<$ty, Self::Err> {
+                Ok($ty {
+                    content: from_str(&self.content).map_err(ApiError::from)?,
+                    event_id: self.id,
+                    event_type: EventType::from(self.event_type.as_ref()),
+                    room_id: self.room_id,
+                    unsigned: None,
+                    user_id: self.user_id,
+                })
+            }
+        }
+    };
+}
+macro_rules! impl_try_into_state_event_for_event {
+    ($ty:ident) => {
+        impl TryInto<$ty> for Event {
+            type Err = ApiError;
+
+            fn try_into(self) -> Result<$ty, Self::Err> {
+                Ok($ty {
+                    content: from_str(&self.content).map_err(ApiError::from)?,
+                    prev_content: None,
+                    event_id: self.id,
+                    state_key: "".to_string(),
+                    event_type: EventType::from(self.event_type.as_ref()),
+                    room_id: self.room_id,
+                    unsigned: None,
+                    user_id: self.user_id,
+                })
+            }
+        }
+    };
+}
+
+impl_try_into_room_event_for_event!(AnswerEvent);
+impl_try_into_room_event_for_event!(CandidatesEvent);
+impl_try_into_room_event_for_event!(HangupEvent);
+impl_try_into_room_event_for_event!(InviteEvent);
+impl_try_into_room_event_for_event!(MessageEvent);
+impl_try_into_room_event_for_event!(CustomRoomEvent);
+
+impl_try_into_state_event_for_event!(AliasesEvent);
+impl_try_into_state_event_for_event!(AvatarEvent);
+impl_try_into_state_event_for_event!(CanonicalAliasEvent);
+impl_try_into_state_event_for_event!(CreateEvent);
+impl_try_into_state_event_for_event!(GuestAccessEvent);
+impl_try_into_state_event_for_event!(HistoryVisibilityEvent);
+impl_try_into_state_event_for_event!(JoinRulesEvent);
+impl_try_into_state_event_for_event!(NameEvent);
+impl_try_into_state_event_for_event!(PowerLevelsEvent);
+impl_try_into_state_event_for_event!(ThirdPartyInviteEvent);
+impl_try_into_state_event_for_event!(TopicEvent);
+impl_try_into_state_event_for_event!(CustomStateEvent);
+
 impl_try_from_room_event_for_new_event!(AnswerEvent);
 impl_try_from_room_event_for_new_event!(CandidatesEvent);
 impl_try_from_room_event_for_new_event!(HangupEvent);
@@ -162,23 +242,6 @@ impl_try_from_state_event_for_new_event!(PowerLevelsEvent);
 impl_try_from_state_event_for_new_event!(ThirdPartyInviteEvent);
 impl_try_from_state_event_for_new_event!(TopicEvent);
 impl_try_from_state_event_for_new_event!(CustomStateEvent);
-
-impl TryInto<JoinRulesEvent> for Event {
-    type Err = ApiError;
-
-    fn try_into(self) -> Result<JoinRulesEvent, Self::Err> {
-        Ok(JoinRulesEvent {
-            content: from_str(&self.content).map_err(ApiError::from)?,
-            event_id: self.id,
-            event_type: EventType::RoomJoinRules,
-            prev_content: None,
-            room_id: self.room_id,
-            state_key: "".to_string(),
-            unsigned: None,
-            user_id: self.user_id,
-        })
-    }
-}
 
 impl TryInto<MemberEvent> for Event {
     type Err = ApiError;
@@ -210,21 +273,3 @@ impl TryInto<MemberEvent> for Event {
         })
     }
 }
-
-impl TryInto<PowerLevelsEvent> for Event {
-    type Err = ApiError;
-
-    fn try_into(self) -> Result<PowerLevelsEvent, Self::Err> {
-        Ok(PowerLevelsEvent {
-            content: from_str(&self.content).map_err(ApiError::from)?,
-            event_id: self.id,
-            event_type: EventType::RoomPowerLevels,
-            prev_content: None,
-            room_id: self.room_id,
-            state_key: "".to_string(),
-            unsigned: None,
-            user_id: self.user_id,
-        })
-    }
-}
-
