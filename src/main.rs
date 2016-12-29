@@ -11,6 +11,7 @@ extern crate clap;
 extern crate env_logger;
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate diesel_codegen;
+extern crate flate2;
 #[macro_use] extern crate iron;
 #[cfg(test)] extern crate iron_test;
 #[macro_use] extern crate log;
