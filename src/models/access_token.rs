@@ -5,6 +5,7 @@ use chrono::{Duration, UTC};
 use diesel::{ExpressionMethods, FilterDsl, LoadDsl, SaveChangesDsl, insert};
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::result::Error as DieselError;
 use iron::typemap::Key;
 use macaroons::caveat::Caveat;
 use macaroons::token::Token;
@@ -64,13 +65,18 @@ impl AccessToken {
     ///
     /// The access token cannot be revoked.
     pub fn find_valid_by_token(connection: &PgConnection, token: &str)
-    -> Result<AccessToken, ApiError> {
-        access_tokens::table
+    -> Result<Option<AccessToken>, ApiError> {
+        let token = access_tokens::table
             .filter(access_tokens::value.eq(token))
             .filter(access_tokens::revoked.eq(false))
             .first(connection)
-            .map(AccessToken::from)
-            .map_err(ApiError::from)
+            .map(AccessToken::from);
+
+        match token {
+            Ok(token) => Ok(Some(token)),
+            Err(DieselError::NotFound) => Ok(None),
+            Err(err) => Err(ApiError::from(err)),
+        }
     }
 
     /// Revoke the access token so it cannot be used again.

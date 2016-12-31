@@ -2,8 +2,7 @@
 
 use diesel::{
     Connection,
-    ExpressionMethods,
-    FilterDsl,
+    FindDsl,
     LoadDsl,
     SaveChangesDsl,
     insert,
@@ -64,47 +63,49 @@ impl User {
         }).map_err(ApiError::from)
     }
 
-    /// Look up a user using the given `AccessToken`.
-    pub fn find_by_access_token(connection: &PgConnection, token: &AccessToken)
-    -> Result<User, ApiError> {
-        users::table
-            .filter(users::id.eq(&token.user_id))
-            .filter(users::active.eq(true))
-            .first(connection)
-            .map(User::from)
-            .map_err(ApiError::from)
-    }
-
     /// Verify that a `User` with the given `UserId` and plaintext password exists.
     pub fn verify(
         connection: &PgConnection,
         id: &UserId,
         plaintext_password: &str,
     ) -> Result<User, ApiError> {
-        let user = User::find_by_uid(connection, id)?;
+        match User::find_active_user(connection, id)? {
+            Some(user) => {
+                if !verify_password(user.password_hash.as_bytes(), plaintext_password)? {
+                    return Err(ApiError::unauthorized("Invalid credentials".to_string()))
+                }
 
-        if verify_password(user.password_hash.as_bytes(), plaintext_password)? {
-            Ok(user)
-        } else {
-            Err(ApiError::unauthorized(None))
+                Ok(user)
+            },
+            None => {
+                Err(ApiError::not_found(format!("The user {} was not found on this server", id)))
+            }
         }
     }
 
-    /// Look up a `User` using the given `UserId`.
-    pub fn find_by_uid(connection: &PgConnection, id: &UserId) -> Result<User, ApiError> {
-        users::table
-            .filter(users::id.eq(id))
-            .filter(users::active.eq(true))
-            .first(connection)
-            .map(User::from)
-            .map_err(|err| {
-                match err {
-                    DieselError::NotFound => ApiError::not_found(
-                        format!("The user {} was not found on this server", id)
-                    ),
-                    _ => ApiError::from(err)
-                }
-            })
+    /// Look up a registered `User` using the given `UserId`.
+    pub fn find_registered_user(connection: &PgConnection, id: &UserId)
+    -> Result<Option<User>, ApiError> {
+        let result = users::table
+            .find(id)
+            .get_result(connection);
+
+        match result {
+            Ok(user) => Ok(Some(user)),
+            Err(DieselError::NotFound) => Ok(None),
+            Err(err) => Err(ApiError::from(err)),
+        }
+    }
+
+    /// Look up an active `User` using the given `UserId`.
+    ///
+    /// A user stops being active when he deactivates his account.
+    pub fn find_active_user(connection: &PgConnection, id: &UserId)
+    -> Result<Option<User>, ApiError> {
+        match User::find_registered_user(connection, id)? {
+            Some(ref user) if user.active => Ok(Some(user.clone())),
+            _ => Ok(None)
+        }
     }
 
     /// Remove the user's ability to login.
