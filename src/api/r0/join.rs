@@ -135,8 +135,11 @@ impl Handler for InviteToRoom {
             // Check if the invitee exists.
             User::find_by_uid(&connection, &invitee_id)?;
 
-            // Check if the room exists.
-            Room::find(&connection, &room_id)?;
+            if Room::find(&connection, &room_id)?.is_none() {
+                return Err(
+                    ApiError::unauthorized("The room was not found on this server".to_string())
+                );
+            }
 
             let unauthorized_err = ApiError::unauthorized(
                 "The inviter hasn't joined the room yet".to_string()
@@ -466,7 +469,7 @@ mod tests {
 
         let response = test.invite(&bob_token, "!random:ruma.test", "@alice:ruma.test");
 
-        assert_eq!(response.status, Status::NotFound);
+        assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
             "The room was not found on this server"

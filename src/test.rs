@@ -269,9 +269,7 @@ impl Test {
             access_token
         );
         let body = format!(r#"{{"body":"{}","msgtype":"m.text"}}"#, message);
-        let response = self.put(&create_event_path, &body);
-        assert_eq!(response.status, Status::Ok);
-        response
+        self.put(&create_event_path, &body)
     }
 
     /// Create a User and Room.

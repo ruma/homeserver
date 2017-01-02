@@ -209,9 +209,11 @@ mod tests {
         let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
 
         let response = test.send_message(&access_token, &room_id, "Hi Test 1");
+        assert_eq!(response.status, Status::Ok);
         let event_id_1 = response.json().find("event_id").unwrap().as_str().unwrap();
 
         let response = test.send_message(&access_token, &room_id, "Hi Test 2");
+        assert_eq!(response.status, Status::Ok);
         let event_id_2 = response.json().find("event_id").unwrap().as_str().unwrap();
 
         let options = SyncOptions {
@@ -278,7 +280,8 @@ mod tests {
         let test = Test::new();
         let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
 
-        test.send_message(&access_token, &room_id, "Hi Test");
+        let response = test.send_message(&access_token, &room_id, "Hi Test");
+        assert_eq!(response.status, Status::Ok);
 
         let options = SyncOptions {
             filter: None,
@@ -311,6 +314,7 @@ mod tests {
         let next_batch = Test::get_next_batch(&response);
 
         test.send_message(&access_token, &room_id, "test 1");
+        assert_eq!(response.status, Status::Ok);
 
         let options = SyncOptions {
             filter: None,

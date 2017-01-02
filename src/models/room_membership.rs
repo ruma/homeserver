@@ -90,14 +90,7 @@ impl RoomMembership {
     /// Creates a new `RoomMembership` in the database.
     pub fn create(connection: &PgConnection, homeserver_domain: &str, options: RoomMembershipOptions)
     -> Result<RoomMembership, ApiError> {
-        let room = Room::find(connection, &options.room_id)?;
-
-        RoomMembership::verify_creation_priviledges(
-            connection,
-            options.sender.clone(),
-            &options.membership,
-            &room
-        )?;
+        RoomMembership::verify_creation_priviledges(connection, &options)?;
 
         let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
 
@@ -131,14 +124,7 @@ impl RoomMembership {
         let mut new_memberships: Vec<NewRoomMembership> = Vec::new();
 
         for option in options {
-            let room = Room::find(connection, &option.room_id)?;
-
-            RoomMembership::verify_creation_priviledges(
-                connection,
-                option.sender.clone(),
-                &option.membership,
-                &room
-            )?;
+            RoomMembership::verify_creation_priviledges(connection, &option)?;
 
             let profile = Profile::find_by_uid(connection, option.user_id.clone())?;
 
@@ -150,7 +136,7 @@ impl RoomMembership {
 
             let new_membership = NewRoomMembership {
                 event_id: new_member_event.id.clone(),
-                room_id: room.id.clone(),
+                room_id: option.room_id.clone(),
                 user_id: option.user_id.clone(),
                 sender: option.sender.clone(),
                 membership: option.membership.clone(),
@@ -181,27 +167,32 @@ impl RoomMembership {
     }
 
     /// Check if a `User` has enough priviledges to create a `RoomMembership`.
-    fn verify_creation_priviledges(
-        connection: &PgConnection,
-        sender: UserId,
-        membership: &str,
-        room: &Room
-    ) -> Result<(), ApiError> {
+    fn verify_creation_priviledges(connection: &PgConnection, options: &RoomMembershipOptions)
+    -> Result<(), ApiError> {
+        let room = match Room::find(connection, &options.room_id)? {
+            Some(room) => room,
+            None => {
+                return Err(
+                    ApiError::unauthorized("The room was not found on this server".to_string())
+                );
+            }
+        };
+
         let join_rules_event = Event::find_room_join_rules_by_room_id(connection, room.id.clone())?;
 
         // Only the creator of the room can join an invite-only room, without an invite.
-        if sender != room.user_id {
-            if membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
+        if options.sender != room.user_id {
+            if options.membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
                 return Err(ApiError::unauthorized("You are not invited to this room".to_string()));
             }
 
             let power_levels = room.current_power_levels(connection)?;
             let user_power_level = power_levels
                 .users
-                .get(&sender)
+                .get(&options.sender)
                 .unwrap_or(&power_levels.users_default);
 
-            if membership == "invite" {
+            if options.membership == "invite" {
                 if power_levels.invite > *user_power_level {
                     return Err(ApiError::unauthorized("Insufficient power level to invite".to_string()));
                 }
