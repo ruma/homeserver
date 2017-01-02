@@ -248,6 +248,17 @@ impl Test {
         self.post(&join_path, r"{}")
     }
 
+    /// Leave a room.
+    pub fn leave_room(&self, access_token: &str, room_id: &str) -> Response {
+        let leave_room_path = format!(
+            "/_matrix/client/r0/rooms/{}/leave?access_token={}",
+            room_id,
+            access_token
+        );
+
+        self.post(&leave_room_path, "{}")
+    }
+
     /// Create tag
     pub fn create_tag(&self, access_token: &str, room_id: &str, user_id: &str, tag: &str, content: &str) {
         let put_tag_path = format!(
@@ -290,6 +301,24 @@ impl Test {
         );
         let body = format!(r#"{{"body":"{}","msgtype":"m.text"}}"#, message);
         self.put(&create_event_path, &body)
+    }
+
+    /// Send a state event to a room.
+    pub fn send_state_event(
+        &self,
+        access_token: &str,
+        room_id: &str,
+        event_type: &str,
+        event_content: &str,
+    ) -> Response {
+        let state_event_path = format!(
+            "/_matrix/client/r0/rooms/{}/state/{}?access_token={}",
+            room_id,
+            event_type,
+            access_token
+        );
+
+        self.put(&state_event_path, &event_content)
     }
 
     /// Create a User and Room.

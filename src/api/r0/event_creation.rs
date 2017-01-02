@@ -578,19 +578,16 @@ mod tests {
         );
 
         let event_content = format!(r#"{{
-                                    "ban": 100,"events": {{
-                                        "m.room.message": 100 
-                                    }},
-                                    "events_default": 0,
-                                    "invite": 100,
-                                    "kick": 100,
-                                    "redact": 0,
-                                    "state_default": 0,
-                                    "users": {{
-                                        "{}": 50
-                                    }},
-                                    "users_default": 0
-                                    }}"#, bob.id);
+            "ban": 100,
+            "events": {{ "m.room.message": 100 }},
+            "events_default": 0,
+            "invite": 100,
+            "kick": 100,
+            "redact": 0,
+            "state_default": 0,
+            "users": {{ "{}": 50 }},
+            "users_default": 0
+        }}"#, bob.id);
 
         let response = test.put(&state_event_path, &event_content);
         assert_eq!(response.status, Status::Ok);
@@ -603,20 +600,16 @@ mod tests {
         );
 
         let event_content = format!(r#"{{
-                                    "ban": 100,
-                                    "events": {{
-                                        "m.room.message": 0 
-                                    }},
-                                    "events_default": 0,
-                                    "invite": 100,
-                                    "kick": 100,
-                                    "redact": 0,
-                                    "state_default": 0,
-                                    "users": {{
-                                        "{}": 50
-                                    }},
-                                    "users_default": 0
-                                    }}"#, bob.id);
+            "ban": 100,
+            "events": {{ "m.room.message": 0 }},
+            "events_default": 0,
+            "invite": 100,
+            "kick": 100,
+            "redact": 0,
+            "state_default": 0,
+            "users": {{ "{}": 50 }},
+            "users_default": 0
+        }}"#, bob.id);
 
         // Now everyone can send messages
         let response = test.put(&state_event_path, &event_content);
