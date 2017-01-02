@@ -3,7 +3,8 @@
 use std::convert::TryInto;
 
 use bodyparser;
-use diesel::{Connection, ExecuteDsl, FindDsl, LoadDsl, insert};
+use diesel::{Connection, ExecuteDsl, insert};
+use diesel::pg::PgConnection;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 use router::Router;
 use ruma_events::call::answer::AnswerEvent;
@@ -21,7 +22,7 @@ use ruma_events::room::power_levels::PowerLevelsEvent;
 use ruma_events::room::third_party_invite::ThirdPartyInviteEvent;
 use ruma_events::room::topic::TopicEvent;
 use ruma_events::{CustomRoomEvent, CustomStateEvent, EventType};
-use ruma_identifiers::EventId;
+use ruma_identifiers::{RoomId, EventId};
 use serde::Deserialize;
 use serde_json::{Value, from_value};
 
@@ -38,9 +39,10 @@ use middleware::{
 };
 use models::event::NewEvent;
 use models::room::Room;
+use models::room_membership::RoomMembership;
 use models::user::User;
 use modifier::SerializableResponse;
-use schema::{events, rooms};
+use schema::events;
 
 macro_rules! room_event {
     (
@@ -156,22 +158,7 @@ impl Handler for SendMessageEvent {
         let connection = DB::from_request(request)?;
 
         connection.transaction(|| {
-            let room = rooms::table.find(room_id.to_string()).first::<Room>(&*connection)?;
-            let power_levels = room.current_power_levels(&*connection)?;
-            let user_power_level = power_levels
-                .users
-                .get(&user.id)
-                .unwrap_or(&power_levels.users_default);
-            let required_power_level = power_levels
-                .events
-                .get(&event_type)
-                .unwrap_or(&power_levels.events_default);
-
-            if required_power_level > user_power_level {
-                return Err(
-                    ApiError::unauthorized("Insufficient power level to create this event.".to_string())
-                );
-            }
+            verify_permissions(&connection, &room_id, &user, &event_type)?;
 
             insert(&room_event)
                 .into(events::table)
@@ -360,22 +347,7 @@ impl Handler for StateMessageEvent {
         let connection = DB::from_request(request)?;
 
         connection.transaction(|| {
-            let room = rooms::table.find(room_id.to_string()).first::<Room>(&*connection)?;
-            let power_levels = room.current_power_levels(&*connection)?;
-            let user_power_level = power_levels
-                .users
-                .get(&user.id)
-                .unwrap_or(&power_levels.users_default);
-            let required_power_level = power_levels
-                .events
-                .get(&event_type)
-                .unwrap_or(&power_levels.state_default);
-
-            if required_power_level > user_power_level {
-                return Err(
-                    ApiError::unauthorized("Insufficient power level to create this event.".to_string())
-                );
-            }
+            verify_permissions(&connection, &room_id, &user, &event_type)?;
 
             insert(&state_event)
                 .into(events::table)
@@ -389,6 +361,52 @@ impl Handler for StateMessageEvent {
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))
     }
+}
+
+/// Check if a `User` has permission to create an event in a given `Room`.
+fn verify_permissions(connection: &PgConnection, room_id: &RoomId, user: &User, event_type: &EventType)
+-> Result<(), ApiError> {
+    let room = match Room::find(connection, room_id)? {
+        Some(room) => room,
+        None => {
+            return Err(
+                ApiError::unauthorized("The room was not found on this server".to_string())
+            );
+        }
+    };
+
+    match RoomMembership::find(connection, room_id, &user.id)? {
+        Some(membership) => {
+            if membership.membership != "join".to_string() {
+                return Err(ApiError::unauthorized(
+                    format!("The user {} has not joined the room", user.id)
+                ));
+            }
+        },
+        None => {
+            return Err(ApiError::unauthorized(
+                format!("The user {} is not a member of the room", user.id)
+            ));
+        }
+    }
+
+    let power_levels = room.current_power_levels(&*connection)?;
+    let user_power_level = power_levels
+        .users
+        .get(&user.id)
+        .unwrap_or(&power_levels.users_default);
+    let required_power_level = power_levels
+        .events
+        .get(&event_type)
+        .unwrap_or(&power_levels.events_default);
+
+    if required_power_level > user_power_level {
+        return Err(
+            ApiError::unauthorized("Insufficient power level to create this event.".to_string())
+        );
+    }
+
+    Ok(())
 }
 
 /// Enforces an empty state key for an event type that requires it.
@@ -418,6 +436,7 @@ fn extract_event_content<T: Deserialize>(event_content: Value, event_type: &Even
 #[cfg(test)]
 mod tests {
     use test::Test;
+    use iron::status::Status;
 
     #[test]
     fn create_message_event() {
@@ -497,5 +516,117 @@ mod tests {
         let response = test.put(&create_event_path, r#"{"foo":"bar"}"#);
 
         assert!(response.json().find("event_id").unwrap().as_str().is_some());
+    }
+
+    #[test]
+    fn send_message_to_non_existent_room() {
+        let test = Test::new();
+        let access_token = test.create_access_token();
+
+        let room_id = "!random:ruma.test";
+        let create_event_path = format!(
+            "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
+            room_id,
+            access_token
+        );
+
+        let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
+
+        assert_eq!(response.status, Status::Forbidden);
+    }
+
+    #[test]
+    fn send_message_without_room_membership() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+
+        let room_id = test.create_room(&alice_token);
+        let response = test.send_message(&bob_token, &room_id, "Hello");
+
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "The user @bob:ruma.test is not a member of the room"
+        );
+    }
+
+    #[test]
+    fn send_message_without_joining() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+
+        let room_options = r#"{ "invite": [ "@bob:ruma.test" ] }"#;
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        let response = test.send_message(&bob_token, &room_id, "Hello");
+
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "The user @bob:ruma.test has not joined the room"
+        );
+    }
+
+    #[test]
+    fn overwrite_state_event() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+
+        let room_options = r#"{ "invite": [ "@bob:ruma.test" ] }"#;
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+
+        let state_event_path = format!(
+            "/_matrix/client/r0/rooms/{}/state/m.room.power_levels?access_token={}",
+            room_id,
+            alice_token
+        );
+
+        let event_content = r#"{
+            "ban": 100,
+            "events": { "m.room.message": 100 },
+            "events_default": 0,
+            "invite": 100,
+            "kick": 100,
+            "redact": 0,
+            "state_default": 0,
+            "users": {
+                "@bob:ruma.test": 50
+            },
+            "users_default": 0
+        }"#;
+
+        let response = test.put(&state_event_path, &event_content);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&bob_token, &room_id, "Hello");
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "Insufficient power level to create this event."
+        );
+
+        let event_content = r#"{
+            "ban": 100,
+            "events": { "m.room.message": 0 },
+            "events_default": 0,
+            "invite": 100,
+            "kick": 100,
+            "redact": 0,
+            "state_default": 0,
+            "users": {
+                "@bob:ruma.test": 50
+            },
+            "users_default": 0
+        }"#;
+
+        // Now everyone can send messages
+        let response = test.put(&state_event_path, &event_content);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&bob_token, &room_id, "Hello again");
+        assert_eq!(response.status, Status::Ok);
     }
 }

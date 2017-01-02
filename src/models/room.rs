@@ -463,18 +463,15 @@ impl Room {
 
     /// Look up a `Room` given the `RoomId`.
     pub fn find(connection: &PgConnection, room_id: &RoomId)
-    -> Result<Room, ApiError> {
-        rooms::table
+    -> Result<Option<Room>, ApiError> {
+        let result = rooms::table
             .find(room_id)
-            .get_result(connection)
-            .map(Room::from)
-            .map_err(|err| {
-                match err {
-                    DieselError::NotFound => ApiError::not_found(
-                        "The room was not found on this server".to_string()
-                    ),
-                    _ => ApiError::from(err)
-                }
-            })
+            .get_result(connection);
+
+        match result {
+            Ok(room) => Ok(Some(room)),
+            Err(DieselError::NotFound) => Ok(None),
+            Err(err) => Err(ApiError::from(err)),
+        }
     }
 }
