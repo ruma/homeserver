@@ -6,6 +6,7 @@ use bodyparser;
 use diesel::Connection;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use ruma_events::stripped::StrippedState;
 use ruma_identifiers::RoomId;
 
 use config::Config;
@@ -23,6 +24,7 @@ pub struct CreateRoom;
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
     pub creation_content: Option<CreationContent>,
+    pub initial_state: Option<Vec<Box<StrippedState>>>,
     pub invite: Option<Vec<String>>,
     pub name: Option<String>,
     pub preset: Option<RoomPreset>,
@@ -92,6 +94,7 @@ impl Handler for CreateRoom {
         let creation_options = CreationOptions {
             alias: create_room_request.room_alias_name,
             federate: federate,
+            initial_state: create_room_request.initial_state,
             invite_list: create_room_request.invite,
             name: create_room_request.name,
             preset: preset,
@@ -126,6 +129,7 @@ impl Handler for CreateRoom {
 #[cfg(test)]
 mod tests {
     use test::Test;
+    use iron::status::Status;
 
     #[test]
     fn no_parameters() {
@@ -251,5 +255,108 @@ mod tests {
         assert!(error.starts_with("Unknown users in invite list:"));
         assert!(error.contains("@carl:ruma.test"));
         assert!(error.contains("@dan:ruma.test"));
+    }
+
+    #[test]
+    fn with_power_levels_in_initial_state() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+        let carl_token = test.create_access_token_with_username("carl");
+        test.create_access_token_with_username("dan");
+        test.create_access_token_with_username("eve");
+
+        let room_options = r#"{
+            "invite": [
+                "@bob:ruma.test",
+                "@carl:ruma.test"
+            ],
+            "initial_state": [{
+                "state_key": "",
+                "type": "m.room.power_levels",
+                "content": {
+                    "ban": 100,
+                    "events": { "m.room.topic": 50 },
+                    "events_default": 0,
+                    "invite": 100,
+                    "kick": 100,
+                    "redact": 0,
+                    "state_default": 0,
+                    "users": {
+                        "@bob:ruma.test": 100,
+                        "@carl:ruma.test": 50
+                    },
+                    "users_default": 0
+                }
+            }]
+        }"#;
+
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+
+        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&carl_token, &room_id).status, Status::Ok);
+
+        // Bob has enough power to invite other users.
+        assert_eq!(
+            test.invite(&bob_token, &room_id, "@eve:ruma.test").status,
+            Status::Ok
+        );
+
+        // Carl doesn't ...
+        assert_eq!(
+            test.invite(&carl_token, &room_id, "@dan:ruma.test").status,
+            Status::Forbidden
+        );
+    }
+
+    #[test]
+    fn with_room_aliases_in_initial_state() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+
+        let room_options = r##"{
+            "initial_state": [{
+                "state_key": "",
+                "type": "m.room.aliases",
+                "content": {
+                    "aliases": ["#alias_1:ruma.test", "#alias_2:ruma.test"]
+                }
+            }]
+        }"##;
+
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+
+        let first_alias_response = test.get_room_by_alias("alias_1");
+        let second_alias_response = test.get_room_by_alias("alias_2");
+
+        assert_eq!(
+            first_alias_response.json().find("room_id").unwrap().as_str().unwrap(),
+            room_id
+        );
+
+        assert_eq!(
+            second_alias_response.json().find("room_id").unwrap().as_str().unwrap(),
+            room_id
+        );
+    }
+
+    #[test]
+    fn with_join_rules_in_initial_state() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+
+        let room_options = r#"{
+            "initial_state":[{
+                "state_key": "",
+                "content": { "join_rule": "public" },
+                "type": "m.room.join_rules"
+            }]
+        }"#;
+
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+
+        // Bob can join without an invite.
+        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
     }
 }

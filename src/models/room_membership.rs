@@ -1,6 +1,7 @@
 //! Matrix room membership.
 
-use std::convert::TryInto;
+use std::collections::HashSet;
+use std::convert::{TryFrom, TryInto};
 use std::error::Error;
 
 use diesel::{
@@ -32,9 +33,10 @@ use serde_json::{Value, from_value};
 
 use error::ApiError;
 use models::event::{NewEvent, Event};
+use models::user::User;
 use models::profile::Profile;
 use models::room::Room;
-use schema::{events, room_memberships};
+use schema::{events, users, room_memberships};
 
 /// Room membership update or create data.
 #[derive(Debug, Clone)]
@@ -88,31 +90,14 @@ impl RoomMembership {
     /// Creates a new `RoomMembership` in the database.
     pub fn create(connection: &PgConnection, homeserver_domain: &str, options: RoomMembershipOptions)
     -> Result<RoomMembership, ApiError> {
-        let join_rules_event = Event::find_room_join_rules_by_room_id(
-            &connection,
-            options.clone().room_id,
-        )?;
-
         let room = Room::find(connection, &options.room_id)?;
 
-        // Only the creator of the room can join an invite-only room, without an invite.
-        if options.sender != room.user_id {
-            if options.membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
-                return Err(ApiError::unauthorized("You are not invited to this room".to_string()));
-            }
-
-            let power_levels = room.current_power_levels(connection)?;
-            let user_power_level = power_levels
-                .users
-                .get(&options.sender)
-                .unwrap_or(&power_levels.users_default);
-
-            if options.membership == "invite" {
-                if power_levels.invite > *user_power_level {
-                    return Err(ApiError::unauthorized("Insufficient power level to invite".to_string()));
-                }
-            }
-        }
+        RoomMembership::verify_creation_priviledges(
+            connection,
+            options.sender.clone(),
+            &options.membership,
+            &room
+        )?;
 
         let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
 
@@ -122,7 +107,7 @@ impl RoomMembership {
             profile,
         )?;
 
-        let new_room_membership = NewRoomMembership {
+        let new_membership = NewRoomMembership {
             event_id: new_member_event.id.clone(),
             room_id: options.room_id.clone(),
             user_id: options.user_id.clone(),
@@ -130,18 +115,100 @@ impl RoomMembership {
             membership: options.membership.clone(),
         };
 
-        connection.transaction::<RoomMembership, ApiError, _>(|| {
-            insert(&new_member_event)
+        let memberships = RoomMembership::save_memberships(
+            connection,
+            vec![new_member_event],
+            vec![new_membership]
+        )?;
+
+        Ok(memberships.get(0).unwrap().clone())
+    }
+
+    /// Creates many `RoomMembership`s in the database.
+    pub fn create_many(connection: &PgConnection, homeserver_domain: &str, options: Vec<RoomMembershipOptions>)
+    -> Result<Vec<RoomMembership>, ApiError> {
+        let mut events: Vec<NewEvent> = Vec::new();
+        let mut new_memberships: Vec<NewRoomMembership> = Vec::new();
+
+        for option in options {
+            let room = Room::find(connection, &option.room_id)?;
+
+            RoomMembership::verify_creation_priviledges(
+                connection,
+                option.sender.clone(),
+                &option.membership,
+                &room
+            )?;
+
+            let profile = Profile::find_by_uid(connection, option.user_id.clone())?;
+
+            let new_member_event = RoomMembership::create_new_room_member_event(
+                homeserver_domain,
+                &option,
+                profile,
+            )?;
+
+            let new_membership = NewRoomMembership {
+                event_id: new_member_event.id.clone(),
+                room_id: room.id.clone(),
+                user_id: option.user_id.clone(),
+                sender: option.sender.clone(),
+                membership: option.membership.clone(),
+            };
+
+            events.push(new_member_event);
+            new_memberships.push(new_membership);
+        }
+
+        RoomMembership::save_memberships(connection, events, new_memberships)
+    }
+
+    /// Save new memberships along with their corresponding `m.room.member` events.
+    fn save_memberships(connection: &PgConnection, events: Vec<NewEvent>, new_memberships: Vec<NewRoomMembership>)
+    -> Result<Vec<RoomMembership>, ApiError> {
+        connection.transaction::<Vec<RoomMembership>, ApiError, _>(|| {
+            insert(&events)
                 .into(events::table)
                 .execute(connection)
                 .map_err(ApiError::from)?;
 
-            let room_membership: RoomMembership = insert(&new_room_membership)
+            let memberships: Vec<RoomMembership> = insert(&new_memberships)
                                                     .into(room_memberships::table)
-                                                    .get_result(connection)
+                                                    .get_results(connection)
                                                     .map_err(ApiError::from)?;
-            Ok(room_membership)
+            Ok(memberships)
         }).map_err(ApiError::from)
+    }
+
+    /// Check if a `User` has enough priviledges to create a `RoomMembership`.
+    fn verify_creation_priviledges(
+        connection: &PgConnection,
+        sender: UserId,
+        membership: &str,
+        room: &Room
+    ) -> Result<(), ApiError> {
+        let join_rules_event = Event::find_room_join_rules_by_room_id(connection, room.id.clone())?;
+
+        // Only the creator of the room can join an invite-only room, without an invite.
+        if sender != room.user_id {
+            if membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
+                return Err(ApiError::unauthorized("You are not invited to this room".to_string()));
+            }
+
+            let power_levels = room.current_power_levels(connection)?;
+            let user_power_level = power_levels
+                .users
+                .get(&sender)
+                .unwrap_or(&power_levels.users_default);
+
+            if membership == "invite" {
+                if power_levels.invite > *user_power_level {
+                    return Err(ApiError::unauthorized("Insufficient power level to invite".to_string()));
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Return `RoomMembership` for given `RoomId` and `UserId`.
@@ -253,6 +320,71 @@ impl RoomMembership {
         }.try_into()?;
 
         Ok(new_member_event)
+    }
+
+    /// Given a list of invited users create the appropriate membership entries and `m.room.member` events.
+    pub fn create_memberships(
+        connection: &PgConnection,
+        room: &Room,
+        invite_list: &Vec<String>,
+        homeserver_domain: &str
+    ) -> Result<(), ApiError> {
+        let mut user_ids = HashSet::with_capacity(invite_list.len());
+
+        for invitee in invite_list {
+            let user_id = UserId::try_from(invitee)?;
+
+            if user_id.hostname().to_string() != homeserver_domain {
+                return Err(
+                    ApiError::unimplemented("Federation is not yet supported.".to_string())
+                );
+            }
+
+            user_ids.insert(user_id);
+        }
+
+        let users: Vec<User> = users::table
+            .filter(users::id.eq(any(
+                user_ids.iter().cloned().collect::<Vec<UserId>>()))
+            )
+            .get_results(connection)
+            .map_err(ApiError::from)?;
+
+        let loaded_user_ids: HashSet<UserId> = users
+            .iter()
+            .map(|user| user.id.clone())
+            .collect();
+
+        let missing_user_ids: Vec<UserId> = user_ids
+            .difference(&loaded_user_ids)
+            .cloned()
+            .collect();
+
+        if missing_user_ids.len() > 0 {
+            return Err(
+                ApiError::bad_json(format!(
+                    "Unknown users in invite list: {}",
+                    &missing_user_ids
+                        .iter()
+                        .map(|user_id| user_id.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                ))
+            )
+        }
+
+        let options = users.iter().map(|user| {
+            RoomMembershipOptions {
+                room_id: room.id.clone(),
+                user_id: user.id.clone(),
+                sender: room.user_id.clone(),
+                membership: "invite".to_string(),
+            }
+        }).collect::<Vec<RoomMembershipOptions>>();
+
+        RoomMembership::create_many(connection, &homeserver_domain, options)?;
+
+        Ok(())
     }
 
     /// Return member events for given `room_id`.
