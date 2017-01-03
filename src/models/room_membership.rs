@@ -181,22 +181,22 @@ impl RoomMembership {
         let join_rules_event = Event::find_room_join_rules_by_room_id(connection, room.id.clone())?;
 
         // Only the creator of the room can join an invite-only room, without an invite.
-        if options.sender != room.user_id {
-            if options.membership == "join" && join_rules_event.content.join_rule == JoinRule::Invite {
+        if options.membership == "join" {
+            if join_rules_event.content.join_rule == JoinRule::Invite && options.sender != room.user_id {
                 return Err(ApiError::unauthorized("You are not invited to this room".to_string()));
             }
 
-            let power_levels = room.current_power_levels(connection)?;
-            let user_power_level = power_levels
-                .users
-                .get(&options.sender)
-                .unwrap_or(&power_levels.users_default);
+            return Ok(());
+        }
 
-            if options.membership == "invite" {
-                if power_levels.invite > *user_power_level {
-                    return Err(ApiError::unauthorized("Insufficient power level to invite".to_string()));
-                }
-            }
+        let power_levels = room.current_power_levels(connection)?;
+        let user_power_level = power_levels
+            .users
+            .get(&options.sender)
+            .unwrap_or(&power_levels.users_default);
+
+        if options.membership == "invite" && power_levels.invite > *user_power_level {
+            return Err(ApiError::unauthorized("Insufficient power level to invite".to_string()));
         }
 
         Ok(())
