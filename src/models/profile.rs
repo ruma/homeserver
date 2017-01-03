@@ -92,7 +92,7 @@ impl Profile {
     -> Result<(), ApiError> {
         let mut room_memberships = RoomMembership::find_by_uid(connection, user_id.clone())?;
 
-        for room_membership in room_memberships.iter_mut() {
+        for room_membership in &mut room_memberships {
             let options = RoomMembershipOptions {
                 room_id: room_membership.room_id.clone(),
                 user_id: user_id.clone(),

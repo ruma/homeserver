@@ -74,11 +74,8 @@ impl Handler for Register {
         };
 
         if let Some(kind) = registration_request.kind {
-            match kind {
-                RegistrationKind::Guest => {
-                    return Err(IronError::from(ApiError::guest_forbidden(None)));
-                }
-                _ => {},
+            if let RegistrationKind::Guest = kind {
+                return Err(IronError::from(ApiError::guest_forbidden(None)));
             }
         }
 

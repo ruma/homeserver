@@ -377,7 +377,7 @@ fn verify_permissions(connection: &PgConnection, room_id: &RoomId, user: &User, 
 
     match RoomMembership::find(connection, room_id, &user.id)? {
         Some(membership) => {
-            if membership.membership != "join".to_string() {
+            if membership.membership != "join" {
                 return Err(ApiError::unauthorized(
                     format!("The user {} has not joined the room", user.id)
                 ));
@@ -397,7 +397,7 @@ fn verify_permissions(connection: &PgConnection, room_id: &RoomId, user: &User, 
         .unwrap_or(&power_levels.users_default);
     let required_power_level = power_levels
         .events
-        .get(&event_type)
+        .get(event_type)
         .unwrap_or(&power_levels.events_default);
 
     if required_power_level > user_power_level {

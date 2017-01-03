@@ -339,15 +339,15 @@ impl ApiErrorCode {
     pub fn status_code(&self) -> Status {
         match *self {
             ApiErrorCode::AliasTaken => Status::Conflict,
-            ApiErrorCode::BadEvent => Status::UnprocessableEntity,
+            ApiErrorCode::BadEvent |
             ApiErrorCode::BadJson => Status::UnprocessableEntity,
-            ApiErrorCode::Forbidden => Status::Forbidden,
+            ApiErrorCode::Forbidden |
             ApiErrorCode::GuestAccessForbidden => Status::Forbidden,
-            ApiErrorCode::InvalidParam => Status::BadRequest,
-            ApiErrorCode::LimitExceeded => Status::TooManyRequests,
-            ApiErrorCode::MissingParam => Status::BadRequest,
-            ApiErrorCode::NotFound => Status::NotFound,
+            ApiErrorCode::InvalidParam |
+            ApiErrorCode::MissingParam |
             ApiErrorCode::NotJson => Status::BadRequest,
+            ApiErrorCode::LimitExceeded => Status::TooManyRequests,
+            ApiErrorCode::NotFound |
             ApiErrorCode::Unimplemented => Status::NotFound,
             ApiErrorCode::Unknown => Status::InternalServerError,
             ApiErrorCode::UnknownToken => Status::Unauthorized,
