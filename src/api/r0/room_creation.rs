@@ -210,9 +210,9 @@ mod tests {
     #[test]
     fn with_invited_users() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
         let carl_token = test.create_access_token_with_username("carl");
+        let bob_token = test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
 
         let room_options = r#"{"visibility": "private",
                                "invite": [
@@ -230,8 +230,8 @@ mod tests {
     #[test]
     fn with_unknown_invited_users() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
         test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
 
         let room_options = r#"{"visibility": "private",
                                "invite": [
@@ -280,8 +280,8 @@ mod tests {
             }]
         }"#;
 
-        let alice_token = test.create_access_token_with_username("alice");
         let bob_token = test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
 
         let room_id = test.create_room_with_params(&alice_token, &room_options);
 
@@ -302,9 +302,9 @@ mod tests {
     #[test]
     fn creator_has_max_power_level_by_default() {
         let test = Test::new();
-        let (alice_token, room_id) = test.initial_fixtures("alice", "{}");
-        let bob_token = test.create_access_token_with_username("bob");
         let _ = test.create_access_token_with_username("carl");
+        let bob_token = test.create_access_token_with_username("bob");
+        let (alice_token, room_id) = test.initial_fixtures("alice", "{}");
 
         let response = test.invite(&alice_token, &room_id, "@bob:ruma.test");
         assert_eq!(response.status, Status::Ok);
@@ -323,11 +323,11 @@ mod tests {
     #[test]
     fn with_power_levels_in_initial_state() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
-        let carl_token = test.create_access_token_with_username("carl");
-        test.create_access_token_with_username("dan");
         test.create_access_token_with_username("eve");
+        test.create_access_token_with_username("dan");
+        let carl_token = test.create_access_token_with_username("carl");
+        let bob_token = test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
 
         let room_options = r#"{
             "invite": [
@@ -406,8 +406,8 @@ mod tests {
     #[test]
     fn with_join_rules_in_initial_state() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
         let bob_token = test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
 
         let room_options = r#"{
             "initial_state":[{
