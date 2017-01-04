@@ -37,10 +37,60 @@ impl Handler for Login {
     }
 }
 
+/// Temporary UIAuth provider.
+pub struct LoginFlows;
+
+#[derive(Debug, Serialize)]
+struct Flows {
+    pub flows: Vec<LoginType>
+}
+
+#[derive(Debug, Serialize)]
+struct LoginType {
+    #[serde(rename="type")]
+    pub login_type: String
+}
+
+impl MiddlewareChain for LoginFlows {
+    fn chain() -> Chain {
+        Chain::new(LoginFlows)
+    }
+}
+
+impl Handler for LoginFlows {
+    fn handle(&self, _: &mut Request) -> IronResult<Response> {
+        let pass_login = LoginType { login_type: "m.login.password".to_string() };
+        let response = Flows { flows: vec![pass_login] };
+
+        Ok(Response::with((status::Ok, SerializableResponse(response))))
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use test::Test;
     use iron::status::Status;
+
+    #[test]
+    fn get_available_flows() {
+        let test = Test::new();
+
+        let response = test.get("/_matrix/client/r0/login");
+        let flows = response.json().find("flows");
+
+        assert!(flows.is_some());
+        assert_eq!(flows.unwrap().as_array().unwrap().len(), 1);
+
+        let login_type = flows.unwrap()
+            .as_array().unwrap()
+            .get(0).unwrap()
+            .as_object().unwrap()
+            .get("type").unwrap()
+            .as_str().unwrap();
+
+        assert_eq!(login_type, "m.login.password");
+    }
 
     #[test]
     fn valid_credentials() {
