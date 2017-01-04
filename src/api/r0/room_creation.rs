@@ -258,6 +258,69 @@ mod tests {
     }
 
     #[test]
+    fn creator_has_max_power_level_from_initial_state() {
+        let test = Test::new();
+
+        let room_options = r#"{
+            "invite": [ "@bob:ruma.test" ],
+            "initial_state": [{
+                "state_key": "",
+                "type": "m.room.power_levels",
+                "content": {
+                    "ban": 100,
+                    "events": { "m.room.message": 100 },
+                    "events_default": 0,
+                    "invite": 100,
+                    "kick": 100,
+                    "redact": 0,
+                    "state_default": 0,
+                    "users": { },
+                    "users_default": 0
+                }
+            }]
+        }"#;
+
+        let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
+
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+
+        let response = test.join_room(&bob_token, &room_id);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&alice_token, &room_id, "Hi");
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&bob_token, &room_id, "Hi");
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "Insufficient power level to create this event."
+        );
+    }
+
+    #[test]
+    fn creator_has_max_power_level_by_default() {
+        let test = Test::new();
+        let (alice_token, room_id) = test.initial_fixtures("alice", "{}");
+        let bob_token = test.create_access_token_with_username("bob");
+        let _ = test.create_access_token_with_username("carl");
+
+        let response = test.invite(&alice_token, &room_id, "@bob:ruma.test");
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.join_room(&bob_token, &room_id);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.invite(&bob_token, &room_id, "@carl:ruma.test");
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "Insufficient power level to invite"
+        );
+    }
+
+    #[test]
     fn with_power_levels_in_initial_state() {
         let test = Test::new();
         let alice_token = test.create_access_token_with_username("alice");

@@ -156,6 +156,7 @@ impl Room {
             let mut is_canonical_alias_set = false;
             let mut is_history_visibility_set = false;
             let mut is_join_rules_set = false;
+            let mut is_power_levels_set = false;
             let mut new_room_aliases = Vec::new();
 
             if creation_options.initial_state.is_some() {
@@ -268,7 +269,10 @@ impl Room {
 
                             new_events.push(new_name_event);
                         },
-                        StrippedState::RoomPowerLevels(event) => {
+                        StrippedState::RoomPowerLevels(mut event) => {
+                            is_power_levels_set = true;
+                            event.content.users.insert(room.user_id.clone(), 100);
+
                             let new_power_levels_event: NewEvent = PowerLevelsEvent {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
@@ -378,6 +382,34 @@ impl Room {
                         new_events.push(new_join_rules_event);
                     }
                 }
+            }
+
+            if !is_power_levels_set {
+                let mut user_power = HashMap::<UserId, u64>::new();
+                user_power.insert(room.user_id.clone(), 100);
+
+                let new_power_levels_event: NewEvent = PowerLevelsEvent {
+                    content: PowerLevelsEventContent {
+                        ban: 50,
+                        events: HashMap::new(),
+                        events_default: 0,
+                        invite: 50,
+                        kick: 50,
+                        redact: 50,
+                        state_default: 0,
+                        users: user_power,
+                        users_default: 0,
+                    },
+                    event_id: EventId::new(homeserver_domain)?,
+                    event_type: EventType::RoomPowerLevels,
+                    prev_content: None,
+                    room_id: room.id.clone(),
+                    state_key: "".to_string(),
+                    unsigned: None,
+                    user_id: room.user_id.clone(),
+                }.try_into()?;
+
+                new_events.push(new_power_levels_event);
             }
 
             if creation_options.alias.is_some() && !is_canonical_alias_set {

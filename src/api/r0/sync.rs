@@ -295,7 +295,7 @@ mod tests {
         let json = response.json();
         let events = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline", "events"]).unwrap();
         assert!(events.is_array());
-        assert_eq!(events.as_array().unwrap().len(), 5);
+        assert_eq!(events.as_array().unwrap().len(), 6);
     }
 
     #[test]
