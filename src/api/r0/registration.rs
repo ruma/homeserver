@@ -97,6 +97,12 @@ impl Handler for Register {
 
         let connection = DB::from_request(request)?;
 
+        if User::find_registered_user(&connection, &new_user.id)?.is_some() {
+            let error = ApiError::unauthorized("This user_id already exists".to_string());
+
+            return Err(IronError::from(error));
+        }
+
         let (user, access_token) = User::create(
             &connection,
             &new_user,
@@ -116,6 +122,7 @@ impl Handler for Register {
 #[cfg(test)]
 mod tests {
     use test::Test;
+    use iron::status::Status;
 
     #[test]
     fn minimum_input_parameters() {
@@ -154,6 +161,27 @@ mod tests {
         assert_eq!(
             response.json().find("errcode").unwrap().as_str().unwrap(),
             "M_GUEST_ACCESS_FORBIDDEN"
+        );
+    }
+
+    #[test]
+    fn user_already_registered() {
+        let test = Test::new();
+
+        let response = test.register_user(
+            r#"{"bind_email": true, "kind": "user", "username": "alice", "password": "secret"}"#
+        );
+
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.register_user(
+            r#"{"bind_email": true, "kind": "user", "username": "alice", "password": "secret"}"#
+        );
+
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "This user_id already exists"
         );
     }
 }

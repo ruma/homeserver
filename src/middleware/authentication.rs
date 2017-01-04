@@ -38,12 +38,24 @@ impl BeforeMiddleware for AccessTokenAuth {
         let mut query_pairs = url.query_pairs();
 
         if let Some((_, ref token)) = query_pairs.find(|&(ref key, _)| key == "access_token") {
-            if let Ok(access_token) = AccessToken::find_valid_by_token(&connection, &token) {
-                if let Ok(user) = User::find_by_access_token(&connection, &access_token) {
+            let access_token = match AccessToken::find_valid_by_token(&connection, &token)? {
+                Some(access_token) => access_token,
+                None => {
+                    return Err(IronError::from(ApiError::unauthorized("Unknown token".to_string())));
+                }
+            };
+
+            match User::find_active_user(&connection, &access_token.user_id)? {
+                Some(user) => {
                     request.extensions.insert::<AccessToken>(access_token);
                     request.extensions.insert::<User>(user);
 
                     return Ok(());
+                },
+                None => {
+                    let error = ApiError::unauthorized("No user with the given token was found".to_string());
+
+                    return Err(IronError::from(error));
                 }
             }
         }

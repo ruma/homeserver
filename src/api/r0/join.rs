@@ -132,8 +132,11 @@ impl Handler for InviteToRoom {
         let config = Config::from_request(request)?;
 
         let invitee_membership = connection.transaction::<Option<RoomMembership>, ApiError, _>(|| {
-            // Check if the invitee exists.
-            User::find_by_uid(&connection, &invitee_id)?;
+            if User::find_active_user(&connection, &invitee_id)?.is_none() {
+                return Err(
+                    ApiError::not_found(format!("The invited user {} was not found on this server", invitee_id))
+                );
+            }
 
             if Room::find(&connection, &room_id)?.is_none() {
                 return Err(
@@ -405,7 +408,7 @@ mod tests {
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
-            "The user @mark:ruma.test was not found on this server"
+            "The invited user @mark:ruma.test was not found on this server"
         );
     }
 
