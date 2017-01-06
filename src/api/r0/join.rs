@@ -7,7 +7,7 @@ use bodyparser;
 use diesel::Connection;
 use diesel::pg::PgConnection;
 use iron::status::Status;
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
 use ruma_identifiers::{UserId, RoomId, RoomIdOrAliasId};
 
 use config::Config;
@@ -101,6 +101,57 @@ fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Co
     Ok(Response::with((Status::Ok, SerializableResponse(response))))
 }
 
+/// The `/rooms/:room_id/leave` endpoint.
+pub struct LeaveRoom;
+
+middleware_chain!(LeaveRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
+
+impl Handler for LeaveRoom {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        let user = request.extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
+
+        let connection = DB::from_request(request)?;
+        let config = Config::from_request(request)?;
+
+        let room_id = request.extensions.get::<RoomIdParam>()
+            .expect("Should have been required by RoomIdParam.")
+            .clone();
+
+        let room_membership_options = RoomMembershipOptions {
+            room_id: room_id.clone(),
+            user_id: user.id.clone(),
+            sender: user.id.clone(),
+            membership: "leave".to_string(),
+        };
+
+        if Room::find(&connection, &room_id)?.is_none() {
+            return Err(IronError::from(ApiError::unauthorized("The room was not found on this server".to_string())));
+        }
+
+        match RoomMembership::find(&connection, &room_id, &user.id)? {
+            Some(mut room_membership) => {
+                match room_membership.membership.as_str() {
+                    "leave" => Ok(Response::with(Status::Ok)),
+                    "join" | "invite" => {
+                        room_membership.update(
+                            &connection,
+                            &config.domain,
+                            room_membership_options)?;
+                        Ok(Response::with((Status::Ok)))
+                    },
+                    "ban" => {
+                        Err(IronError::from(ApiError::unauthorized("User is banned from the room".to_string())))
+                    },
+                    _ => Err(IronError::from(ApiError::unauthorized("Invalid membership state".to_string())))
+                }
+            },
+            None => Err(IronError::from(ApiError::unauthorized("User not in room or uninvited".to_string()))),
+        }
+    }
+}
 
 /// The `/rooms/:room_id/invite` endpoint.
 #[derive(Debug)]
@@ -476,6 +527,122 @@ mod tests {
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
             "The room was not found on this server"
+        );
+    }
+
+    #[test]
+    fn leave_own_room() {
+        let test = Test::new();
+        let (alice_token, room_id) = test.initial_fixtures("alice", r#"{"visibility": "private"}"#);
+
+        let leave_room_path = format!(
+            "/_matrix/client/r0/rooms/{}/leave?access_token={}",
+            room_id,
+            alice_token
+        );
+
+        let response = test.post(&leave_room_path, r#"{}"#);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&alice_token, &room_id, "Hi");
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "The user @alice:ruma.test has not joined the room"
+        );
+    }
+
+    #[test]
+    fn leave_nonexistent_room() {
+        let test = Test::new();
+        let alice_token = test.create_access_token_with_username("alice");
+
+        let leave_room_path = format!(
+            "/_matrix/client/r0/rooms/{}/leave?access_token={}",
+            "!random_room_id:ruma.test",
+            alice_token,
+        );
+
+        let response = test.post(&leave_room_path, r#"{}"#);
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "The room was not found on this server"
+        );
+    }
+
+    #[test]
+    fn leave_uninvited_room() {
+        let test = Test::new();
+        let bob_token = test.create_access_token_with_username("bob");
+        let (_, room_id) = test.initial_fixtures("alice", r#"{"visibility": "public"}"#);
+
+        let leave_room_path = format!(
+            "/_matrix/client/r0/rooms/{}/leave?access_token={}",
+            room_id,
+            bob_token,
+        );
+
+        let response = test.post(&leave_room_path, r#"{}"#);
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "User not in room or uninvited"
+        );
+    }
+
+    #[test]
+    fn leave_invited_room() {
+        let test = Test::new();
+        let bob_token = test.create_access_token_with_username("bob");
+        let (alice_id, room_id) = test.initial_fixtures("alice", r#"{"visibility": "private"}"#);
+
+        let response = test.invite(&alice_id, &room_id, "@bob:ruma.test");
+        assert_eq!(response.status, Status::Ok);
+
+        let leave_room_path = format!(
+            "/_matrix/client/r0/rooms/{}/leave?access_token={}",
+            room_id,
+            bob_token,
+        );
+
+        let response = test.post(&leave_room_path, r#"{}"#);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&bob_token, &room_id, "Hi");
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "The user @bob:ruma.test has not joined the room"
+        );
+    }
+
+    #[test]
+    fn leave_joined_room() {
+        let test = Test::new();
+        let bob_token = test.create_access_token_with_username("bob");
+        let (alice_id, room_id) = test.initial_fixtures("alice", r#"{"visibility": "private"}"#);
+
+        let response = test.invite(&alice_id, &room_id, "@bob:ruma.test");
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.join_room(&bob_token, &room_id);
+        assert_eq!(response.status, Status::Ok);
+
+        let leave_room_path = format!(
+            "/_matrix/client/r0/rooms/{}/leave?access_token={}",
+            room_id,
+            bob_token,
+        );
+
+        let response = test.post(&leave_room_path, r#"{}"#);
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.send_message(&bob_token, &room_id, "Hi");
+        assert_eq!(response.status, Status::Forbidden);
+        assert_eq!(
+            response.json().find("error").unwrap().as_str().unwrap(),
+            "The user @bob:ruma.test has not joined the room"
         );
     }
 }

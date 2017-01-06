@@ -8,7 +8,7 @@ pub use self::account::{
 };
 pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
 pub use self::event_creation::{SendMessageEvent, StateMessageEvent};
-pub use self::join::{InviteToRoom, JoinRoom, JoinRoomWithIdOrAlias};
+pub use self::join::{InviteToRoom, JoinRoom, JoinRoomWithIdOrAlias, LeaveRoom};
 pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::members::Members;
