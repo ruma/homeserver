@@ -54,7 +54,7 @@ impl Handler for AccountPassword {
 
         let connection = DB::from_request(request)?;
 
-        if let Err(_) = user.save_changes::<User>(&*connection) {
+        if user.save_changes::<User>(&*connection).is_err() {
             return Err(IronError::from(ApiError::unauthorized(None)));
         }
 

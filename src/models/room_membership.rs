@@ -114,7 +114,7 @@ impl RoomMembership {
             vec![new_membership]
         )?;
 
-        Ok(memberships.get(0).unwrap().clone())
+        Ok(memberships[0].clone())
     }
 
     /// Creates many `RoomMembership`s in the database.
@@ -198,7 +198,6 @@ impl RoomMembership {
         if options.membership == "invite" && power_levels.invite > *user_power_level {
             return Err(ApiError::unauthorized("Insufficient power level to invite".to_string()));
         }
-
         Ok(())
     }
 
@@ -253,7 +252,7 @@ impl RoomMembership {
         let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
 
         let event = RoomMembership::create_new_room_member_event(
-            &homeserver_domain,
+            homeserver_domain,
             &options,
             profile,
         )?;
@@ -284,7 +283,7 @@ impl RoomMembership {
         options: &RoomMembershipOptions,
         profile: Option<Profile>
     ) -> Result<NewEvent, ApiError> {
-        let event_id = EventId::new(&homeserver_domain).map_err(ApiError::from)?;
+        let event_id = EventId::new(homeserver_domain).map_err(ApiError::from)?;
         let membership_string = Value::String(options.membership.clone());
         let membership: MembershipState = from_value(membership_string)?;
 
@@ -317,7 +316,7 @@ impl RoomMembership {
     pub fn create_memberships(
         connection: &PgConnection,
         room: &Room,
-        invite_list: &Vec<String>,
+        invite_list: &[String],
         homeserver_domain: &str
     ) -> Result<(), ApiError> {
         let mut user_ids = HashSet::with_capacity(invite_list.len());
@@ -351,7 +350,7 @@ impl RoomMembership {
             .cloned()
             .collect();
 
-        if missing_user_ids.len() > 0 {
+        if !missing_user_ids.is_empty() {
             return Err(
                 ApiError::bad_json(format!(
                     "Unknown users in invite list: {}",
@@ -373,7 +372,7 @@ impl RoomMembership {
             }
         }).collect::<Vec<RoomMembershipOptions>>();
 
-        RoomMembership::create_many(connection, &homeserver_domain, options)?;
+        RoomMembership::create_many(connection, homeserver_domain, options)?;
 
         Ok(())
     }

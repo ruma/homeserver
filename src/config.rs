@@ -84,9 +84,9 @@ impl Config {
     fn load_json() -> Result<RawConfig, CliError> {
         let contents = Self::read_file_contents("ruma.json");
         match serde_json::from_str(&contents) {
-            Ok(config) => return Ok(config),
-            Err(error) => return Err(CliError::from(error)),
-        };
+            Ok(config) => Ok(config),
+            Err(error) => Err(CliError::from(error)),
+        }
     }
 
     /// Load the `RawConfig` from a TOML configuration file.
@@ -107,25 +107,23 @@ impl Config {
 
         let config = toml::Value::Table(data.unwrap());
         match toml::decode(config) {
-            Some(t) => return Ok(t),
-            None => return Err(CliError::new("Error while decoding ruma.toml.")),
+            Some(t) => Ok(t),
+            None => Err(CliError::new("Error while decoding ruma.toml.")),
         }
     }
 
     /// Load the `RawConfig` from a YAML configuration file.
     fn load_yaml() -> Result<RawConfig, CliError> {
-        let contents;
-
-        if Path::new("ruma.yaml").is_file() {
-            contents = Self::read_file_contents("ruma.yaml");
+        let contents = if Path::new("ruma.yaml").is_file() {
+            Self::read_file_contents("ruma.yaml")
         } else {
-            contents = Self::read_file_contents("ruma.yml");
-        }
+            Self::read_file_contents("ruma.yml")
+        };
 
         match serde_yaml::from_str(&contents) {
-            Ok(config) => return Ok(config),
-            Err(error) => return Err(CliError::from(error)),
-        };
+            Ok(config) => Ok(config),
+            Err(error) => Err(CliError::from(error)),
+        }
     }
 
     /// Read the contents of a file.

@@ -452,7 +452,7 @@ impl Room {
             }
 
             if let Some(ref invite_list) = creation_options.invite_list {
-                RoomMembership::create_memberships(connection, &room, &invite_list, homeserver_domain)?;
+                RoomMembership::create_memberships(connection, &room, invite_list, homeserver_domain)?;
             }
 
             Ok(room)

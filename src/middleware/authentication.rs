@@ -38,7 +38,7 @@ impl BeforeMiddleware for AccessTokenAuth {
         let mut query_pairs = url.query_pairs();
 
         if let Some((_, ref token)) = query_pairs.find(|&(ref key, _)| key == "access_token") {
-            let access_token = match AccessToken::find_valid_by_token(&connection, &token)? {
+            let access_token = match AccessToken::find_valid_by_token(&connection, token)? {
                 Some(access_token) => access_token,
                 None => {
                     return Err(IronError::from(ApiError::unauthorized("Unknown token".to_string())));

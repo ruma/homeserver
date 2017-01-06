@@ -48,7 +48,7 @@ impl AccessToken {
     pub fn create(
         connection: &PgConnection,
         user_id: &UserId,
-        macaroon_secret_key: &Vec<u8>,
+        macaroon_secret_key: &[u8],
     ) -> Result<Self, ApiError> {
         let new_access_token = NewAccessToken {
             user_id: user_id.clone(),
@@ -94,7 +94,7 @@ impl Key for AccessToken {
     type Value = AccessToken;
 }
 
-fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &UserId) -> Result<String, ApiError> {
+fn create_macaroon(macaroon_secret_key: &[u8], user_id: &UserId) -> Result<String, ApiError> {
     let expiration = match UTC::now().checked_add(Duration::hours(1)) {
         Some(datetime) => datetime,
         None => return Err(
@@ -102,11 +102,11 @@ fn create_macaroon(macaroon_secret_key: &Vec<u8>, user_id: &UserId) -> Result<St
         ),
     };
 
-    let token = V1Token::new(macaroon_secret_key, "key".as_bytes().to_owned(), None)
+    let token = V1Token::new(macaroon_secret_key, b"key".to_vec(), None)
         .add_caveat(&Caveat::first_party(
             format!("user_id = {}", user_id.to_string()).as_bytes().to_owned()
         ))
-        .add_caveat(&Caveat::first_party("type = access".as_bytes().to_owned()))
+        .add_caveat(&Caveat::first_party(b"type = access".to_vec()))
         .add_caveat(&Caveat::first_party(
             format!("time < {}", expiration).as_bytes().to_owned()
         ));

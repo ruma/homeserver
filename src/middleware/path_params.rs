@@ -110,7 +110,7 @@ impl BeforeMiddleware for DataTypeParam {
             .expect("Params object is missing").clone();
 
         let data_type = params.find("type")
-            .ok_or(ApiError::missing_param("type"))
+            .ok_or_else(||ApiError::missing_param("type"))
             .map_err(IronError::from)?;
 
         request.extensions.insert::<DataTypeParam>(data_type.to_string().clone());
@@ -133,7 +133,7 @@ impl BeforeMiddleware for FilterIdParam {
             .expect("Params object is missing").clone();
 
         let filter_id = params.find("filter_id")
-            .ok_or(ApiError::missing_param("filter_id"))
+            .ok_or_else(||ApiError::missing_param("filter_id"))
             .map_err(IronError::from)?;
         let filter_id: i64 = filter_id.parse()
             .map_err(|_| ApiError::invalid_param("filter_id", "Parsing failed"))
@@ -163,13 +163,11 @@ impl BeforeMiddleware for RoomAliasIdParam {
             Some(room_alias) => {
                 debug!("room_alias param: {}", room_alias);
 
-                let room_alias_id = RoomAliasId::try_from(
+                RoomAliasId::try_from(
                     &format!("#{}:{}", room_alias, config.domain)
                 ).map_api_err(|err| {
                     ApiError::invalid_param("room_alias", err.description())
-                })?;
-
-                room_alias_id
+                })?
             }
             None => {
                 return Err(IronError::from(ApiError::missing_param("room_alias")));
@@ -195,7 +193,7 @@ impl BeforeMiddleware for EventTypeParam {
             .expect("Params object is missing").clone();
 
         let event_type = params.find("event_type")
-            .ok_or(ApiError::missing_param("event_type"))
+            .ok_or_else(||ApiError::missing_param("event_type"))
             .map_err(IronError::from)
             .map(EventType::from)?;
 
@@ -218,7 +216,7 @@ impl BeforeMiddleware for TagParam {
             .expect("Params object is missing").clone();
 
         let tag = params.find("tag")
-            .ok_or(ApiError::missing_param("tag"))
+            .ok_or_else(||ApiError::missing_param("tag"))
             .map_err(IronError::from)?;
 
         request.extensions.insert::<TagParam>(tag.to_string().clone());
@@ -241,7 +239,7 @@ impl BeforeMiddleware for TransactionIdParam {
             .expect("Params object is missing").clone();
 
         let transaction_id = params.find("transaction_id")
-            .ok_or(ApiError::missing_param("transaction_id"))
+            .ok_or_else(||ApiError::missing_param("transaction_id"))
             .map_err(IronError::from)?;
 
         request.extensions.insert::<TransactionIdParam>(transaction_id.to_string().clone());

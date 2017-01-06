@@ -22,8 +22,8 @@ impl Handler for GetFilter {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 
-        let filter_id = request.extensions.get::<FilterIdParam>()
-            .expect("FilterIdParam should ensure a FilterIdParam").clone();
+        let filter_id = *request.extensions.get::<FilterIdParam>()
+            .expect("FilterIdParam should ensure a FilterIdParam");
 
         let connection = DB::from_request(request)?;
         let filter = Filter::find(&connection, user_id, filter_id)?;

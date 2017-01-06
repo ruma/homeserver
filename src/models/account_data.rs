@@ -100,7 +100,7 @@ impl AccountData {
             &new_data.user_id,
             &new_data.data_type
         ) {
-            Ok(mut saved) => saved.update(&connection, new_data.content.clone()),
+            Ok(mut saved) => saved.update(connection, new_data.content.clone()),
             Err(err) => {
                 match err {
                     DieselError::NotFound => AccountData::create(connection, new_data),
@@ -190,15 +190,15 @@ impl RoomAccountData {
     pub fn upsert(connection: &PgConnection, new_data: &NewRoomAccountData)
     -> Result<RoomAccountData, ApiError> {
         match RoomAccountData::find(
-            &connection,
+            connection,
             &new_data.user_id,
             &new_data.room_id,
             &new_data.data_type
         ) {
-            Ok(mut saved) => saved.update(&connection, new_data.content.clone()),
+            Ok(mut saved) => saved.update(connection, new_data.content.clone()),
             Err(err) => {
                 match err {
-                    DieselError::NotFound => RoomAccountData::create(&connection, &new_data),
+                    DieselError::NotFound => RoomAccountData::create(connection, new_data),
                     _ => Err(ApiError::from(err))
                 }
             }

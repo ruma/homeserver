@@ -49,7 +49,7 @@ impl User {
     pub fn create(
         connection: &PgConnection,
         new_user: &NewUser,
-        macaroon_secret_key: &Vec<u8>,
+        macaroon_secret_key: &[u8],
     ) -> Result<(User, AccessToken), ApiError> {
         connection.transaction::<(User, AccessToken), ApiError, _>(|| {
             let user: User = insert(new_user)

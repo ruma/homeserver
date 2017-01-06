@@ -254,12 +254,11 @@ impl TryInto<MemberEvent> for Event {
             invite_room_state: match self.extra_content {
                 Some(extra_content) => {
                     let object: Value = from_str(&extra_content).map_err(ApiError::from)?;
+                    let field: &Value = object.find("invite_room_state")
+                        .ok_or_else(||
+                            ApiError::unknown("Data for member event was missing invite_room_state".to_string()
+                    ))?;
 
-                    let field: &Value = object.find("invite_room_state").ok_or(
-                        ApiError::unknown(
-                            "Data for member event was missing invite_room_state".to_string()
-                        )
-                    )?;
 
                     from_value(field.clone()).map_err(ApiError::from)?
                 },

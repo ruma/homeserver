@@ -85,9 +85,10 @@ impl Handler for CreateRoom {
 
         let preset = match create_room_request.preset {
             Some(preset) => preset,
-            None => match new_room.public {
-                true => RoomPreset::PublicChat,
-                false => RoomPreset::PrivateChat,
+            None => if new_room.public {
+                RoomPreset::PublicChat
+            } else {
+                RoomPreset::PrivateChat
             }
         };
 
