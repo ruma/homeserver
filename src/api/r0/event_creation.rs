@@ -533,8 +533,8 @@ mod tests {
     #[test]
     fn send_message_without_room_membership() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
         let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
 
         let room_id = test.create_room(&alice_token);
         let response = test.send_message(&bob_token, &room_id, "Hello");
@@ -549,8 +549,8 @@ mod tests {
     #[test]
     fn send_message_without_joining() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
         let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
 
         let room_options = r#"{ "invite": [ "@bob:ruma.test" ] }"#;
         let room_id = test.create_room_with_params(&alice_token, &room_options);
@@ -566,8 +566,8 @@ mod tests {
     #[test]
     fn overwrite_state_event() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
         let alice_token = test.create_access_token_with_username("alice");
+        let bob_token = test.create_access_token_with_username("bob");
 
         let room_options = r#"{ "invite": [ "@bob:ruma.test" ] }"#;
         let room_id = test.create_room_with_params(&alice_token, &room_options);
