@@ -1,8 +1,9 @@
 //! Matrix room membership.
 
 use std::collections::HashSet;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::error::Error;
+use std::iter::FromIterator;
 
 use diesel::{
     Connection,
@@ -316,21 +317,17 @@ impl RoomMembership {
     pub fn create_memberships(
         connection: &PgConnection,
         room: &Room,
-        invite_list: &[String],
+        invite_list: Vec<UserId>,
         homeserver_domain: &str
     ) -> Result<(), ApiError> {
-        let mut user_ids = HashSet::with_capacity(invite_list.len());
+        let user_ids = HashSet::from_iter(invite_list.clone());
 
         for invitee in invite_list {
-            let user_id = UserId::try_from(invitee)?;
-
-            if user_id.hostname().to_string() != homeserver_domain {
+            if invitee.hostname().to_string() != homeserver_domain {
                 return Err(
                     ApiError::unimplemented("Federation is not yet supported.".to_string())
                 );
             }
-
-            user_ids.insert(user_id);
         }
 
         let users: Vec<User> = users::table
