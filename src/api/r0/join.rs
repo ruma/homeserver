@@ -263,13 +263,13 @@ mod tests {
     #[test]
     fn join_own_public_room_via_join_endpoint() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_public_room(&access_token);
+        let user = test.create_user();
+        let room_id = test.create_public_room(&user.token);
 
         let room_join_path = format!(
             "/_matrix/client/r0/join/{}?access_token={}",
             room_id,
-            access_token
+            user.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -280,16 +280,16 @@ mod tests {
     #[test]
     fn join_own_public_room_via_join_endpoint_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
         let room_id = test.create_room_with_params(
-            &access_token,
+            &user.token,
             r#"{"room_alias_name":"thepub", "visibility": "public"}"#
         );
 
         let room_join_path = format!(
             "/_matrix/client/r0/join/{}?access_token={}",
             "%23thepub:ruma.test", // Hash symbols need to be urlencoded
-            access_token
+            user.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -300,12 +300,12 @@ mod tests {
     #[test]
     fn join_own_public_room() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -317,13 +317,13 @@ mod tests {
     #[test]
     fn join_other_public_room() {
         let test = Test::new();
-        let (_, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
-        let mark_token = test.create_access_token_with_username("mark");
+        let (_, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
+        let mark = test.create_user();
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            mark_token
+            mark.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -335,12 +335,12 @@ mod tests {
     #[test]
     fn join_own_private_room() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -352,16 +352,16 @@ mod tests {
     #[test]
     fn join_other_private_room() {
         let test = Test::new();
-        let carl_token = test.create_access_token_with_username("carl");
-        let mark_token = test.create_access_token_with_username("mark");
+        let carl = test.create_user();
+        let mark = test.create_user();
 
-        let body = r#"{"visibility": "private", "invite": ["@mark:ruma.test"]}"#;
-        let room_id = test.create_room_with_params(&carl_token, body);
+        let body = format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, mark.id);
+        let room_id = test.create_room_with_params(&carl.token, &body);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            mark_token
+            mark.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -373,13 +373,13 @@ mod tests {
     #[test]
     fn join_other_private_room_without_invite() {
         let test = Test::new();
-        let (_, room_id) = test.initial_fixtures("bob", r#"{"visibility": "private"}"#);
-        let alice_token = test.create_access_token_with_username("alice");
+        let (_, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
+        let alice = test.create_user();
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            alice_token
+            alice.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -390,30 +390,30 @@ mod tests {
     #[test]
     fn invite_to_room() {
         let test = Test::new();
-        let (bob_token, room_id) = test.initial_fixtures("bob", r#"{"visibility": "private"}"#);
-        let alice_token = test.create_access_token_with_username("alice");
+        let (bob, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
+        let alice = test.create_user();
 
-        let response = test.invite(&bob_token, &room_id, "@alice:ruma.test");
+        let response = test.invite(&bob.token, &room_id, &alice.id);
 
         assert_eq!(response.status, Status::Ok);
 
-        assert!(test.join_room(&alice_token, &room_id).status.is_success());
+        assert!(test.join_room(&alice.token, &room_id).status.is_success());
     }
 
     #[test]
     fn invite_before_joining() {
         let test = Test::new();
 
-        let carl_token = test.create_access_token_with_username("carl");
-        let bob_token = test.create_access_token_with_username("bob");
-        let _ = test.create_access_token_with_username("alice");
+        let carl = test.create_user();
+        let bob = test.create_user();
+        let alice = test.create_user();
 
         // Carl invites Bob.
-        let body = r#"{"visibility": "private", "invite": ["@bob:ruma.test"]}"#;
-        let room_id = test.create_room_with_params(&carl_token, body);
+        let body = format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, bob.id);
+        let room_id = test.create_room_with_params(&carl.token, &body);
 
         // Bob invites Alice before joining.
-        let response = test.invite(&bob_token, &room_id, "@alice:ruma.test");
+        let response = test.invite(&bob.token, &room_id, &alice.id);
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
@@ -425,12 +425,12 @@ mod tests {
     #[test]
     fn invite_without_user_id() {
         let test = Test::new();
-        let (carl_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
         let invite_path = format!(
             "/_matrix/client/r0/rooms/{}/invite?access_token={}",
             room_id,
-            carl_token
+            carl.token
         );
 
         // Empty body.
@@ -442,10 +442,10 @@ mod tests {
     #[test]
     fn invitee_does_not_exist() {
         let test = Test::new();
-        let (carl_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
         // User 'mark' does not exist.
-        let response = test.invite(&carl_token, &room_id, "@mark:ruma.test");
+        let response = test.invite(&carl.token, &room_id, "@mark:ruma.test");
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
@@ -457,9 +457,9 @@ mod tests {
     #[test]
     fn invitee_is_invalid() {
         let test = Test::new();
-        let (carl_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "private"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
-        let response = test.invite(&carl_token, &room_id, "mark.ruma.test");
+        let response = test.invite(&carl.token, &room_id, "mark.ruma.test");
 
         assert_eq!(response.status, Status::UnprocessableEntity);
     }
@@ -467,15 +467,14 @@ mod tests {
     #[test]
     fn invitee_is_already_invited() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let _ = test.create_access_token_with_username("alice");
+        let bob = test.create_user();
+        let alice = test.create_user();
 
         let room_id = test.create_room_with_params(
-            &bob_token,
-            r#"{"visibility": "private", "invite": ["@alice:ruma.test"]}"#
-        );
+            &bob.token,
+            format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str());
 
-        let response = test.invite(&bob_token, &room_id, "@alice:ruma.test");
+        let response = test.invite(&bob.token, &room_id, &alice.id);
 
         assert_eq!(response.status, Status::Ok);
     }
@@ -483,17 +482,16 @@ mod tests {
     #[test]
     fn invitee_has_already_joined() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let alice_token = test.create_access_token_with_username("alice");
+        let bob = test.create_user();
+        let alice = test.create_user();
 
         let room_id = test.create_room_with_params(
-            &bob_token,
-            r#"{"visibility": "private", "invite": ["@alice:ruma.test"]}"#
-        );
+            &bob.token,
+            format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str());
 
-        assert!(test.join_room(&alice_token, &room_id).status.is_success());
+        assert!(test.join_room(&alice.token, &room_id).status.is_success());
 
-        let response = test.invite(&bob_token, &room_id, "@alice:ruma.test");
+        let response = test.invite(&bob.token, &room_id, &alice.id);
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
@@ -505,10 +503,10 @@ mod tests {
     #[test]
     fn room_does_not_exist() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let _ = test.create_access_token_with_username("alice");
+        let bob = test.create_user();
+        let alice = test.create_user();
 
-        let response = test.invite(&bob_token, "!random:ruma.test", "@alice:ruma.test");
+        let response = test.invite(&bob.token, "!random:ruma.test", &alice.id);
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
@@ -520,34 +518,33 @@ mod tests {
     #[test]
     fn leave_own_room() {
         let test = Test::new();
-        let (alice_token, room_id) = test.initial_fixtures("alice", r#"{"visibility": "private"}"#);
+        let (alice, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
             room_id,
-            alice_token
+            alice.token
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&alice_token, &room_id, "Hi");
+        let response = test.send_message(&alice.token, &room_id, "Hi");
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
-            "The user @alice:ruma.test has not joined the room"
-        );
+            format!("The user {} has not joined the room", alice.id));
     }
 
     #[test]
     fn leave_nonexistent_room() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
+        let alice = test.create_user();
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
             "!random_room_id:ruma.test",
-            alice_token,
+            alice.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -561,13 +558,13 @@ mod tests {
     #[test]
     fn leave_uninvited_room() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let (_, room_id) = test.initial_fixtures("alice", r#"{"visibility": "public"}"#);
+        let bob = test.create_user();
+        let (_, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
             room_id,
-            bob_token,
+            bob.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -581,55 +578,53 @@ mod tests {
     #[test]
     fn leave_invited_room() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let (alice_id, room_id) = test.initial_fixtures("alice", r#"{"visibility": "private"}"#);
+        let bob = test.create_user();
+        let (alice, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
-        let response = test.invite(&alice_id, &room_id, "@bob:ruma.test");
+        let response = test.invite(&alice.token, &room_id, &bob.id);
         assert_eq!(response.status, Status::Ok);
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
             room_id,
-            bob_token,
+            bob.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob_token, &room_id, "Hi");
+        let response = test.send_message(&bob.token, &room_id, "Hi");
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
-            "The user @bob:ruma.test has not joined the room"
-        );
+            format!("The user {} has not joined the room", bob.id));
     }
 
     #[test]
     fn leave_joined_room() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let (alice_id, room_id) = test.initial_fixtures("alice", r#"{"visibility": "private"}"#);
+        let bob = test.create_user();
+        let (alice, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
-        let response = test.invite(&alice_id, &room_id, "@bob:ruma.test");
+        let response = test.invite(&alice.token, &room_id, &bob.id);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.join_room(&bob_token, &room_id);
+        let response = test.join_room(&bob.token, &room_id);
         assert_eq!(response.status, Status::Ok);
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
             room_id,
-            bob_token,
+            bob.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob_token, &room_id, "Hi");
+        let response = test.send_message(&bob.token, &room_id, "Hi");
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
-            "The user @bob:ruma.test has not joined the room"
-        );
+            format!("The user {} has not joined the room", bob.id));
     }
 }

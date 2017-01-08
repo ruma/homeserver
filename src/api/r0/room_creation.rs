@@ -130,10 +130,10 @@ mod tests {
     #[test]
     fn no_parameters() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
 
         let response = test.post(&create_room_path, "{}");
 
@@ -143,10 +143,10 @@ mod tests {
     #[test]
     fn with_room_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
 
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().find("room_id").unwrap().as_str();
@@ -164,10 +164,10 @@ mod tests {
     #[test]
     fn with_public_visibility() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "public"}"#);
 
@@ -177,10 +177,10 @@ mod tests {
     #[test]
     fn with_private_visibility() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "private"}"#);
 
@@ -190,10 +190,10 @@ mod tests {
     #[test]
     fn with_invalid_visibility() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "bogus"}"#);
 
@@ -206,28 +206,28 @@ mod tests {
     #[test]
     fn with_invited_users() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
-        let carl_token = test.create_access_token_with_username("carl");
+        let alice = test.create_user();
+        let bob = test.create_user();
+        let carl = test.create_user();
 
-        let room_options = r#"{"visibility": "private",
-                               "invite": [
-                                   "@bob:ruma.test",
-                                   "@carl:ruma.test"
-                               ]}"#;
+        let room_options = format!(r#"{{"visibility": "private",
+                                        "invite": [
+                                           "{}",
+                                           "{}"
+                                        ]}}"#, bob.id, carl.id);
 
-        let room_id = test.create_room_with_params(&alice_token, room_options);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
-        assert!(test.join_room(&alice_token, &room_id).status.is_success());
-        assert!(test.join_room(&bob_token, &room_id).status.is_success());
-        assert!(test.join_room(&carl_token, &room_id).status.is_success());
+        assert!(test.join_room(&alice.token, &room_id).status.is_success());
+        assert!(test.join_room(&bob.token, &room_id).status.is_success());
+        assert!(test.join_room(&carl.token, &room_id).status.is_success());
     }
 
     #[test]
     fn with_unknown_invited_users() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        test.create_access_token_with_username("bob");
+        let _bob = test.create_user();
+        let alice = test.create_user();
 
         let room_options = r#"{"visibility": "private",
                                "invite": [
@@ -237,7 +237,7 @@ mod tests {
                                ]}"#;
 
         let response = test.post(
-            &format!( "/_matrix/client/r0/createRoom?access_token={}", alice_token),
+            &format!( "/_matrix/client/r0/createRoom?access_token={}", alice.token),
             room_options
         );
 
@@ -257,37 +257,37 @@ mod tests {
     fn creator_has_max_power_level_from_initial_state() {
         let test = Test::new();
 
-        let room_options = r#"{
-            "invite": [ "@bob:ruma.test" ],
-            "initial_state": [{
+        let alice = test.create_user();
+        let bob = test.create_user();
+
+        let room_options = format!(r#"{{
+            "invite": [ "{}" ],
+            "initial_state": [{{
                 "state_key": "",
                 "type": "m.room.power_levels",
-                "content": {
+                "content": {{
                     "ban": 100,
-                    "events": { "m.room.message": 100 },
+                    "events": {{ "m.room.message": 100 }},
                     "events_default": 0,
                     "invite": 100,
                     "kick": 100,
                     "redact": 0,
                     "state_default": 0,
-                    "users": { },
+                    "users": {{  }},
                     "users_default": 0
-                }
-            }]
-        }"#;
+                }} 
+            }}]
+        }}"#, bob.id);
 
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
-
-        let response = test.join_room(&bob_token, &room_id);
+        let response = test.join_room(&bob.token, &room_id);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&alice_token, &room_id, "Hi");
+        let response = test.send_message(&alice.token, &room_id, "Hi");
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob_token, &room_id, "Hi");
+        let response = test.send_message(&bob.token, &room_id, "Hi");
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
@@ -298,17 +298,17 @@ mod tests {
     #[test]
     fn creator_has_max_power_level_by_default() {
         let test = Test::new();
-        let (alice_token, room_id) = test.initial_fixtures("alice", "{}");
-        let bob_token = test.create_access_token_with_username("bob");
-        let _ = test.create_access_token_with_username("carl");
+        let (alice, room_id) = test.initial_fixtures("{}");
+        let bob = test.create_user();
+        let carl = test.create_user();
 
-        let response = test.invite(&alice_token, &room_id, "@bob:ruma.test");
+        let response = test.invite(&alice.token, &room_id, &bob.id);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.join_room(&bob_token, &room_id);
+        let response = test.join_room(&bob.token, &room_id);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.invite(&bob_token, &room_id, "@carl:ruma.test");
+        let response = test.invite(&bob.token, &room_id, &carl.id);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
@@ -319,51 +319,51 @@ mod tests {
     #[test]
     fn with_power_levels_in_initial_state() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
-        let carl_token = test.create_access_token_with_username("carl");
-        test.create_access_token_with_username("dan");
-        test.create_access_token_with_username("eve");
+        let alice = test.create_user();
+        let bob = test.create_user();
+        let carl = test.create_user();
+        let dan = test.create_user();
+        let eve = test.create_user();
 
-        let room_options = r#"{
+        let room_options = format!(r#"{{
             "invite": [
-                "@bob:ruma.test",
-                "@carl:ruma.test"
+                "{0}",
+                "{1}"
             ],
-            "initial_state": [{
+            "initial_state": [{{
                 "state_key": "",
                 "type": "m.room.power_levels",
-                "content": {
+                "content": {{
                     "ban": 100,
-                    "events": { "m.room.topic": 50 },
+                    "events": {{ "m.room.topic": 50 }},
                     "events_default": 0,
                     "invite": 100,
                     "kick": 100,
                     "redact": 0,
                     "state_default": 0,
-                    "users": {
-                        "@bob:ruma.test": 100,
-                        "@carl:ruma.test": 50
-                    },
+                    "users": {{
+                        "{0}": 100,
+                        "{1}": 50
+                    }},
                     "users_default": 0
-                }
-            }]
-        }"#;
+                }}
+            }}]
+        }}"#, bob.id, carl.id);
 
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
-        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
-        assert_eq!(test.join_room(&carl_token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&carl.token, &room_id).status, Status::Ok);
 
         // Bob has enough power to invite other users.
         assert_eq!(
-            test.invite(&bob_token, &room_id, "@eve:ruma.test").status,
+            test.invite(&bob.token, &room_id, &eve.id).status,
             Status::Ok
         );
 
         // Carl doesn't ...
         assert_eq!(
-            test.invite(&carl_token, &room_id, "@dan:ruma.test").status,
+            test.invite(&carl.token, &room_id, &dan.id).status,
             Status::Forbidden
         );
     }
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     fn with_room_aliases_in_initial_state() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
+        let alice = test.create_user();
 
         let room_options = r##"{
             "initial_state": [{
@@ -383,7 +383,7 @@ mod tests {
             }]
         }"##;
 
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
         let first_alias_response = test.get_room_by_alias("alias_1");
         let second_alias_response = test.get_room_by_alias("alias_2");
@@ -402,8 +402,8 @@ mod tests {
     #[test]
     fn with_join_rules_in_initial_state() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
+        let alice = test.create_user();
+        let bob = test.create_user();
 
         let room_options = r#"{
             "initial_state":[{
@@ -413,64 +413,64 @@ mod tests {
             }]
         }"#;
 
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
         // Bob can join without an invite.
-        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
     }
 
     #[test]
     fn with_increased_power_levels_in_trusted_chats_by_default() {
         let test = Test::new();
 
-        let _ = test.create_access_token_with_username("carl");
-        let bob_token = test.create_access_token_with_username("bob");
-        let alice_token = test.create_access_token_with_username("alice");
+        let carl = test.create_user();
+        let bob = test.create_user();
+        let alice = test.create_user();
 
-        let room_options = r#"{
-            "invite": ["@bob:ruma.test", "@carl:ruma.test"],
+        let room_options = format!(r#"{{
+            "invite": ["{}", "{}"],
             "preset": "trusted_private_chat"
-        }"#;
+        }}"#, bob.id, carl.id);
 
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
-        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
-        assert_eq!(test.invite(&bob_token, &room_id, "@carl:ruma.test").status, Status::Ok);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+        assert_eq!(test.invite(&bob.token, &room_id, &carl.id).status, Status::Ok);
     }
 
     #[test]
     fn with_increased_power_levels_in_trusted_chats_from_initial_state() {
         let test = Test::new();
 
-        let _ = test.create_access_token_with_username("carl");
-        let bob_token = test.create_access_token_with_username("bob");
-        let alice_token = test.create_access_token_with_username("alice");
+        let carl = test.create_user();
+        let bob = test.create_user();
+        let alice = test.create_user();
 
-        let room_options = r#"{
-            "invite": ["@bob:ruma.test"],
+        let room_options = format!(r#"{{
+            "invite": ["{}"],
             "preset": "trusted_private_chat",
-            "initial_state": [{
+            "initial_state": [{{
                 "state_key": "",
                 "type": "m.room.power_levels",
-                "content": {
+                "content": {{
                     "ban": 100,
-                    "events": { "m.message.text": 100 },
+                    "events": {{ "m.message.text": 100 }},
                     "events_default": 100,
                     "invite": 100,
                     "kick": 100,
                     "redact": 100,
                     "state_default": 100,
-                    "users": { },
+                    "users": {{  }},
                     "users_default": 0
-                }
-            }]
-        }"#;
+                }}
+            }}]
+        }}"#, bob.id);
 
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
 
-        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
-        assert_eq!(test.invite(&bob_token, &room_id, "@carl:ruma.test").status, Status::Ok);
-        assert_eq!(test.send_message(&bob_token, &room_id, "Hi").status, Status::Ok);
-        assert_eq!(test.send_message(&alice_token, &room_id, "Hi").status, Status::Ok);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+        assert_eq!(test.invite(&bob.token, &room_id, &carl.id).status, Status::Ok);
+        assert_eq!(test.send_message(&bob.token, &room_id, "Hi").status, Status::Ok);
+        assert_eq!(test.send_message(&alice.token, &room_id, "Hi").status, Status::Ok);
     }
 }

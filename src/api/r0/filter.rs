@@ -80,16 +80,15 @@ mod tests {
     #[test]
     fn basic_test() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
-        let user_id = "@carl:ruma.test";
+        let carl = test.create_user();
 
-        let filter_id = test.create_filter(&access_token, user_id, r#"{"room":{"timeline":{"limit":10}}}"#);
+        let filter_id = test.create_filter(&carl.token, carl.id.as_str(), r#"{"room":{"timeline":{"limit":10}}}"#);
 
         let get_filter_path = format!(
             "/_matrix/client/r0/user/{}/filter/{}?access_token={}",
-            user_id,
+            carl.id,
             filter_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_filter_path);
@@ -100,13 +99,12 @@ mod tests {
     #[test]
     fn invalid_user() {
         let test = Test::new();
-        let _ = test.create_access_token_with_username("carl");
-        let alice = test.create_access_token_with_username("alice");
-        let user_id = "@carl:ruma.test";
+        let carl = test.create_user();
+        let alice = test.create_user();
         let filter_path = format!(
             "/_matrix/client/r0/user/{}/filter?access_token={}",
-            user_id,
-            alice
+            carl.id,
+            alice.token
         );
 
         let response = test.post(&filter_path, r#"{"room":{"timeline":{"limit":10}}}"#);
@@ -116,14 +114,13 @@ mod tests {
     #[test]
     fn get_not_found() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
-        let user_id = "@carl:ruma.test";
+        let carl = test.create_user();
 
         let get_filter_path = format!(
             "/_matrix/client/r0/user/{}/filter/{}?access_token={}",
-            user_id,
+            carl.id,
             1,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_filter_path);

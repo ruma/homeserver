@@ -206,11 +206,11 @@ mod tests {
     #[test]
     fn change_password() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         assert!(
             test.post(
-                &format!("/_matrix/client/r0/account/password?access_token={}", access_token),
+                &format!("/_matrix/client/r0/account/password?access_token={}", user.token),
                 r#"{"new_password": "hidden"}"#
             ).status.is_success()
         );
@@ -218,7 +218,7 @@ mod tests {
         assert!(
             test.post(
                 "/_matrix/client/r0/login",
-                r#"{"auth": {"type": "m.login.password", "user": "carl", "password": "hidden"}}"#,
+                format!(r#"{{"auth": {{"type": "m.login.password", "user": "{}", "password": "hidden"}}}}"#, user.name).as_str(),
             ).status.is_success()
         )
     }
@@ -226,13 +226,13 @@ mod tests {
     #[test]
     fn deactivate_account() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
-        let login = r#"{"auth": {"type": "m.login.password", "user": "carl", "password": "secret"}}"#;
-        let deactivate = format!("/_matrix/client/r0/account/deactivate?access_token={}", access_token);
+        let login = format!(r#"{{"auth": {{"type": "m.login.password", "user": "{}", "password": "secret"}}}}"#, user.name);
+        let deactivate = format!("/_matrix/client/r0/account/deactivate?access_token={}", user.token);
 
         assert!(
-            test.post("/_matrix/client/r0/login", login).status.is_success()
+            test.post("/_matrix/client/r0/login", &login).status.is_success()
         );
 
         assert!(
@@ -240,7 +240,7 @@ mod tests {
         );
 
         assert_eq!(
-            test.post("/_matrix/client/r0/login", login).status,
+            test.post("/_matrix/client/r0/login", &login).status,
             Status::Forbidden
         );
 
@@ -253,14 +253,13 @@ mod tests {
     #[test]
     fn update_account_data() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let user_id = "@carl:ruma.test";
+        let user = test.create_user();
 
         let content = r#"{"email": "user@email.com", "phone": "123456789"}"#;
         let data_type = "org.matrix.personal.config";
         let account_data_path = format!(
             "/_matrix/client/r0/user/{}/account_data/{}?access_token={}",
-            user_id, data_type, access_token
+            user.id, data_type, user.token
         );
 
         assert!(
@@ -277,14 +276,14 @@ mod tests {
     #[test]
     fn update_account_data_with_invalid_user_id() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let mut user_id = "carl.ruma.test";
+        let user = test.create_user();
+        let mut user_id = "mark:ruma.test";
 
         let content = r#"{"email": "user@email.com", "phone": "123456789"}"#;
         let data_type = "org.matrix.personal.config";
         let mut account_data_path = format!(
             "/_matrix/client/r0/user/{}/account_data/{}?access_token={}",
-            user_id, data_type, access_token
+            user_id, data_type, user.token
         );
 
         let response = test.put(&account_data_path, &content);
@@ -304,7 +303,7 @@ mod tests {
         user_id = "@mark:ruma.test";
         account_data_path = format!(
             "/_matrix/client/r0/user/{}/account_data/{}?access_token={}",
-            user_id, data_type, access_token
+            user_id, data_type, user.token
         );
 
         assert_eq!(
@@ -316,18 +315,17 @@ mod tests {
     #[test]
     fn update_room_account_data() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
-        let user_id = "@carl:ruma.test";
+        let room_id = test.create_public_room(&user.token);
         let content = r#"{"ui_color": "yellow"}"#;
         let data_type = "org.matrix.room.config";
         let path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
-            user_id, room_id, data_type, access_token
+            user.id, room_id, data_type, user.token
         );
 
-        assert_eq!(test.join_room(&access_token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&user.token, &room_id).status, Status::Ok);
 
         assert_eq!(test.put(&path, &content).status, Status::Ok);
 
@@ -339,19 +337,19 @@ mod tests {
     #[test]
     fn update_room_account_data_with_invalid_user() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
+        let room_id = test.create_public_room(&user.token);
         let user_id = "@mark:ruma.test";
         let content = r#"{"ui_color": "yellow"}"#;
         let data_type = "org.matrix.room.config";
 
         let path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
-            user_id, room_id, data_type, access_token
+            user_id, room_id, data_type, user.token
         );
 
-        assert_eq!(test.join_room(&access_token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&user.token, &room_id).status, Status::Ok);
 
         assert_eq!(test.put(&path, &content).status, Status::Forbidden);
 
@@ -364,16 +362,15 @@ mod tests {
     #[test]
     fn update_room_account_data_with_invalid_room() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let carl = test.create_user();
 
-        let user_id = "@carl:ruma.test";
         let room_id = "invalid_room_id";
         let content = r#"{"ui_color": "yellow"}"#;
         let data_type = "org.matrix.room.config";
 
         let path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
-            user_id, room_id, data_type, access_token
+            carl.id, room_id, data_type, carl.token
         );
 
         let response = test.put(&path, &content);
@@ -392,17 +389,16 @@ mod tests {
     #[test]
     fn update_room_account_data_without_room_access() {
         let test = Test::new();
-        let carl_token = test.create_access_token();
-        let mark_token = test.create_access_token_with_username("mark");
+        let carl = test.create_user();
+        let mark = test.create_user();
 
-        let room_id = test.create_private_room(&mark_token);
-        let user_id = "@carl:ruma.test";
+        let room_id = test.create_private_room(&mark.token);
         let content = r#"{"ui_color": "yellow"}"#;
         let data_type = "org.matrix.room.config";
 
         let path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/account_data/{}?access_token={}",
-            user_id, room_id, data_type, carl_token
+            carl.id, room_id, data_type, carl.token
         );
 
         assert_eq!(test.put(&path, &content).status, Status::Forbidden);

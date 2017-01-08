@@ -120,10 +120,10 @@ mod tests {
     #[test]
     fn get_room_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
 
@@ -136,10 +136,10 @@ mod tests {
     #[test]
     fn get_unknown_room_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
         let _ = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
         let response = test.get("/_matrix/client/r0/directory/room/no_room");
@@ -154,18 +154,18 @@ mod tests {
     #[test]
     fn delete_room_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!(
             "/_matrix/client/r0/createRoom?access_token={}",
-            access_token
+            user.token
         );
 
         test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
         let delete_room_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}",
-            access_token
+            user.token
         );
 
         let delete_response = test.delete(&delete_room_path);
@@ -180,20 +180,20 @@ mod tests {
     #[test]
     fn delete_room_alias_from_different_user() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!(
             "/_matrix/client/r0/createRoom?access_token={}",
-            access_token
+            user.token
         );
 
         test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
-        let access_token_2 = test.create_access_token_with_username("henry");
+        let henry = test.create_user();
 
         let delete_room_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}",
-            access_token_2
+            henry.token
         );
 
         let response = test.delete(&delete_room_path);
@@ -204,10 +204,10 @@ mod tests {
     #[test]
     fn put_room_alias() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let put_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
+            "/_matrix/client/r0/directory/room/my_room?access_token={}", carl.token
         );
         let put_room_alias_body = format!(r#"{{"room_id": "{}"}}"#, room_id);
         let response = test.put(&put_room_alias_path, &put_room_alias_body);
@@ -223,10 +223,10 @@ mod tests {
     #[test]
     fn put_room_alias_with_no_room() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let put_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
+            "/_matrix/client/r0/directory/room/my_room?access_token={}", user.token
         );
         let put_room_alias_body = r#"{"room_id": "!nonexistent:ruma.test"}"#;
         let response = test.put(&put_room_alias_path, &put_room_alias_body);
@@ -237,15 +237,15 @@ mod tests {
     #[test]
     fn put_existing_room_alias() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       access_token);
+                                       user.token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
 
         let put_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", access_token
+            "/_matrix/client/r0/directory/room/my_room?access_token={}", user.token
         );
         let put_room_alias_body = format!(r#"{{"room_id": "{}"}}"#, room_id);
         let response = test.put(&put_room_alias_path, &put_room_alias_body);

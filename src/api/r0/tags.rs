@@ -123,16 +123,17 @@ mod tests {
     #[test]
     fn put_tag() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
+        let carl = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
+        let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&access_token, &room_id, "@carl:ruma.test", "work", r#"{"order":"test"}"#);
+        test.create_tag(&carl.token, &room_id, &carl.id, "work", r#"{"order":"test"}"#);
 
         let get_tags_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -148,14 +149,15 @@ mod tests {
     #[test]
     fn get_tags_forbidden() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
-        let alice_token = test.create_access_token_with_username("alice");
-        let room_id = test.create_public_room(&access_token);
+        let carl = test.create_user();
+        let alice = test.create_user();
+        let room_id = test.create_public_room(&carl.token);
 
         let get_tags_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
+            carl.id,
             room_id,
-            alice_token
+            alice.token
         );
 
         let response = test.get(&get_tags_path);
@@ -165,16 +167,16 @@ mod tests {
     #[test]
     fn put_tag_forbidden() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
-        let alice_token = test.create_access_token_with_username("alice");
+        let carl = test.create_user();
+        let alice = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
+        let room_id = test.create_public_room(&carl.token);
         let put_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/{}?access_token={}",
-            "@carl:ruma.test",
+            carl.id,
             room_id,
             "work",
-            alice_token
+            alice.token
         );
 
         let response = test.put(&put_tag_path, r#"{}"#);
@@ -184,17 +186,18 @@ mod tests {
     #[test]
     fn delete_tag_forbidden() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
-        let alice_token = test.create_access_token_with_username("alice");
+        let carl = test.create_user();
+        let alice = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
+        let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&access_token, &room_id, "@carl:ruma.test", "delete", r#"{"order":"test"}"#);
+        test.create_tag(&carl.token, &room_id, carl.id.as_str(), "delete", r#"{"order":"test"}"#);
 
         let delete_tag_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags/delete?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags/delete?access_token={}",
+            carl.id,
             room_id,
-            alice_token
+            alice.token
         );
 
         let response = test.delete(&delete_tag_path);
@@ -204,18 +207,19 @@ mod tests {
     #[test]
     fn double_put_should_update_tag() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
+        let carl = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
+        let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&access_token, &room_id, "@carl:ruma.test", "test", r#"{"order":"test"}"#);
+        test.create_tag(&carl.token, &room_id, &carl.id, "test", r#"{"order":"test"}"#);
 
-        test.create_tag(&access_token, &room_id, "@carl:ruma.test", "test", r#"{"order":"test2"}"#);
+        test.create_tag(&carl.token, &room_id, &carl.id, "test", r#"{"order":"test2"}"#);
 
         let get_tags_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -228,25 +232,27 @@ mod tests {
     #[test]
     fn delete_tag() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
+        let carl = test.create_user();
 
-        let room_id = test.create_public_room(&access_token);
+        let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&access_token, &room_id, "@carl:ruma.test", "delete", r#"{"order":"test"}"#);
+        test.create_tag(&carl.token, &room_id, &carl.id, "delete", r#"{"order":"test"}"#);
 
         let delete_tag_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags/delete?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags/delete?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.delete(&delete_tag_path);
         assert_eq!(response.status, Status::Ok);
 
         let get_tags_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -259,16 +265,16 @@ mod tests {
     #[test]
     fn put_tag_invalid_room() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
+        let carl = test.create_user();
 
         let room_id = "!n8f893n9:ruma.test";
 
         let put_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/{}?access_token={}",
-            "@carl:ruma.test",
+            carl.id,
             room_id,
             "work",
-            access_token
+            carl.token
         );
 
         let response = test.get(&put_tag_path);
@@ -278,14 +284,15 @@ mod tests {
     #[test]
     fn get_tags_invalid_room() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
+        let carl = test.create_user();
 
         let room_id = "!n8f893n9:ruma.test";
 
         let get_tags_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -295,13 +302,14 @@ mod tests {
     #[test]
     fn delete_tags_invalid_room_and_tag() {
         let test = Test::new();
-        let access_token = test.create_access_token_with_username("carl");
-        let room_id = test.create_public_room(&access_token);
+        let carl = test.create_user();
+        let room_id = test.create_public_room(&carl.token);
 
         let delete_tag_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags/test?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags/test?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.delete(&delete_tag_path);
@@ -310,9 +318,10 @@ mod tests {
         let room_id = "!n8f893n9:ruma.test";
 
         let delete_tag_path = format!(
-            "/_matrix/client/r0/user/@carl:ruma.test/rooms/{}/tags/test?access_token={}",
+            "/_matrix/client/r0/user/{}/rooms/{}/tags/test?access_token={}",
+            carl.id,
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.delete(&delete_tag_path);

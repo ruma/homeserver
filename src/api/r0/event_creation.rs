@@ -436,13 +436,13 @@ mod tests {
     #[test]
     fn create_message_event() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_room(&access_token);
+        let user = test.create_user();
+        let room_id = test.create_room(&user.token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
             room_id,
-            access_token
+            user.token
         );
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
@@ -453,13 +453,13 @@ mod tests {
     #[test]
     fn event_content_does_not_match_event_type() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_room(&access_token);
+        let user = test.create_user();
+        let room_id = test.create_room(&user.token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.call.answer/1?access_token={}",
             room_id,
-            access_token
+            user.token
         );
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
@@ -476,13 +476,13 @@ mod tests {
     #[test]
     fn non_message_event_type() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_room(&access_token);
+        let user = test.create_user();
+        let room_id = test.create_room(&user.token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.topic/1?access_token={}",
             room_id,
-            access_token
+            user.token
         );
 
         let response = test.put(&create_event_path, r#"{"topic":"fail"}"#);
@@ -499,13 +499,13 @@ mod tests {
     #[test]
     fn custom_message_event() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let room_id = test.create_room(&access_token);
+        let user = test.create_user();
+        let room_id = test.create_room(&user.token);
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/io.ruma.test/1?access_token={}",
             room_id,
-            access_token
+            user.token
         );
 
         let response = test.put(&create_event_path, r#"{"foo":"bar"}"#);
@@ -516,13 +516,13 @@ mod tests {
     #[test]
     fn send_message_to_non_existent_room() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let room_id = "!random:ruma.test";
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
             room_id,
-            access_token
+            user.token
         );
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
@@ -533,95 +533,96 @@ mod tests {
     #[test]
     fn send_message_without_room_membership() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
+        let alice = test.create_user();
+        let bob = test.create_user();
 
-        let room_id = test.create_room(&alice_token);
-        let response = test.send_message(&bob_token, &room_id, "Hello");
+        let room_id = test.create_room(&alice.token);
+        let response = test.send_message(&bob.token, &room_id, "Hello");
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
-            "The user @bob:ruma.test is not a member of the room"
-        );
+            format!("The user {} is not a member of the room", bob.id));
     }
 
     #[test]
     fn send_message_without_joining() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
+        let alice = test.create_user();
+        let bob = test.create_user();
 
-        let room_options = r#"{ "invite": [ "@bob:ruma.test" ] }"#;
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
-        let response = test.send_message(&bob_token, &room_id, "Hello");
+        let room_options = format!(r#"{{ "invite": [ "{}" ] }}"#, bob.id);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        let response = test.send_message(&bob.token, &room_id, "Hello");
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
-            "The user @bob:ruma.test has not joined the room"
-        );
+            format!("The user {} has not joined the room", bob.id));
     }
 
     #[test]
     fn overwrite_state_event() {
         let test = Test::new();
-        let alice_token = test.create_access_token_with_username("alice");
-        let bob_token = test.create_access_token_with_username("bob");
+        let alice = test.create_user();
+        let bob = test.create_user();
 
-        let room_options = r#"{ "invite": [ "@bob:ruma.test" ] }"#;
-        let room_id = test.create_room_with_params(&alice_token, &room_options);
-        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+        let room_options = format!(r#"{{ "invite": [ "{}" ] }}"#, bob.id);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
 
         let state_event_path = format!(
             "/_matrix/client/r0/rooms/{}/state/m.room.power_levels?access_token={}",
             room_id,
-            alice_token
+            alice.token
         );
 
-        let event_content = r#"{
-            "ban": 100,
-            "events": { "m.room.message": 100 },
-            "events_default": 0,
-            "invite": 100,
-            "kick": 100,
-            "redact": 0,
-            "state_default": 0,
-            "users": {
-                "@bob:ruma.test": 50
-            },
-            "users_default": 0
-        }"#;
+        let event_content = format!(r#"{{
+                                    "ban": 100,"events": {{
+                                        "m.room.message": 100 
+                                    }},
+                                    "events_default": 0,
+                                    "invite": 100,
+                                    "kick": 100,
+                                    "redact": 0,
+                                    "state_default": 0,
+                                    "users": {{
+                                        "{}": 50
+                                    }},
+                                    "users_default": 0
+                                    }}"#, bob.id);
 
         let response = test.put(&state_event_path, &event_content);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob_token, &room_id, "Hello");
+        let response = test.send_message(&bob.token, &room_id, "Hello");
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
             "Insufficient power level to create this event."
         );
 
-        let event_content = r#"{
-            "ban": 100,
-            "events": { "m.room.message": 0 },
-            "events_default": 0,
-            "invite": 100,
-            "kick": 100,
-            "redact": 0,
-            "state_default": 0,
-            "users": {
-                "@bob:ruma.test": 50
-            },
-            "users_default": 0
-        }"#;
+        let event_content = format!(r#"{{
+                                    "ban": 100,
+                                    "events": {{
+                                        "m.room.message": 0 
+                                    }},
+                                    "events_default": 0,
+                                    "invite": 100,
+                                    "kick": 100,
+                                    "redact": 0,
+                                    "state_default": 0,
+                                    "users": {{
+                                        "{}": 50
+                                    }},
+                                    "users_default": 0
+                                    }}"#, bob.id);
 
         // Now everyone can send messages
         let response = test.put(&state_event_path, &event_content);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob_token, &room_id, "Hello again");
+        let response = test.send_message(&bob.token, &room_id, "Hello again");
         assert_eq!(response.status, Status::Ok);
     }
 }
