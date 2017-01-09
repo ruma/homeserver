@@ -172,11 +172,7 @@ impl RoomMembership {
     -> Result<(), ApiError> {
         let room = match Room::find(connection, &options.room_id)? {
             Some(room) => room,
-            None => {
-                return Err(
-                    ApiError::unauthorized("The room was not found on this server".to_string())
-                );
-            }
+            None => Err(ApiError::unauthorized("The room was not found on this server".to_string()))?,
         };
 
         let join_rules_event = Event::find_room_join_rules_by_room_id(connection, room.id.clone())?;

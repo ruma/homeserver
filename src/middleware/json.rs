@@ -1,5 +1,5 @@
 use bodyparser;
-use iron::{BeforeMiddleware, IronError, IronResult, Plugin, Request};
+use iron::{BeforeMiddleware, IronResult, Plugin, Request};
 use iron::headers::ContentType;
 use iron::mime::{Mime, SubLevel, TopLevel};
 use iron::typemap::Key;
@@ -20,14 +20,12 @@ impl BeforeMiddleware for JsonRequest {
             Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
             _ => None,
         }).is_none() {
-            return Err(IronError::from(ApiError::wrong_content_type(None)));
+            Err(ApiError::wrong_content_type(None))?
         }
 
         match request.get::<bodyparser::Json>() {
             Ok(Some(_)) => Ok(()),
-            Ok(_) | Err(_) => {
-                Err(IronError::from(ApiError::not_json(None)))
-            },
+            Ok(_) | Err(_) => Err(ApiError::not_json(None))?,
         }
     }
 }

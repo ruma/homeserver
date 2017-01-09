@@ -40,9 +40,7 @@ impl BeforeMiddleware for AccessTokenAuth {
         if let Some((_, ref token)) = query_pairs.find(|&(ref key, _)| key == "access_token") {
             let access_token = match AccessToken::find_valid_by_token(&connection, token)? {
                 Some(access_token) => access_token,
-                None => {
-                    return Err(IronError::from(ApiError::unauthorized("Unknown token".to_string())));
-                }
+                None => Err(ApiError::unauthorized("Unknown token".to_string()))?,
             };
 
             match User::find_active_user(&connection, &access_token.user_id)? {
@@ -53,9 +51,7 @@ impl BeforeMiddleware for AccessTokenAuth {
                     return Ok(());
                 },
                 None => {
-                    let error = ApiError::unauthorized("No user with the given token was found".to_string());
-
-                    return Err(IronError::from(error));
+                    Err(ApiError::unauthorized("No user with the given token was found".to_string()))?
                 }
             }
         }

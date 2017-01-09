@@ -41,9 +41,7 @@ impl Handler for AccountPassword {
             .get::<bodyparser::Struct<AccountPasswordRequest>>()
         {
             Ok(Some(account_password_request)) => account_password_request,
-            Ok(None) | Err(_) => {
-                return Err(IronError::from(ApiError::not_json(None)));
-            }
+            Ok(None) | Err(_) => Err(ApiError::not_json(None))?,
         };
 
         let mut user = request.extensions.get::<User>()
@@ -54,9 +52,8 @@ impl Handler for AccountPassword {
 
         let connection = DB::from_request(request)?;
 
-        if user.save_changes::<User>(&*connection).is_err() {
-            return Err(IronError::from(ApiError::unauthorized(None)));
-        }
+        user.save_changes::<User>(&*connection)
+            .map_err(|_| ApiError::unauthorized(None))?;
 
         Ok(Response::with(Status::Ok))
     }
@@ -76,24 +73,17 @@ impl Handler for DeactivateAccount {
             let token = request.extensions.get_mut::<AccessToken>()
                 .expect("AccessTokenAuth should ensure an access token");
 
-            if let Err(error) = token.revoke(&connection) {
-                return Err(IronError::from(error));
-            };
+            token.revoke(&connection)?;
         }
 
         let user = request.extensions.get_mut::<User>()
             .expect("AccessTokenAuth should ensure a user");
 
-        if let Err(error) = user.deactivate(&connection) {
-            return Err(IronError::from(error));
-        };
+        user.deactivate(&connection)?;
 
         // Delete all the account data associated with the user.
-        AccountData::delete_by_uid(&connection, &user.id)
-            .map_err(IronError::from)?;
-
-        RoomAccountData::delete_by_uid(&connection, &user.id)
-            .map_err(IronError::from)?;
+        AccountData::delete_by_uid(&connection, &user.id)?;
+        RoomAccountData::delete_by_uid(&connection, &user.id)?;
 
         Ok(Response::with(Status::Ok))
     }
@@ -126,11 +116,7 @@ impl Handler for PutAccountData {
 
         let content = match request.get::<bodyparser::Json>() {
             Ok(Some(content)) => content.to_string().clone(),
-            Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::from(error));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let new_data = NewAccountData {
@@ -141,8 +127,7 @@ impl Handler for PutAccountData {
 
         let connection = DB::from_request(request)?;
 
-        AccountData::upsert(&connection, &new_data)
-            .map_err(IronError::from)?;
+        AccountData::upsert(&connection, &new_data)?;
 
         Ok(Response::with(Status::Ok))
     }
@@ -176,8 +161,7 @@ impl Handler for PutRoomAccountData {
         let connection = DB::from_request(request)?;
 
         // Check if the user has joined the room.
-        let entry = RoomMembership::find(&connection, &room_id, &user_id)
-            .map_err(IronError::from)?;
+        let entry = RoomMembership::find(&connection, &room_id, &user_id)?;
 
         if entry.is_none() {
             let error = ApiError::unauthorized(
@@ -198,9 +182,7 @@ impl Handler for PutRoomAccountData {
 
         let content = match request.get::<bodyparser::Json>() {
             Ok(Some(content)) => content.to_string().clone(),
-            Ok(None) | Err(_) => {
-                return Err(IronError::from(ApiError::bad_json(None)));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let new_data = NewRoomAccountData {
@@ -210,8 +192,7 @@ impl Handler for PutRoomAccountData {
             content: content,
         };
 
-        RoomAccountData::upsert(&connection, &new_data)
-            .map_err(IronError::from)?;
+        RoomAccountData::upsert(&connection, &new_data)?;
 
         Ok(Response::with(Status::Ok))
     }

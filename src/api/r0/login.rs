@@ -1,5 +1,7 @@
 use iron::{Chain, Handler, IronResult, Request, Response, status};
 
+use ruma_identifiers::UserId;
+
 use authentication::{AuthType, Flow, InteractiveAuth};
 use config::Config;
 use db::DB;
@@ -13,9 +15,12 @@ pub struct Login;
 
 #[derive(Debug, Serialize)]
 struct LoginResponse {
+    /// An access token for the account. This access token can then be used to authorize other requests.
     pub access_token: String,
+    /// The hostname of the homeserver on which the account has been registered.
     pub home_server: String,
-    pub user_id: String,
+    /// The fully-qualified Matrix ID that has been registered.
+    pub user_id: UserId,
 }
 
 middleware_chain!(Login, [JsonRequest, UIAuth::new(InteractiveAuth::new(vec![Flow::new(vec![AuthType::Password])]))]);
@@ -30,7 +35,7 @@ impl Handler for Login {
         let response = LoginResponse {
             access_token: access_token.value,
             home_server: config.domain.clone(),
-            user_id: user.id.to_string(),
+            user_id: user.id,
         };
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))

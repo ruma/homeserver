@@ -64,11 +64,9 @@ impl Config {
         let macaroon_secret_key = match decode(&config.macaroon_secret_key) {
             Ok(bytes) => match bytes.len() {
                 32 => bytes,
-                _ => return Err(CliError::new("macaroon_secret_key must be 32 bytes.")),
+                _ => Err(CliError::new("macaroon_secret_key must be 32 bytes."))?,
             },
-            Err(_) => return Err(CliError::new(
-                "macaroon_secret_key must be valid Base64."
-            )),
+            Err(_) => Err(CliError::new("macaroon_secret_key must be valid Base64."))?,
         };
 
         Ok(Config {

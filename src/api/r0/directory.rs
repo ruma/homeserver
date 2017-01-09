@@ -1,9 +1,7 @@
 //! Endpoints for managing room aliases.
 
-use std::convert::TryFrom;
-
 use bodyparser;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_identifiers::RoomId;
 
@@ -20,7 +18,9 @@ pub struct GetRoomAlias;
 
 #[derive(Debug, Serialize)]
 struct GetRoomAliasResponse {
-    room_id: String,
+    /// The room ID associated with the room alias.
+    room_id: RoomId,
+    /// A list of servers that are aware of this room ID.
     servers: Vec<String>,
 }
 
@@ -36,7 +36,7 @@ impl Handler for GetRoomAlias {
         let room_alias = RoomAlias::find_by_alias(&connection, &room_alias_id)?;
 
         let response = GetRoomAliasResponse {
-            room_id: room_alias.room_id.to_string(),
+            room_id: room_alias.room_id,
             servers: room_alias.servers,
         };
 
@@ -64,11 +64,9 @@ impl Handler for DeleteRoomAlias {
         if affected_rows > 0 {
             Ok(Response::with((Status::Ok, "{}")))
         } else {
-            let error = ApiError::not_found(
+            Err(ApiError::not_found(
                 "Provided room alias did not exist or you do not have access to delete it.".to_string()
-            );
-
-            Err(IronError::from(error))
+            ))?
         }
     }
 }
@@ -78,7 +76,8 @@ pub struct PutRoomAlias;
 
 #[derive(Clone, Debug, Deserialize)]
 struct PutRoomAliasRequest {
-    pub room_id: String,
+    /// The room ID for which the alias will be set.
+    pub room_id: RoomId,
 }
 
 middleware_chain!(PutRoomAlias, [JsonRequest, RoomAliasIdParam, AccessTokenAuth]);
@@ -90,11 +89,9 @@ impl Handler for PutRoomAlias {
         let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
             .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
 
-        let parsed_request = request.get::<bodyparser::Struct<PutRoomAliasRequest>>();
-        let room_id = if let Ok(Some(api_request)) = parsed_request {
-            RoomId::try_from(&api_request.room_id).map_err(ApiError::from)?
-        } else {
-            return Err(IronError::from(ApiError::bad_json(None)));
+        let room_id = match request.get::<bodyparser::Struct<PutRoomAliasRequest>>() {
+            Ok(Some(req)) => req.room_id,
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let user = request.extensions.get::<User>()
