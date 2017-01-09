@@ -141,6 +141,14 @@ The Swagger endpoint is compiled conditionally when the "swagger" Cargo feature 
 
 See the [CONTRIBUTING](CONTRIBUTING.md) document.
 
+## Dedication
+
+Ruma is dedicated to my best friend, Tamara Boyens, who passed away in January 2017.
+She and I talked online for hours every day.
+She was a large part of my motivation in starting Ruma, because our online communication was where we spent the most time together after we both moved away from the city where we met, and we were always looking for a system that would fix our grievances with all the subpar choices we had for chatting.
+
+— Jimmy Cuadra
+
 ## License
 
 [MIT](http://opensource.org/licenses/MIT)
