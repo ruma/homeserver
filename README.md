@@ -4,7 +4,7 @@
 
 **Ruma** is a [Matrix](https://matrix.org/) homeserver written in [Rust](https://www.rust-lang.org/).
 
-If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://vector.im/beta/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
+If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://riot.im/app/#/room/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
 
 ## Status
 
@@ -49,13 +49,37 @@ When all of these features are stabilized, Ruma will target stable Rust.
 Docker is used to make everyone's life easier by pinning a compatible version of nightly Rust and managing test PostgreSQL databases without assuming anything about the host system.
 If you really want to avoid Docker, it's up to you to configure your development environment to match the assumptions made by code in Ruma.
 In particular, this means a version of the nightly Rust compiler that can compile Ruma given the current Cargo.lock and a PostgreSQL installation with suitable permissions available at the address and port used in `src/test.rs`.
-You can find the version of nightly Rust used in the Docker setup by looking at the Dockerfile for Ruma's [development Docker image](https://github.com/ruma/docker-ruma-dev).
-Look at the line that installs rustup for the date.
-It will look something like this:
 
-``` bash
-./rustup-init -y --no-modify-path --default-toolchain nightly-YYYY-MM-DD
-```
+#### Steps to install rust
+
+1. Install [rustup.rs](https://rustup.rs/)
+
+2. Clone the source code:
+
+   ```sh
+   git clone https://github.com/ruma/ruma.git # or the url for your fork
+   cd ruma
+   ```
+
+3. Make sure you have the right Rust compiler installed.
+
+   ```sh
+   rustup override set nightly
+   ```
+
+   If you run into problems, try a known-good version of the compiler by running
+
+   ```sh
+   rustup override set $(<rustc-version)
+   ```
+
+#### Configuring PostgreSQL
+
+1. Install PostgreSQL using the method of your choice.
+
+2. Configure the hostname as follows:
+By default postgresql binds on localhost at port 5432, but the tests in ruma expect the hostname `postgres`. If you are on linux, add the line `127.0.0.1   postgres`
+in `/etc/hosts`
 
 ## Documentation
 
