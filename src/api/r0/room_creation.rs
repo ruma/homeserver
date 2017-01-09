@@ -7,13 +7,13 @@ use diesel::Connection;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_events::stripped::StrippedState;
-use ruma_identifiers::RoomId;
+use ruma_identifiers::{RoomId, UserId};
 
 use config::Config;
 use db::DB;
 use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
-use models::room::{CreationOptions, NewRoom, Room, RoomPreset};
+use models::room::{CreationOptions, NewRoom, Room, RoomPreset, RoomVisibility};
 use models::room_membership::{RoomMembership, RoomMembershipOptions};
 use models::user::User;
 use modifier::SerializableResponse;
@@ -23,14 +23,23 @@ pub struct CreateRoom;
 
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
+    /// Extra keys to be added to the content of the m.room.create.
     pub creation_content: Option<CreationContent>,
+    /// A list of state events to set in the new room. This allows the
+    /// user to override the default state events set in the new room.
     pub initial_state: Option<Vec<Box<StrippedState>>>,
-    pub invite: Option<Vec<String>>,
+    /// A list of user IDs to invite to the room.
+    pub invite: Option<Vec<UserId>>,
+    /// Indicates the room's name.
     pub name: Option<String>,
+    /// Convenience parameter for setting various default state events based on a preset.
     pub preset: Option<RoomPreset>,
+    /// The desired room alias local part.
     pub room_alias_name: Option<String>,
+    /// Indicates the room's topic.
     pub topic: Option<String>,
-    pub visibility: Option<String>,
+    /// Indicates whether or not that the room will be shown in the published room list.
+    pub visibility: Option<RoomVisibility>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -41,29 +50,17 @@ struct CreationContent {
 
 #[derive(Debug, Serialize)]
 struct CreateRoomResponse {
-    room_id: String,
+    room_id: RoomId,
 }
 
 middleware_chain!(CreateRoom, [JsonRequest, AccessTokenAuth]);
-
-impl CreateRoomRequest {
-    pub fn validate(self) -> Result<Self, IronError> {
-        if let Some(ref visibility) = self.visibility {
-            if visibility != "public" && visibility != "private" {
-                return Err(IronError::from(ApiError::bad_json(None)));
-            }
-        }
-
-        Ok(self)
-    }
-}
 
 impl Handler for CreateRoom {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
-            Ok(Some(create_room_request)) => create_room_request.validate()?,
+            Ok(Some(create_room_request)) => create_room_request,
             Ok(None) | Err(_) => {
                 return Err(IronError::from(ApiError::bad_json(None)));
             }
@@ -75,7 +72,7 @@ impl Handler for CreateRoom {
         let new_room = NewRoom {
             id: RoomId::new(&config.domain).map_err(ApiError::from)?,
             user_id: user.id,
-            public: create_room_request.visibility.map_or(false, |v| v == "public"),
+            public: create_room_request.visibility.map_or(false, |v| v == RoomVisibility::Public),
         };
 
         let federate = match create_room_request.creation_content {
@@ -120,7 +117,7 @@ impl Handler for CreateRoom {
         .map_err(ApiError::from)?;
 
         let response = CreateRoomResponse {
-            room_id: room.id.to_string(),
+            room_id: room.id,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -422,5 +419,60 @@ mod tests {
 
         // Bob can join without an invite.
         assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+    }
+
+    #[test]
+    fn with_increased_power_levels_in_trusted_chats_by_default() {
+        let test = Test::new();
+
+        let _ = test.create_access_token_with_username("carl");
+        let bob_token = test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
+
+        let room_options = r#"{
+            "invite": ["@bob:ruma.test", "@carl:ruma.test"],
+            "preset": "trusted_private_chat"
+        }"#;
+
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+
+        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+        assert_eq!(test.invite(&bob_token, &room_id, "@carl:ruma.test").status, Status::Ok);
+    }
+
+    #[test]
+    fn with_increased_power_levels_in_trusted_chats_from_initial_state() {
+        let test = Test::new();
+
+        let _ = test.create_access_token_with_username("carl");
+        let bob_token = test.create_access_token_with_username("bob");
+        let alice_token = test.create_access_token_with_username("alice");
+
+        let room_options = r#"{
+            "invite": ["@bob:ruma.test"],
+            "preset": "trusted_private_chat",
+            "initial_state": [{
+                "state_key": "",
+                "type": "m.room.power_levels",
+                "content": {
+                    "ban": 100,
+                    "events": { "m.message.text": 100 },
+                    "events_default": 100,
+                    "invite": 100,
+                    "kick": 100,
+                    "redact": 100,
+                    "state_default": 100,
+                    "users": { },
+                    "users_default": 0
+                }
+            }]
+        }"#;
+
+        let room_id = test.create_room_with_params(&alice_token, &room_options);
+
+        assert_eq!(test.join_room(&bob_token, &room_id).status, Status::Ok);
+        assert_eq!(test.invite(&bob_token, &room_id, "@carl:ruma.test").status, Status::Ok);
+        assert_eq!(test.send_message(&bob_token, &room_id, "Hi").status, Status::Ok);
+        assert_eq!(test.send_message(&alice_token, &room_id, "Hi").status, Status::Ok);
     }
 }

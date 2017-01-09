@@ -42,7 +42,7 @@ pub struct CreationOptions {
     /// A list of state events to set in the new room.
     pub initial_state: Option<Vec<Box<StrippedState>>>,
     /// A list of users to invite to the room.
-    pub invite_list: Option<Vec<String>>,
+    pub invite_list: Option<Vec<UserId>>,
     /// An initial name for the room.
     pub name: Option<String>,
     /// A convenience parameter for setting a few default state events.
@@ -80,15 +80,35 @@ pub struct Room {
 #[derive(Clone, Copy, Debug, Deserialize)]
 pub enum RoomPreset {
     /// `join_rules` is set to `invite` and `history_visibility` is set to `shared`.
+    #[serde(rename="private_chat")]
     PrivateChat,
     /// `join_rules` is set to `public` and `history_visibility` is set to `shared`.
+    #[serde(rename="public_chat")]
     PublicChat,
     /// Same as `PrivateChat`, but all initial invitees get the same power level as the creator.
+    #[serde(rename="trusted_private_chat")]
     TrustedPrivateChat,
+}
+
+/// Indicates whether or not that the room will be shown in the published room list.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+pub enum RoomVisibility {
+    /// The room will be private.
+    #[serde(rename="private")]
+    Private,
+    /// The room will be public.
+    #[serde(rename="public")]
+    Public,
 }
 
 impl Room {
     /// Creates a new room in the database.
+    ///
+    /// The creation order of the events should be the following:
+    /// 1. Events set by presets.
+    /// 2. Events listed in initial_state, in the order that they are listed.
+    /// 3. Events implied by name and topic.
+    /// 4. Invite events implied by invite and invite_3pid.
     pub fn create(
         connection: &PgConnection,
         new_room: &NewRoom,
@@ -118,6 +138,59 @@ impl Room {
             }.try_into()?;
 
             new_events.push(new_create_event);
+
+            let mut is_canonical_alias_set = false;
+            let mut is_history_visibility_set = false;
+            let mut is_power_levels_set = false;
+            let mut is_trusted_private_chat = false;
+            let mut new_room_aliases = Vec::new();
+
+            match creation_options.preset {
+                RoomPreset::PrivateChat => {
+                    let new_join_rules_event: NewEvent = JoinRulesEvent {
+                        content: JoinRulesEventContent { join_rule: JoinRule::Invite },
+                        event_id: EventId::new(homeserver_domain)?,
+                        event_type: EventType::RoomJoinRules,
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: "".to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
+
+                    new_events.push(new_join_rules_event);
+                },
+                RoomPreset::PublicChat => {
+                    let new_join_rules_event: NewEvent = JoinRulesEvent {
+                        content: JoinRulesEventContent { join_rule: JoinRule::Public },
+                        event_id: EventId::new(homeserver_domain)?,
+                        event_type: EventType::RoomJoinRules,
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: "".to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
+
+                    new_events.push(new_join_rules_event);
+                },
+                RoomPreset::TrustedPrivateChat => {
+                    is_trusted_private_chat = true;
+
+                    let new_join_rules_event: NewEvent = JoinRulesEvent {
+                        content: JoinRulesEventContent { join_rule: JoinRule::Invite },
+                        event_id: EventId::new(homeserver_domain)?,
+                        event_type: EventType::RoomJoinRules,
+                        prev_content: None,
+                        room_id: room.id.clone(),
+                        state_key: "".to_string(),
+                        unsigned: None,
+                        user_id: new_room.user_id.clone(),
+                    }.try_into()?;
+
+                    new_events.push(new_join_rules_event);
+                }
+            }
 
             if let Some(ref name) = creation_options.name {
                 let new_name_event: NewEvent = NameEvent {
@@ -152,12 +225,6 @@ impl Room {
 
                 new_events.push(new_topic_event);
             }
-
-            let mut is_canonical_alias_set = false;
-            let mut is_history_visibility_set = false;
-            let mut is_join_rules_set = false;
-            let mut is_power_levels_set = false;
-            let mut new_room_aliases = Vec::new();
 
             if creation_options.initial_state.is_some() {
                 let initial_events = creation_options.initial_state.clone().unwrap();
@@ -236,8 +303,6 @@ impl Room {
                             new_events.push(new_history_visibility_event);
                         },
                         StrippedState::RoomJoinRules(event) => {
-                            is_join_rules_set = true;
-
                             let new_join_rules_event: NewEvent = JoinRulesEvent {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
@@ -272,6 +337,12 @@ impl Room {
                         StrippedState::RoomPowerLevels(mut event) => {
                             is_power_levels_set = true;
                             event.content.users.insert(room.user_id.clone(), 100);
+
+                            if is_trusted_private_chat && creation_options.invite_list.is_some() {
+                                for user in creation_options.invite_list.clone().unwrap() {
+                                    event.content.users.insert(user.clone(), 100);
+                                }
+                            }
 
                             let new_power_levels_event: NewEvent = PowerLevelsEvent {
                                 content: event.content.clone(),
@@ -337,56 +408,15 @@ impl Room {
                 new_events.push(new_history_visibility_event);
             }
 
-            if !is_join_rules_set {
-                match creation_options.preset {
-                    RoomPreset::PrivateChat => {
-                        let new_join_rules_event: NewEvent = JoinRulesEvent {
-                            content: JoinRulesEventContent { join_rule: JoinRule::Invite },
-                            event_id: EventId::new(homeserver_domain)?,
-                            event_type: EventType::RoomJoinRules,
-                            prev_content: None,
-                            room_id: room.id.clone(),
-                            state_key: "".to_string(),
-                            unsigned: None,
-                            user_id: new_room.user_id.clone(),
-                        }.try_into()?;
-
-                        new_events.push(new_join_rules_event);
-                    }
-                    RoomPreset::PublicChat => {
-                        let new_join_rules_event: NewEvent = JoinRulesEvent {
-                            content: JoinRulesEventContent { join_rule: JoinRule::Public },
-                            event_id: EventId::new(homeserver_domain)?,
-                            event_type: EventType::RoomJoinRules,
-                            prev_content: None,
-                            room_id: room.id.clone(),
-                            state_key: "".to_string(),
-                            unsigned: None,
-                            user_id: new_room.user_id.clone(),
-                        }.try_into()?;
-
-                        new_events.push(new_join_rules_event);
-                    }
-                    RoomPreset::TrustedPrivateChat => {
-                        let new_join_rules_event: NewEvent = JoinRulesEvent {
-                            content: JoinRulesEventContent { join_rule: JoinRule::Invite },
-                            event_id: EventId::new(homeserver_domain)?,
-                            event_type: EventType::RoomJoinRules,
-                            prev_content: None,
-                            room_id: room.id.clone(),
-                            state_key: "".to_string(),
-                            unsigned: None,
-                            user_id: new_room.user_id.clone(),
-                        }.try_into()?;
-
-                        new_events.push(new_join_rules_event);
-                    }
-                }
-            }
-
             if !is_power_levels_set {
                 let mut user_power = HashMap::<UserId, u64>::new();
                 user_power.insert(room.user_id.clone(), 100);
+
+                if is_trusted_private_chat && creation_options.invite_list.is_some() {
+                    for user in creation_options.invite_list.clone().unwrap() {
+                        user_power.insert(user.clone(), 100);
+                    }
+                }
 
                 let new_power_levels_event: NewEvent = PowerLevelsEvent {
                     content: PowerLevelsEventContent {
@@ -451,7 +481,7 @@ impl Room {
                 RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
             }
 
-            if let Some(ref invite_list) = creation_options.invite_list {
+            if let Some(invite_list) = creation_options.invite_list.clone() {
                 RoomMembership::create_memberships(connection, &room, invite_list, homeserver_domain)?;
             }
 
