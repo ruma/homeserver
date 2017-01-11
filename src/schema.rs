@@ -139,3 +139,17 @@ table! {
         observed_user_id -> Text,
     }
 }
+
+table! {
+    pushers(user_id, app_id) {
+        user_id -> Text,
+        lang -> Text,
+        kind -> Text,
+        url -> Nullable<Text>,
+        device_display_name -> Text,
+        app_id -> Text,
+        profile_tag -> Nullable<Text>,
+        pushkey -> Text,
+        app_display_name -> Text,
+    }
+}

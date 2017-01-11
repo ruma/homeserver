@@ -19,6 +19,7 @@ use ruma_identifiers::UserId;
 
 use config::Config;
 use embedded_migrations::run as run_pending_migrations;
+use models::pusher::PusherOptions;
 use query::{SyncOptions, Batch};
 use server::Server;
 
@@ -404,6 +405,16 @@ impl Test {
         let response = self.put(&presence_status_path , body);
         assert_eq!(response.status, Status::Ok);
         response
+    }
+
+    /// Set pusher
+    pub fn set_pusher(&self, access_token: &str, options: PusherOptions) -> Response {
+        let post_pusher = format!(
+            "/_matrix/client/r0/pushers/set?access_token={}",
+            access_token,
+        );
+
+        self.post(&post_pusher, &to_string(&options).unwrap())
     }
 }
 

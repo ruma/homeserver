@@ -337,12 +337,12 @@ Legend:
     <th align="left" colspan="3">Push notifications</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/46">#46</a></td>
     <td>POST /pushers/set</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/47">#47</a></td>
     <td>GET /pushers</td>
   </tr>
