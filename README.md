@@ -24,6 +24,8 @@ Ruma includes a development setup using [Docker](https://www.docker.com/).
 To install Docker, see the installation instructions for [OS X](https://docs.docker.com/mac/), [Linux](https://docs.docker.com/linux/), or [Windows](https://docs.docker.com/windows/).
 (Note that both Docker and Docker Compose are needed, but the standard ways of installing include both.)
 
+**Note**: `docker-compose` version 1.6 or higher and `docker-engine` version 1.10.0 or higher are required.
+
 Cargo is the main entrypoint for development.
 Use the `script/cargo` shell script as you would normally use plain `cargo`.
 This will run the Cargo command inside a Docker container that has  Rust and other dependencies already installed.
