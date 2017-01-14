@@ -1,4 +1,5 @@
 use std::sync::{ONCE_INIT, Once};
+use std::convert::TryFrom;
 
 use env_logger;
 use diesel::Connection;
@@ -14,6 +15,7 @@ use r2d2::{Config as R2D2Config, CustomizeConnection};
 use r2d2_diesel::Error as R2D2DieselError;
 use serde_json::{Value, from_str, to_string};
 use ruma_events::presence::PresenceState;
+use ruma_identifiers::UserId;
 
 use config::Config;
 use embedded_migrations::run as run_pending_migrations;
@@ -24,6 +26,20 @@ static START: Once = ONCE_INIT;
 
 const DATABASE_URL: &'static str = "postgres://postgres:test@postgres:5432/ruma_test";
 const POSTGRES_URL: &'static str = "postgres://postgres:test@postgres:5432";
+
+/// Used to return the randomly generated user id and access token
+#[derive(Debug)]
+pub struct TestUser {
+    pub id: String,
+    pub token: String,
+    pub name: String,
+}
+
+impl TestUser {
+    pub fn new(user: UserId, token: String) -> Self {
+        TestUser { id: user.to_string(), token: token, name: user.localpart().to_string() }
+    }
+}
 
 /// Manages the Postgres for the duration of a test case and provides helper methods for
 /// interacting with the Ruma API server.
@@ -158,20 +174,24 @@ impl Test {
         self.post("/_matrix/client/r0/register", body)
     }
 
-    /// Registers a new user account with a fixed name and returns the user's access token.
-    pub fn create_access_token(&self) -> String {
-        self.create_access_token_with_username("carl")
-    }
+    /// Registers a new user account with a random user id and returns
+    /// the `TestUser`
+    pub fn create_user(&self) -> TestUser {
+        let response = self.register_user(&format!(r#"{{"password": "secret"}}"#));
 
-    /// Registers a new user account with the given username and returns the user's access token.
-    pub fn create_access_token_with_username(&self, username: &str) -> String {
-        self.register_user(&format!(r#"{{"username": "{}", "password": "secret"}}"#, username))
-            .json()
-            .find("access_token")
+        let access_token = response.json().find("access_token")
             .unwrap()
             .as_str()
             .unwrap()
-            .to_string()
+            .to_string();
+
+        let user_id = response.json().find("user_id")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        TestUser::new(UserId::try_from(&user_id).unwrap(), access_token)
     }
 
     /// Creates a room given the body parameters and returns the room ID as a string.
@@ -273,10 +293,10 @@ impl Test {
     }
 
     /// Create a User and Room.
-    pub fn initial_fixtures(&self, username: &str, body: &str) -> (String, String) {
-        let access_token = self.create_access_token_with_username(username);
-        let room_id = self.create_room_with_params(&access_token, body);
-        (access_token, room_id)
+    pub fn initial_fixtures(&self, body: &str) -> (TestUser, String) {
+        let user = self.create_user();
+        let room_id = self.create_room_with_params(&user.token, body);
+        (user, room_id)
     }
 
     /// Try to find a batch in a Response.

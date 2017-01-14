@@ -48,19 +48,19 @@ mod tests {
     #[test]
     fn room_members() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
             room_id,
-            access_token
+            carl.token
         );
         test.post(&room_join_path, r"{}");
 
         let room_members_path = format!(
             "/_matrix/client/r0/rooms/{}/members?access_token={}",
             room_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&room_members_path);

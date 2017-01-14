@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn can_sync_a_joined_room() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let options = SyncOptions {
             filter: None,
@@ -110,7 +110,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let next_batch = Test::get_next_batch(&response);
         let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]).unwrap();
         assert!(room.is_object());
@@ -122,7 +122,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]);
         assert_eq!(room, None);
     }
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn full_state_sync_includes_joined_rooms() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let options = SyncOptions {
             filter: Some(from_str(r#"{"room":{"timeline":{"limit":10}}}"#).unwrap()),
@@ -140,7 +140,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
 
         let options = SyncOptions {
@@ -150,7 +150,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]).unwrap();
         Test::assert_json_keys(room, vec!["timeline", "state", "ephemeral"]);
         Test::assert_json_keys(room.find("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn newly_joined_room_is_included_in_an_incremental_sync() {
         let test = Test::new();
-        let (access_token, _) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let options = SyncOptions {
             filter: Some(from_str(r#"{"room":{"timeline":{"limit":10}}}"#).unwrap()),
@@ -171,9 +171,9 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
-        let room_id = test.create_room(&access_token);
+        let room_id = test.create_room(&carl.token);
 
         let options = SyncOptions {
             filter: Some(from_str(r#"{"room":{"timeline":{"limit":10}}}"#).unwrap()),
@@ -182,7 +182,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
         let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]).unwrap();
         Test::assert_json_keys(room, vec!["timeline", "state", "ephemeral"]);
@@ -197,7 +197,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]);
         assert_eq!(room, None);
     }
@@ -206,13 +206,13 @@ mod tests {
     #[test]
     fn can_sync_a_room_with_a_single_message() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.send_message(&access_token, &room_id, "Hi Test 1");
+        let response = test.send_message(&carl.token, &room_id, "Hi Test 1");
         assert_eq!(response.status, Status::Ok);
         let event_id_1 = response.json().find("event_id").unwrap().as_str().unwrap();
 
-        let response = test.send_message(&access_token, &room_id, "Hi Test 2");
+        let response = test.send_message(&carl.token, &room_id, "Hi Test 2");
         assert_eq!(response.status, Status::Ok);
         let event_id_2 = response.json().find("event_id").unwrap().as_str().unwrap();
 
@@ -223,7 +223,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let json = response.json();
         let timeline = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline"]).unwrap();
         assert_eq!(timeline.find("limited").unwrap().as_bool().unwrap(), true);
@@ -242,7 +242,7 @@ mod tests {
     #[test]
     fn syncing_a_new_room_with_a_large_timeline_limit_isnt_limited() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let options = SyncOptions {
             filter: Some(from_str(r#"{"room":{"timeline":{"limit":100}}}"#).unwrap()),
@@ -251,7 +251,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let json = response.json();
         let timeline = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline"]).unwrap();
         assert_eq!(timeline.find("limited").unwrap().as_bool().unwrap(), false);
@@ -260,11 +260,11 @@ mod tests {
     #[test]
     fn initial_state() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let sync_path = format!(
             "/_matrix/client/r0/sync?access_token={}",
-            access_token,
+            user.token,
         );
 
         let response = test.get(&sync_path);
@@ -278,9 +278,9 @@ mod tests {
     #[test]
     fn initial_state_find_joined_rooms() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.send_message(&access_token, &room_id, "Hi Test");
+        let response = test.send_message(&carl.token, &room_id, "Hi Test");
         assert_eq!(response.status, Status::Ok);
 
         let options = SyncOptions {
@@ -290,7 +290,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
         let events = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline", "events"]).unwrap();
@@ -301,7 +301,7 @@ mod tests {
     #[test]
     fn basic_since_state() {
         let test = Test::new();
-        let (access_token, room_id) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let options = SyncOptions {
             filter: None,
@@ -310,10 +310,10 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let next_batch = Test::get_next_batch(&response);
 
-        test.send_message(&access_token, &room_id, "test 1");
+        test.send_message(&carl.token, &room_id, "test 1");
         assert_eq!(response.status, Status::Ok);
 
         let options = SyncOptions {
@@ -323,7 +323,7 @@ mod tests {
             set_presence: PresenceState::Offline,
             timeout: 0
         };
-        let response = test.sync(&access_token, options);
+        let response = test.sync(&carl.token, options);
         let json = response.json();
         let events = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline", "events"]).unwrap();
         assert!(events.is_array());
@@ -333,45 +333,45 @@ mod tests {
     #[test]
     fn invalid_since() {
         let test = Test::new();
-        let (access_token, _) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?since={}&access_token={}", "10s_234", access_token));
+        let response = test.get(&format!("/_matrix/client/r0/sync?since={}&access_token={}", "10s_234", carl.token));
         assert_eq!(response.status, Status::BadRequest);
     }
 
     #[test]
     fn invalid_timeout() {
         let test = Test::new();
-        let (access_token, _) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?timeout={}&access_token={}", "10s_234", access_token));
+        let response = test.get(&format!("/_matrix/client/r0/sync?timeout={}&access_token={}", "10s_234", carl.token));
         assert_eq!(response.status, Status::BadRequest);
     }
 
     #[test]
     fn invalid_set_presence() {
         let test = Test::new();
-        let (access_token, _) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?set_presence={}&access_token={}", "10s_234", access_token));
+        let response = test.get(&format!("/_matrix/client/r0/sync?set_presence={}&access_token={}", "10s_234", carl.token));
         assert_eq!(response.status, Status::BadRequest);
     }
 
     #[test]
     fn invalid_filter() {
         let test = Test::new();
-        let (access_token, _) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?filter={}&access_token={}", "{10s_234", access_token));
+        let response = test.get(&format!("/_matrix/client/r0/sync?filter={}&access_token={}", "{10s_234", carl.token));
         assert_eq!(response.status, Status::BadRequest);
     }
 
     #[test]
     fn invalid_full_state() {
         let test = Test::new();
-        let (access_token, _) = test.initial_fixtures("carl", r#"{"visibility": "public"}"#);
+        let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?full_state={}&access_token={}", "{10s_234", access_token));
+        let response = test.get(&format!("/_matrix/client/r0/sync?full_state={}&access_token={}", "{10s_234", carl.token));
         assert_eq!(response.status, Status::BadRequest);
     }
 }

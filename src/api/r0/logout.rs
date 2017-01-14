@@ -32,10 +32,10 @@ mod tests {
     #[test]
     fn logout_revokes_access_token() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let user = test.create_user();
 
         let login_path = format!("/_matrix/client/r0/logout?access_token={}",
-                                 access_token);
+                                 user.token);
 
         assert!(test.post(&login_path, "{}").status.is_success());
         assert_eq!(test.post(&login_path, "{}").status, Status::Forbidden);

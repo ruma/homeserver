@@ -240,13 +240,13 @@ mod tests {
     #[test]
     fn get_displayname_non_existent_user() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let carl = test.create_user();
         let user_id = "@carls:ruma.test";
 
         let get_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
             user_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_displayname_path);
@@ -261,13 +261,13 @@ mod tests {
     #[test]
     fn get_avatar_url_non_existent_user() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let carl = test.create_user();
         let user_id = "@carls:ruma.test";
 
         let get_avatar_url = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
             user_id,
-            access_token
+            carl.token
         );
 
         let response = test.get(&get_avatar_url);
@@ -282,13 +282,12 @@ mod tests {
     #[test]
     fn put_avatar_url() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let user_id = "@carl:ruma.test";
+        let carl = test.create_user();
 
         let put_avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            user_id,
-            access_token
+            carl.id,
+            carl.token
         );
         let response = test.put(&put_avatar_url_path, r#"{"avatar_url": "mxc://matrix.org/wefh34uihSDRGhw34"}"#);
 
@@ -296,8 +295,8 @@ mod tests {
 
         let get_avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            user_id,
-            access_token,
+            carl.id,
+            carl.token,
         );
         let response = test.get(&get_avatar_url_path);
         assert_eq!(response.status, Status::Ok);
@@ -310,13 +309,12 @@ mod tests {
     #[test]
     fn put_displayname() {
         let test = Test::new();
-        let access_token = test.create_access_token();
-        let user_id = "@carl:ruma.test";
+        let carl = test.create_user();
 
         let put_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            user_id,
-            access_token
+            carl.id,
+            carl.token
         );
         let response = test.put(&put_displayname_path, r#"{"displayname": "Bogus"}"#);
 
@@ -324,8 +322,8 @@ mod tests {
 
         let get_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            user_id,
-            access_token,
+            carl.id,
+            carl.token,
         );
         let response = test.get(&get_displayname_path);
         assert_eq!(response.status, Status::Ok);
@@ -338,13 +336,13 @@ mod tests {
     #[test]
     fn put_displayname_unauthorized() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let _ = test.create_access_token_with_username("alice");
+        let bob = test.create_user();
+        let alice = test.create_user();
 
         let put_displayname = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            "@alice:ruma.test",
-            bob_token,
+            alice.id,
+            bob.token,
         );
 
         let response = test.put(&put_displayname, r#"{"displayname": "Alice"}"#);
@@ -359,13 +357,13 @@ mod tests {
     #[test]
     fn put_avatar_url_unauthorized() {
         let test = Test::new();
-        let bob_token = test.create_access_token_with_username("bob");
-        let _ = test.create_access_token_with_username("alice");
+        let bob = test.create_user();
+        let alice = test.create_user();
 
         let put_avatar_url = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            "@alice:ruma.test",
-            bob_token,
+            alice.id,
+            bob.token,
         );
 
         let response = test.put(
@@ -383,13 +381,13 @@ mod tests {
     #[test]
     fn get_profile() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let carl = test.create_user();
 
         let avatar_url_body = r#"{"avatar_url": "mxc://matrix.org/some/url"}"#;
         let avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            "@carl:ruma.test",
-            access_token
+            carl.id,
+            carl.token
         );
 
         assert!(test.put(&avatar_url_path, avatar_url_body).status.is_success());
@@ -397,16 +395,16 @@ mod tests {
         let displayname_body = r#"{"displayname": "Carl"}"#;
         let displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            "@carl:ruma.test",
-            access_token
+            carl.id,
+            carl.token
         );
 
         assert!(test.put(&displayname_path, displayname_body).status.is_success());
 
         let profile_path = format!(
             "/_matrix/client/r0/profile/{}?access_token={}",
-            "@carl:ruma.test",
-            access_token
+            carl.id,
+            carl.token
         );
 
         let response = test.get(&profile_path);
@@ -425,13 +423,13 @@ mod tests {
     #[test]
     fn get_profile_non_existent_user() {
         let test = Test::new();
-        let access_token = test.create_access_token();
+        let carl = test.create_user();
         let user_id = "@carls:ruma.test";
 
         let get_profile = format!(
             "/_matrix/client/r0/profile/{}?access_token={}",
             user_id,
-            access_token,
+            carl.token,
         );
 
         let response = test.get(&get_profile);
