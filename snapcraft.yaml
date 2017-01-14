@@ -1,0 +1,21 @@
+name: ruma
+version: master
+summary: A Matrix homeserver client API written in Rust
+description: |
+  Ruma is a Matrix homeserver written in Rust. Ruma's approach to Matrix
+  emphasizes security and scalability.
+
+grade: devel
+confinement: strict
+
+apps:
+  ruma:
+    command: ruma
+    plugs: [network, network-bind]
+
+parts:
+  ruma:
+    source: .
+    plugin: rust
+    rust-channel: nightly
+    build-packages: [gcc, libpq-dev, libsodium-dev, libssl-dev, openssl]
