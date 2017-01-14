@@ -4,7 +4,7 @@ use std::convert::From;
 
 use bodyparser;
 use diesel::Connection;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_events::stripped::StrippedState;
 use ruma_identifiers::{RoomId, UserId};
@@ -50,6 +50,7 @@ struct CreationContent {
 
 #[derive(Debug, Serialize)]
 struct CreateRoomResponse {
+    /// The fully qualified ID of the room that was created.
     room_id: RoomId,
 }
 
@@ -61,9 +62,7 @@ impl Handler for CreateRoom {
             .expect("AccessTokenAuth should ensure a user").clone();
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
             Ok(Some(create_room_request)) => create_room_request,
-            Ok(None) | Err(_) => {
-                return Err(IronError::from(ApiError::bad_json(None)));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let connection = DB::from_request(request)?;
@@ -109,8 +108,7 @@ impl Handler for CreateRoom {
                 membership: "join".to_string(),
             };
 
-            RoomMembership::create(&connection, &config.domain, options)
-                .map_err(ApiError::from)?;
+            RoomMembership::create(&connection, &config.domain, options)?;
 
             Ok(room)
         })

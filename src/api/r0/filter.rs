@@ -1,6 +1,6 @@
 //! Endpoints for filter rooms.
 use bodyparser;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use serde_json::de::from_str;
 use serde_json::value::ToJson;
@@ -37,6 +37,7 @@ pub struct PostFilter;
 
 #[derive(Debug, Serialize)]
 struct PostFilterResponse {
+    /// The ID of the filter that was created.
     filter_id: String,
 }
 
@@ -56,10 +57,7 @@ impl Handler for PostFilter {
 
         let filter = match request.get::<bodyparser::Struct<ContentFilter>>() {
             Ok(Some(account_password_request)) => account_password_request,
-            Ok(None) | Err(_) => {
-                let error = ApiError::bad_json(None);
-                return Err(IronError::new(error.clone(), error));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let connection = DB::from_request(request)?;

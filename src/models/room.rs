@@ -284,7 +284,7 @@ impl Room {
                             new_events.push(new_canonical_alias_event);
                         },
                         StrippedState::RoomGuestAccess(_) => {
-                            return Err(ApiError::unimplemented("Guests are not yet supported".to_string()));
+                            Err(ApiError::unimplemented("Guests are not yet supported".to_string()))?
                         },
                         StrippedState::RoomHistoryVisibility(event) => {
                             is_history_visibility_set = true;
@@ -358,9 +358,7 @@ impl Room {
                             new_events.push(new_power_levels_event);
                         },
                         StrippedState::RoomThirdPartyInvite(_) => {
-                            return Err(
-                                ApiError::unimplemented("Third party invites are not yet supported".to_string())
-                            );
+                            Err(ApiError::unimplemented("Third party invites are not yet supported".to_string()))?
                         },
                         StrippedState::RoomTopic(event) => {
                             if creation_options.topic.is_some() {
@@ -381,11 +379,11 @@ impl Room {
                             new_events.push(new_topic_event);
                         }
                         StrippedState::RoomCreate(_) | StrippedState::RoomMember(_) => {
-                            return Err(
+                            Err(
                                 ApiError::bad_json(
                                     "m.room.create and m.room.member are not supported by 'initial_state'".to_string()
                                 )
-                            );
+                            )?
                         }
                     }
                 }

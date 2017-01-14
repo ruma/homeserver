@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::convert::From;
 use std::error::Error;
 
-use iron::{BeforeMiddleware, IronResult, IronError, Request};
+use iron::{BeforeMiddleware, IronResult, Request};
 use iron::typemap::Key;
 use router::Router;
 use ruma_events::EventType;
@@ -31,9 +31,7 @@ impl BeforeMiddleware for RoomIdParam {
             Some(room_id) => RoomId::try_from(room_id).map_api_err(|err| {
                 ApiError::invalid_param("room_id", err.description())
             }),
-            None => {
-                Err(ApiError::missing_param("room_id"))
-            }
+            None => Err(ApiError::missing_param("room_id"))
         }?;
         request.extensions.insert::<RoomIdParam>(room_id);
         Ok(())
@@ -61,9 +59,7 @@ impl BeforeMiddleware for RoomIdOrAliasParam {
                     ApiError::invalid_param("room_id_or_alias", err.description())
                 })
             },
-            None => {
-                Err(ApiError::missing_param("room_id_or_alias"))
-            }
+            None => Err(ApiError::missing_param("room_id_or_alias"))
         }?;
         request.extensions.insert::<RoomIdOrAliasParam>(room_id_or_alias);
         Ok(())
@@ -86,9 +82,7 @@ impl BeforeMiddleware for UserIdParam {
             Some(user_id) => UserId::try_from(user_id).map_api_err(|err| {
                 ApiError::invalid_param("user_id", err.description())
             }),
-            None => {
-                Err(ApiError::missing_param("user_id"))
-            }
+            None => Err(ApiError::missing_param("user_id"))
         }?;
 
         request.extensions.insert::<UserIdParam>(user_id);
@@ -110,8 +104,7 @@ impl BeforeMiddleware for DataTypeParam {
             .expect("Params object is missing").clone();
 
         let data_type = params.find("type")
-            .ok_or_else(||ApiError::missing_param("type"))
-            .map_err(IronError::from)?;
+            .ok_or_else(||ApiError::missing_param("type"))?;
 
         request.extensions.insert::<DataTypeParam>(data_type.to_string().clone());
 
@@ -133,11 +126,9 @@ impl BeforeMiddleware for FilterIdParam {
             .expect("Params object is missing").clone();
 
         let filter_id = params.find("filter_id")
-            .ok_or_else(||ApiError::missing_param("filter_id"))
-            .map_err(IronError::from)?;
+            .ok_or_else(||ApiError::missing_param("filter_id"))?;
         let filter_id: i64 = filter_id.parse()
-            .map_err(|_| ApiError::invalid_param("filter_id", "Parsing failed"))
-            .map_err(IronError::from)?;
+            .map_err(|_| ApiError::invalid_param("filter_id", "Parsing failed"))?;
 
         request.extensions.insert::<FilterIdParam>(filter_id);
 
@@ -169,9 +160,7 @@ impl BeforeMiddleware for RoomAliasIdParam {
                     ApiError::invalid_param("room_alias", err.description())
                 })?
             }
-            None => {
-                return Err(IronError::from(ApiError::missing_param("room_alias")));
-            }
+            None => Err(ApiError::missing_param("room_alias"))?,
         };
 
         request.extensions.insert::<RoomAliasIdParam>(room_alias_id);
@@ -194,7 +183,6 @@ impl BeforeMiddleware for EventTypeParam {
 
         let event_type = params.find("event_type")
             .ok_or_else(||ApiError::missing_param("event_type"))
-            .map_err(IronError::from)
             .map(EventType::from)?;
 
         request.extensions.insert::<EventTypeParam>(event_type);
@@ -216,8 +204,7 @@ impl BeforeMiddleware for TagParam {
             .expect("Params object is missing").clone();
 
         let tag = params.find("tag")
-            .ok_or_else(||ApiError::missing_param("tag"))
-            .map_err(IronError::from)?;
+            .ok_or_else(||ApiError::missing_param("tag"))?;
 
         request.extensions.insert::<TagParam>(tag.to_string().clone());
 
@@ -239,8 +226,7 @@ impl BeforeMiddleware for TransactionIdParam {
             .expect("Params object is missing").clone();
 
         let transaction_id = params.find("transaction_id")
-            .ok_or_else(||ApiError::missing_param("transaction_id"))
-            .map_err(IronError::from)?;
+            .ok_or_else(||ApiError::missing_param("transaction_id"))?;
 
         request.extensions.insert::<TransactionIdParam>(transaction_id.to_string().clone());
 

@@ -1,18 +1,17 @@
 //! Endpoints for joining rooms.
 
-use std::convert::TryFrom;
 use std::error::Error;
 
 use bodyparser;
 use diesel::Connection;
 use diesel::pg::PgConnection;
 use iron::status::Status;
-use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_identifiers::{UserId, RoomId, RoomIdOrAliasId};
 
 use config::Config;
 use db::DB;
-use error::{ApiError, MapApiError};
+use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, RoomIdOrAliasParam};
 use modifier::SerializableResponse;
 use models::room::Room;
@@ -26,7 +25,8 @@ pub struct JoinRoom;
 
 #[derive(Debug, Serialize)]
 struct JoinRoomResponse {
-    room_id: String,
+    /// The joined room.
+    room_id: RoomId,
 }
 
 middleware_chain!(JoinRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
@@ -81,8 +81,7 @@ impl Handler for JoinRoomWithIdOrAlias {
 }
 
 /// Handles the work of actually saving the user to the room membership table
-fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Config
-    ) -> IronResult<Response> {
+fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Config) -> IronResult<Response> {
     let room_membership_options = RoomMembershipOptions {
         room_id: room_id.clone(),
         user_id: user.id.clone(),
@@ -96,7 +95,7 @@ fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Co
         room_membership_options
     )?;
 
-    let response = JoinRoomResponse { room_id: room_membership.room_id.to_string() };
+    let response = JoinRoomResponse { room_id: room_membership.room_id };
 
     Ok(Response::with((Status::Ok, SerializableResponse(response))))
 }
@@ -128,7 +127,7 @@ impl Handler for LeaveRoom {
         };
 
         if Room::find(&connection, &room_id)?.is_none() {
-            return Err(IronError::from(ApiError::unauthorized("The room was not found on this server".to_string())));
+            Err(ApiError::unauthorized("The room was not found on this server".to_string()))?;
         }
 
         match RoomMembership::find(&connection, &room_id, &user.id)? {
@@ -143,12 +142,12 @@ impl Handler for LeaveRoom {
                         Ok(Response::with((Status::Ok)))
                     },
                     "ban" => {
-                        Err(IronError::from(ApiError::unauthorized("User is banned from the room".to_string())))
+                        Err(ApiError::unauthorized("User is banned from the room".to_string()))?
                     },
-                    _ => Err(IronError::from(ApiError::unauthorized("Invalid membership state".to_string())))
+                    _ => Err(ApiError::unauthorized("Invalid membership state".to_string()))?,
                 }
             },
-            None => Err(IronError::from(ApiError::unauthorized("User not in room or uninvited".to_string()))),
+            None => Err(ApiError::unauthorized("User not in room or uninvited".to_string()))?,
         }
     }
 }
@@ -159,7 +158,8 @@ pub struct InviteToRoom;
 
 #[derive(Clone, Debug, Deserialize)]
 struct InviteToRoomRequest {
-    pub user_id: String,
+    /// The fully qualified user ID of the invitee.
+    pub user_id: UserId,
 }
 
 middleware_chain!(InviteToRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
@@ -173,11 +173,10 @@ impl Handler for InviteToRoom {
             .expect("AccessTokenAuth should ensure a user").clone();
 
         let invitee_id = match request.get::<bodyparser::Struct<InviteToRoomRequest>>() {
-            Ok(Some(req)) => UserId::try_from(&req.user_id).map_api_err(|err| {
-                ApiError::invalid_param("user_id", err.description())
-            }),
-            Ok(None) | Err(_) => Err(ApiError::missing_param("user_id"))
-        }?;
+            Ok(Some(req)) => req.user_id,
+            Ok(None) => Err(ApiError::missing_param("user_id"))?,
+            Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
+        };
 
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
@@ -437,15 +436,7 @@ mod tests {
         // Empty body.
         let response = test.post(&invite_path, "{}");
 
-        assert_eq!(response.status, Status::BadRequest);
-        assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
-            "M_MISSING_PARAM"
-        );
-        assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
-            "Missing value for required parameter: user_id."
-        );
+        assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
     #[test]
@@ -470,11 +461,7 @@ mod tests {
 
         let response = test.invite(&carl_token, &room_id, "mark.ruma.test");
 
-        assert_eq!(response.status, Status::BadRequest);
-        assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
-            "IO_RUMA_INVALID_PARAM"
-        );
+        assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
     #[test]

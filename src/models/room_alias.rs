@@ -22,7 +22,7 @@ use ruma_events::EventType;
 use error::ApiError;
 use models::event::NewEvent;
 use models::room::Room;
-use schema::{events, room_aliases, rooms};
+use schema::{events, room_aliases};
 
 /// A new room alias, not yet saved.
 #[derive(Debug, Insertable)]
@@ -60,18 +60,8 @@ impl RoomAlias {
     pub fn create(connection: &PgConnection, homeserver_domain: &str, new_room_alias: &NewRoomAlias)
     -> Result<RoomAlias, ApiError> {
         connection.transaction(|| {
-            let room_result = rooms::table
-                .find(new_room_alias.room_id.to_string())
-                .first::<Room>(&*connection)
-                .map_err(|err| {
-                   match err {
-                       DieselError::NotFound => ApiError::bad_json("Room not found.".to_string()),
-                       _ => ApiError::from(err),
-                   }
-               });
-
-            if room_result.is_err() {
-                return Err(room_result.err().unwrap());
+            if Room::find(connection, &new_room_alias.room_id)?.is_none() {
+                return Err(ApiError::bad_json("Room not found".to_string()));
             }
 
             let aliases = RoomAlias::find_by_room_id(connection, &new_room_alias.room_id)?;
@@ -130,7 +120,7 @@ impl RoomAlias {
 
     /// Deletes a room alias in the database.
     pub fn delete(connection: &PgConnection, alias_id: &RoomAliasId, user_id: &UserId)
-                  -> Result<usize, ApiError> {
+    -> Result<usize, ApiError> {
         let alias = room_aliases::table
             .filter(room_aliases::alias.eq(alias_id.to_string()))
             .filter(room_aliases::user_id.eq(user_id.to_string()));

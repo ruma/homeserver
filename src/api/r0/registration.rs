@@ -20,9 +20,14 @@ pub struct Register;
 
 #[derive(Clone, Debug, Deserialize)]
 struct RegistrationRequest {
+    /// If true, the server binds the email used for authentication to the Matrix ID with the ID Server.
     pub bind_email: Option<bool>,
+    /// The kind of account to register. Defaults to user. One of: ["guest", "user"]
     pub kind: Option<RegistrationKind>,
+    /// The desired password for the account.
     pub password: String,
+    /// The local part of the desired Matrix ID. If omitted, the homeserver
+    /// MUST generate a Matrix ID local part.
     pub username: Option<String>,
 }
 
@@ -34,9 +39,12 @@ enum RegistrationKind {
 
 #[derive(Debug, Serialize)]
 struct RegistrationResponse {
+    /// An access token for the account. This access token can then be used to authorize other requests.
     pub access_token: String,
+    /// The hostname of the homeserver on which the account has been registered.
     pub home_server: String,
-    pub user_id: String,
+    /// The fully-qualified Matrix ID that has been registered.
+    pub user_id: UserId,
 }
 
 middleware_chain!(Register, [JsonRequest]);
@@ -68,9 +76,7 @@ impl Handler for Register {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
             Ok(Some(registration_request)) => registration_request,
-            Ok(None) | Err(_) => {
-                return Err(IronError::from(ApiError::bad_json(None)));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         if let Some(kind) = registration_request.kind {
@@ -109,7 +115,7 @@ impl Handler for Register {
         let response = RegistrationResponse {
             access_token: access_token.value,
             home_server: config.domain.clone(),
-            user_id: user.id.to_string(),
+            user_id: user.id,
         };
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))

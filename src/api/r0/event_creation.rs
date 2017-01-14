@@ -89,6 +89,7 @@ macro_rules! state_event {
 
 #[derive(Debug, Serialize)]
 struct EventResponse {
+    /// A unique identifier for the event.
     event_id: String,
 }
 
@@ -368,25 +369,21 @@ fn verify_permissions(connection: &PgConnection, room_id: &RoomId, user: &User, 
 -> Result<(), ApiError> {
     let room = match Room::find(connection, room_id)? {
         Some(room) => room,
-        None => {
-            return Err(
-                ApiError::unauthorized("The room was not found on this server".to_string())
-            );
-        }
+        None => Err(ApiError::unauthorized("The room was not found on this server".to_string()))?,
     };
 
     match RoomMembership::find(connection, room_id, &user.id)? {
         Some(membership) => {
             if membership.membership != "join" {
-                return Err(ApiError::unauthorized(
+                Err(ApiError::unauthorized(
                     format!("The user {} has not joined the room", user.id)
-                ));
+                ))?
             }
         },
         None => {
-            return Err(ApiError::unauthorized(
+            Err(ApiError::unauthorized(
                 format!("The user {} is not a member of the room", user.id)
-            ));
+            ))?
         }
     }
 
@@ -414,9 +411,7 @@ fn ensure_empty_state_key(state_key: &str, event_type: &EventType) -> Result<(),
     if state_key == "" {
         Ok(())
     } else {
-        let error = ApiError::bad_event(format!("Events of type {} must have an empty state key.", event_type));
-
-        Err(IronError::from(error))
+        Err(ApiError::bad_event(format!("Events of type {} must have an empty state key.", event_type)))?
     }
 }
 

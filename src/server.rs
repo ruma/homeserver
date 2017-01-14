@@ -136,14 +136,10 @@ impl<'a> Server<'a> {
 
         if set_up_db {
             debug!("Setting up database.");
-            if let Err(error) =  setup_database(&*connection) {
-                return Err(CliError::new(format!("{:?}", error)));
-            }
+            setup_database(&*connection).map_err(CliError::from)?;
 
             debug!("Running pending database migrations.");
-            if let Err(error) = run_pending_migrations(&*connection) {
-                return Err(CliError::new(format!("{:?}", error)));
-            }
+            run_pending_migrations(&*connection).map_err(CliError::from)?;
         }
 
         r0.link_before(Read::<Config>::one(ruma_config.clone()));

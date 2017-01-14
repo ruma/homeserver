@@ -17,7 +17,9 @@ pub struct Profile;
 
 #[derive(Clone, Debug, Serialize)]
 struct ProfileResponse {
+    /// The user's avatar URL if they have set one, otherwise not present.
     avatar_url: Option<String>,
+    /// The user's display name if they have set one, otherwise not present.
     displayname: Option<String>,
 }
 
@@ -42,13 +44,7 @@ impl Handler for Profile {
                     displayname: profile.displayname,
                 }
             }
-            None => {
-                let error = ApiError::not_found(
-                    format!("No profile found for {}", user_id)
-                );
-
-                return Err(IronError::from(error));
-            }
+            None => Err(ApiError::not_found(format!("No profile found for {}", user_id)))?,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -60,6 +56,7 @@ pub struct GetAvatarUrl;
 
 #[derive(Clone, Debug, Serialize)]
 struct GetAvatarUrlResponse {
+    /// The user's avatar URL.
     avatar_url: String,
 }
 
@@ -86,21 +83,11 @@ impl Handler for GetAvatarUrl {
                         }
                     },
                     None => {
-                        let error = ApiError::not_found(
-                            format!("No avatar_url found for {}", user_id)
-                        );
-
-                        return Err(IronError::from(error));
+                        Err(ApiError::not_found(format!("No avatar_url found for {}", user_id)))?
                     }
                 }
-            }
-            None => {
-                let error = ApiError::not_found(
-                    format!("No profile found for {}", user_id)
-                );
-
-                return Err(IronError::from(error));
-            }
+            },
+            None => Err(ApiError::not_found(format!("No profile found for {}", user_id)))?,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -112,6 +99,7 @@ pub struct PutAvatarUrl;
 
 #[derive(Clone, Debug, Deserialize)]
 struct PutAvatarUrlResquest {
+    /// The new avatar URL for this user.
     avatar_url: Option<String>,
 }
 
@@ -121,9 +109,7 @@ impl Handler for PutAvatarUrl {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let avatar_url_request = match request.get::<bodyparser::Struct<PutAvatarUrlResquest>>() {
             Ok(Some(avatar_url_request)) => avatar_url_request,
-            Ok(None) | Err(_) => {
-                return Err(IronError::from(ApiError::bad_json(None)));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let connection = DB::from_request(request)?;
@@ -160,6 +146,7 @@ pub struct GetDisplayName;
 
 #[derive(Clone, Debug, Serialize)]
 struct GetDisplayNameResponse {
+    /// The user's display name.
     displayname: String,
 }
 
@@ -186,21 +173,11 @@ impl Handler for GetDisplayName {
                         }
                     },
                     None => {
-                        let error = ApiError::not_found(
-                            format!("No displayname found for {}", user_id)
-                        );
-
-                        return Err(IronError::from(error));
+                        Err(ApiError::not_found(format!("No displayname found for {}", user_id)))?
                     }
                 }
             }
-            None => {
-                let error = ApiError::not_found(
-                    format!("No profile found for {}", user_id)
-                );
-
-                return Err(IronError::from(error));
-            }
+            None => Err(ApiError::not_found(format!("No profile found for {}", user_id)))?,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -212,6 +189,7 @@ pub struct PutDisplayName;
 
 #[derive(Clone, Debug, Deserialize)]
 struct PutDisplayNameRequest {
+    /// The new display name for this user.
     displayname: Option<String>,
 }
 
@@ -221,9 +199,7 @@ impl Handler for PutDisplayName {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let displayname_request = match request.get::<bodyparser::Struct<PutDisplayNameRequest>>() {
             Ok(Some(displayname_request)) => displayname_request,
-            Ok(None) | Err(_) => {
-                return Err(IronError::from(ApiError::bad_json(None)));
-            }
+            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let connection = DB::from_request(request)?;

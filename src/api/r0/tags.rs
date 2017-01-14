@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 
 use bodyparser;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_events::tag::TagInfo;
 use serde_json::Value;
@@ -74,11 +74,7 @@ impl Handler for PutTag {
         let content = match request.get::<bodyparser::Struct<Value>>() {
             Ok(Some(content)) => content.to_string(),
             Ok(None) => "".to_string(),
-            Err(_) => {
-                let error = ApiError::bad_json(None);
-
-                return Err(IronError::new(error.clone(), error));
-            }
+            Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let connection = DB::from_request(request)?;
