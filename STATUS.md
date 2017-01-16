@@ -296,22 +296,22 @@ Legend:
     <th align="left" colspan="3">Presence</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/39">#39</a></td>
     <td>PUT /presence/:user_id/status</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/40">#40</a></td>
     <td>GET /presence/:user_id/status</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/41">#41</a></td>
     <td>POST /presence/list/:user_id</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:construction:</td>
     <td><a href="https://github.com/ruma/ruma/issues/42">#42</a></td>
     <td>GET /presence/list/:user_id</td>
   </tr>
@@ -417,17 +417,17 @@ Legend:
     <th align="left" colspan="3">Room tagging</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/59">#59</a></td>
     <td>PUT /user/:user_id/rooms/:room_id/tags/:tag</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/60">#60</a></td>
     <td>DELETE /user/:user_id/rooms/:room_id/tags/:tag</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/61">#61</a></td>
     <td>GET /user/:user_id/rooms/:room_id/tags</td>
   </tr>

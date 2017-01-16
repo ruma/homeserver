@@ -1,4 +1,5 @@
 //! Matrix sync.
+
 use std::cmp;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -11,14 +12,19 @@ use diesel::pg::PgConnection;
 use ruma_events::room::member::MemberEvent;
 use ruma_events::room::message::MessageEvent;
 use ruma_events::room::history_visibility::HistoryVisibilityEvent;
+use ruma_events::presence::PresenceEvent;
 use ruma_events::presence::PresenceState;
+use ruma_events::collections::all::{RoomEvent, StateEvent};
 use ruma_identifiers::RoomId;
-use serde_json::{Value, to_value};
+use serde_json::Value;
+use time;
 
 use error::ApiError;
 use models::event::Event;
 use models::filter::{ContentFilter, RoomEventFilter, RoomFilter};
 use models::room_membership::RoomMembership;
+use models::presence_list::PresenceList;
+use models::presence_status::PresenceStatus;
 use models::user::User;
 
 #[derive(Debug, Clone, Serialize)]
@@ -31,7 +37,7 @@ struct UnreadNotificationCounts {
 struct Timeline {
     limited: bool,
     prev_batch: String,
-    events: Vec<Value>,
+    events: Vec<RoomEvent>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -42,7 +48,7 @@ struct Events<T> {
 #[derive(Debug, Clone, Serialize)]
 struct LeftRoom {
     timeline: Timeline,
-    state: Events<Value>,
+    state: Events<StateEvent>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -54,7 +60,7 @@ struct InvitedRoom {
 struct JoinedRoom {
     unread_notifications: UnreadNotificationCounts,
     timeline: Timeline,
-    state: Events<Value>,
+    state: Events<StateEvent>,
     account_data: Events<Value>,
     ephemeral: Events<Value>,
 }
@@ -70,7 +76,7 @@ struct Rooms {
 #[derive(Debug, Clone, Serialize)]
 pub struct Sync {
     next_batch: String,
-    presence: Events<Value>,
+    presence: Events<PresenceEvent>,
     rooms: Rooms,
 }
 
@@ -129,7 +135,7 @@ pub struct SyncOptions {
     /// Controls whether to include the full state for all rooms the user is a member of.
     pub full_state: bool,
     /// Controls whether the client is automatically marked as online by polling this API.
-    pub set_presence: PresenceState,
+    pub set_presence: Option<PresenceState>,
     /// The maximum time to poll in milliseconds before returning this request.
     pub timeout: u64,
 }
@@ -149,8 +155,9 @@ impl Sync {
     /// Query sync.
     pub fn sync(
         connection: &PgConnection,
-        user: User,
-        options: SyncOptions,
+        homeserver_domain: &str,
+        user: &User,
+        options: SyncOptions
     ) -> Result<Sync, ApiError> {
         let mut context = Context::Initial;
         if let Some(ref batch) = options.since {
@@ -165,78 +172,58 @@ impl Sync {
             Some(filter) => filter.room,
             None => None
         };
+        let (presence_key, presence) = Sync::get_presence_events(
+            connection,
+            homeserver_domain,
+            user,
+            options.set_presence,
+            &context
+        )?;
 
-        let (room_key, rooms) = Sync::sync_rooms(connection, user, filter_room, &context)?;
-        let batch = Batch::new(room_key, 0);
+        let (room_key, rooms) = Sync::get_rooms_events(connection, user, filter_room, &context)?;
+        let batch = Batch::new(room_key, presence_key);
         let state = Sync {
             next_batch: batch.to_string(),
             presence: Events {
-                events: Vec::new(),
+                events: presence,
             },
             rooms: rooms,
         };
         Ok(state)
     }
 
-    /// Converting events in the correct format for timeline.
-    fn convert_events_to_timeline(events: Vec<Event>, timeline_filter: &Option<RoomEventFilter>) -> Result<(i64, Timeline), ApiError> {
-        let mut room_ordering = 0;
-        let mut timeline_events = Vec::new();
-        let mut limited = false;
+    /// Return presence events for sync from database and options.
+    fn get_presence_events(
+        connection: &PgConnection,
+        homeserver_domain: &str,
+        user: &User,
+        set_presence: Option<PresenceState>,
+        context: &Context
+    ) -> Result<(i64, Vec<PresenceEvent>), ApiError> {
+        let set_presence = match set_presence {
+            Some(set_presence) => set_presence,
+            None => PresenceState::Online,
+        };
+        PresenceStatus::upsert(connection, homeserver_domain, &user.id, Some(set_presence), None)?;
 
-        let length = events.len();
-
-        let count = match *timeline_filter {
-            None => 0,
-            Some(ref filter) => {
-                match filter.limit {
-                    0 => 0,
-                    x => {
-                        if length > x {
-                            limited = true;
-                            length - x
-                        } else {
-                            0
-                        }
-                    },
-                }
+        let since = match *context {
+            Context::Incremental(batch) | Context::FullState(batch)  => {
+                Some(time::Timespec::new(batch.presence_key, 0))
             }
+            Context::Initial => None,
         };
 
-        for event in events.into_iter().skip(count) {
-            room_ordering = cmp::max(room_ordering, event.ordering);
-            let value = match event.event_type.as_ref() {
-                "m.room.member" => {
-                    let member_event: MemberEvent = event.try_into()?;
-                    to_value(&member_event)
-                },
-                "m.room.message" => {
-                    let message_event: MessageEvent = event.try_into()?;
-                    to_value(&message_event)
-                },
-                "m.room.history_visibility" => {
-                    let message_event: HistoryVisibilityEvent = event.try_into()?;
-                    to_value(&message_event)
-                },
-                _ => {
-                    println!("unhandled {:?}", event.event_type);
-                    Value::Null
-                },
-            };
-            timeline_events.push(value);
-        }
-
-        Ok((room_ordering, Timeline {
-            events: timeline_events,
-            limited: limited,
-            prev_batch: String::from(""),
-        }))
+        PresenceList::find_events_by_uid(
+            connection,
+            &user.id,
+            since
+        )
     }
 
     /// Return rooms for sync from database and options.
-    fn sync_rooms(
+    fn get_rooms_events(
         connection: &PgConnection,
-        user: User,
+        user: &User,
         room_filter: Option<RoomFilter>,
         context: &Context,
     ) -> Result<(i64, Rooms), ApiError> {
@@ -307,6 +294,64 @@ impl Sync {
             join: join,
             leave: leave,
             invite: invite,
+        }))
+    }
+
+    /// Converting events in the correct format for timeline.
+    fn convert_events_to_timeline(
+        events: Vec<Event>,
+        timeline_filter: &Option<RoomEventFilter>
+    ) -> Result<(i64, Timeline), ApiError> {
+        let mut room_ordering = 0;
+        let mut timeline_events = Vec::new();
+        let mut limited = false;
+
+        let length = events.len();
+
+        let count = match *timeline_filter {
+            None => 0,
+            Some(ref filter) => {
+                match filter.limit {
+                    0 => 0,
+                    x => {
+                        if length > x {
+                            limited = true;
+                            length - x
+                        } else {
+                            0
+                        }
+                    },
+                }
+            }
+        };
+
+        for event in events.into_iter().skip(count) {
+            room_ordering = cmp::max(room_ordering, event.ordering);
+            let value = match event.event_type.as_ref() {
+                "m.room.member" => {
+                    let member_event: MemberEvent = event.try_into()?;
+                    RoomEvent::RoomMember(member_event)
+                },
+                "m.room.message" => {
+                    let message_event: MessageEvent = event.try_into()?;
+                    RoomEvent::RoomMessage(message_event)
+                },
+                "m.room.history_visibility" => {
+                    let history_visibility_event: HistoryVisibilityEvent = event.try_into()?;
+                    RoomEvent::RoomHistoryVisibility(history_visibility_event)
+                },
+                _ => {
+                    println!("unhandled {:?}", event.event_type);
+                    continue;
+                },
+            };
+            timeline_events.push(value);
+        }
+
+        Ok((room_ordering, Timeline {
+            events: timeline_events,
+            limited: limited,
+            prev_batch: String::from(""),
         }))
     }
 }

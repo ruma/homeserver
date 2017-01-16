@@ -1,12 +1,18 @@
 //! Matrix users.
 
+use std::collections::HashSet;
+
 use diesel::{
+    insert,
     Connection,
+    ExpressionMethods,
+    FilterDsl,
     FindDsl,
     LoadDsl,
     SaveChangesDsl,
-    insert,
+    SelectDsl,
 };
+use diesel::expression::dsl::any;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
@@ -116,6 +122,35 @@ impl User {
             Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
+    }
+
+    /// Return `UserId`s for given `user_ids` base on the existence of a single user.
+    pub fn find_missing_users(
+        connection: &PgConnection,
+        user_ids: &Vec<UserId>
+    ) -> Result<Vec<UserId>, ApiError> {
+        let possible_missing_user_ids: HashSet<UserId> = user_ids
+            .iter()
+            .map(UserId::clone)
+            .collect();
+
+        let users: Vec<UserId> = users::table
+            .filter(users::id.eq(any(user_ids)))
+            .select(users::id)
+            .get_results(connection)
+            .map_err(ApiError::from)?;
+
+        let loaded_user_ids: HashSet<UserId> = users
+            .iter()
+            .map(UserId::clone)
+            .collect();
+
+        let missing_user_ids: Vec<UserId> = possible_missing_user_ids
+            .difference(&loaded_user_ids)
+            .cloned()
+            .collect();
+
+        Ok(missing_user_ids)
     }
 }
 
