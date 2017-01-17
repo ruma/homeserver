@@ -17,10 +17,9 @@ use diesel::pg::PgConnection;
 use ruma_events::EventType;
 use ruma_events::presence::{PresenceEvent, PresenceEventContent, PresenceState};
 use ruma_identifiers::UserId;
-use time;
 
 use error::ApiError;
-use models::presence_status::PresenceStatus;
+use models::presence_status::{PresenceStatus, get_now};
 use models::profile::Profile;
 use models::room_membership::RoomMembership;
 use models::user::User;
@@ -88,7 +87,7 @@ impl PresenceList {
             let mut invites: Vec<PresenceList> = Vec::new();
             for ref observed_user in invite.clone() {
                 if observed_user != user_id {
-                    let rooms = RoomMembership::get_common_rooms(
+                    let rooms = RoomMembership::filter_rooms_by_state(
                         connection,
                         &room_ids,
                         observed_user,
@@ -136,7 +135,7 @@ impl PresenceList {
     pub fn find_events_by_uid(
         connection: &PgConnection,
         user_id: &UserId,
-        since: Option<time::Timespec>
+        since: Option<i64>
     ) -> Result<(i64, Vec<PresenceEvent>), ApiError> {
         let mut max_ordering = -1;
 
@@ -149,11 +148,11 @@ impl PresenceList {
         let mut events = Vec::new();
 
         for status in users_status {
-            let last_update = time::Timespec::new(status.updated_at.0, 0);
-            max_ordering = cmp::max(last_update.sec, max_ordering);
+            let last_update = status.updated_at.0;
+            max_ordering = cmp::max(last_update, max_ordering);
 
             let presence_state: PresenceState = status.presence.parse().unwrap();
-            let last_active_ago: time::Duration = last_update - time::get_time();
+            let last_active_ago = get_now() - last_update;
 
             let profile: Option<&Profile> = profiles.iter()
                 .filter(|profile| profile.id == status.user_id)
@@ -172,7 +171,7 @@ impl PresenceList {
                     avatar_url: avatar_url,
                     currently_active: PresenceState::Online == presence_state,
                     displayname: displayname,
-                    last_active_ago: Some(last_active_ago.num_milliseconds() as u64),
+                    last_active_ago: Some(last_active_ago as u64),
                     presence: presence_state,
                     user_id: status.user_id,
                 },

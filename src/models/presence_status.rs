@@ -1,5 +1,6 @@
 //! Storage and querying of presence status.
 
+use chrono::{Duration, NaiveDateTime, NaiveDate, UTC};
 use diesel::{
     insert,
     Connection,
@@ -16,7 +17,6 @@ use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
 use ruma_events::presence::PresenceState;
 use ruma_identifiers::{UserId, EventId};
-use time;
 
 use error::ApiError;
 use schema::presence_status;
@@ -32,7 +32,9 @@ pub struct NewPresenceStatus {
     /// The current presence state.
     pub presence: String,
     /// A possible status message from the user.
-    pub status_msg: Option<String>
+    pub status_msg: Option<String>,
+    /// Timestamp of the last update.
+    pub updated_at: PgTimestamp,
 }
 
 /// A Matrix presence status.
@@ -50,6 +52,19 @@ pub struct PresenceStatus {
     pub status_msg: Option<String>,
     /// Timestamp of the last update.
     pub updated_at: PgTimestamp,
+}
+
+/// Return current time in milliseconds
+pub fn get_now() -> i64 {
+    let now = UTC::now().naive_utc();
+    get_milliseconds(now)
+}
+
+/// Return `time` in milliseconds with a same epoch as PostgreSQL.
+pub fn get_milliseconds(time: NaiveDateTime) -> i64 {
+    let epoch = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+    let duration: Duration = time - epoch;
+    duration.num_milliseconds()
 }
 
 impl PresenceStatus {
@@ -91,9 +106,7 @@ impl PresenceStatus {
         self.presence = presence;
         self.status_msg = status_msg;
         self.event_id = event_id.clone();
-
-        // Use seconds instead of microseconds (default for PgTimestamp)
-        self.updated_at = PgTimestamp(time::get_time().sec);
+        self.updated_at = PgTimestamp(get_now());
 
         match self.save_changes::<PresenceStatus>(connection) {
             Ok(_) => Ok(()),
@@ -114,6 +127,7 @@ impl PresenceStatus {
             event_id: event_id.clone(),
             presence: presence,
             status_msg: status_msg,
+            updated_at: PgTimestamp(get_now()),
         };
         insert(&new_status)
             .into(presence_status::table)
@@ -141,11 +155,11 @@ impl PresenceStatus {
     pub fn get_users(
         connection: &PgConnection,
         users: &Vec<UserId>,
-        since: Option<time::Timespec>,
+        since: Option<i64>,
     ) -> Result<Vec<PresenceStatus>, ApiError> {
         match since {
             Some(since) => {
-                let time = PgTimestamp(since.sec);
+                let time = PgTimestamp(since);
 
                 presence_status::table
                     .filter(presence_status::user_id.eq(any(users)))

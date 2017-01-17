@@ -405,7 +405,7 @@ impl RoomMembership {
     }
 
     /// Return `RoomId`'s for given `UserId`'s.
-    pub fn find_common_joined_rooms(
+    pub fn find_common_rooms(
         connection: &PgConnection,
         user_id: &UserId,
         observed_user_id: &UserId,
@@ -425,8 +425,8 @@ impl RoomMembership {
             .map_err(ApiError::from)
     }
 
-    /// Return `RoomId`'s for given `RoomId`'s and `UserId`.
-    pub fn get_common_rooms(
+    /// Filter `RoomId`'s for `UserId` and membership state.
+    pub fn filter_rooms_by_state(
         connection: &PgConnection,
         room_ids: &Vec<RoomId>,
         user_id: &UserId,

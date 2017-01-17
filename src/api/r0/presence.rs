@@ -5,7 +5,6 @@ use iron::status::Status;
 use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
 use ruma_identifiers::UserId;
 use ruma_events::presence::PresenceState;
-use time;
 
 use config::Config;
 use db::DB;
@@ -14,7 +13,7 @@ use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
 use modifier::SerializableResponse;
 use models::room_membership::RoomMembership;
 use models::presence_list::PresenceList;
-use models::presence_status::PresenceStatus;
+use models::presence_status::{PresenceStatus, get_now};
 use models::user::User;
 
 /// The PUT `/presence/:user_id/status` endpoint.
@@ -78,7 +77,7 @@ struct GetPresenceStatusResponse {
     /// Whether the user is currently active.
     currently_active: bool,
     /// The length of time in milliseconds since an action was performed by this user.
-    last_active_ago: u64,
+    last_active_ago: i64,
     /// This user's presence. One of: ["online", "offline", "unavailable"]
     presence: PresenceState,
 }
@@ -94,7 +93,7 @@ impl Handler for GetPresenceStatus {
         let connection = DB::from_request(request)?;
 
         if user.id != user_id {
-            let rooms = RoomMembership::find_common_joined_rooms(
+            let rooms = RoomMembership::find_common_rooms(
                 &connection,
                 &user.id,
                 &user_id,
@@ -102,7 +101,7 @@ impl Handler for GetPresenceStatus {
             )?;
             if rooms.is_empty() {
                 Err(ApiError::unauthorized(
-                    format!("You are not authorized to get the presence status for th given user_id: {}.", user_id)
+                    format!("You are not authorized to get the presence status for the given user_id: {}.", user_id)
                 ))?;
             }
         }
@@ -117,14 +116,13 @@ impl Handler for GetPresenceStatus {
         let presence_state: PresenceState = status.presence.parse()
             .expect("Database insert should ensure a PresenceState");
 
-        let now = time::get_time();
-        let last_update = time::Timespec::new(status.updated_at.0, 0);
-        let last_active_ago: time::Duration = last_update - now;
+        let now = get_now();
+        let last_active_ago = now - status.updated_at.0;
 
         let response = GetPresenceStatusResponse {
             status_msg: status.status_msg,
             currently_active: PresenceState::Online == presence_state,
-            last_active_ago: last_active_ago.num_milliseconds() as u64,
+            last_active_ago: last_active_ago,
             presence: presence_state,
         };
 
@@ -202,8 +200,12 @@ impl Handler for GetPresenceList {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use std::thread;
+    use std::time::Duration;
+
     use iron::status::Status;
+
+    use test::Test;
 
     #[test]
     fn basic_presence_status() {
@@ -434,5 +436,49 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
         let array = response.json().as_array().unwrap();
         assert_eq!(array.len(), 0);
+    }
+
+    #[test]
+    fn last_active_ago() {
+        let test = Test::new();
+        let alice = test.create_user();
+        let bob = test.create_user();
+        let carl = test.create_user();
+
+        let room_options = format!(r#"{{"invite": ["{}", "{}"]}}"#, bob.id, carl.id);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+        assert_eq!(test.join_room(&carl.token, &room_id).status, Status::Ok);
+
+        test.update_presence(&alice.token, &alice.id, r#"{"presence":"online"}"#);
+        thread::sleep(Duration::from_secs(2));
+
+        test.update_presence(&bob.token, &bob.id, r#"{"presence":"online"}"#);
+        thread::sleep(Duration::from_secs(2));
+
+        let alice_presence_path = format!(
+            "/_matrix/client/r0/presence/{}/status?access_token={}",
+            alice.id,
+            carl.token
+        );
+
+        let bob_presence_path = format!(
+            "/_matrix/client/r0/presence/{}/status?access_token={}",
+            bob.id,
+            carl.token
+        );
+
+        let bob_response = test.get(&bob_presence_path);
+        assert_eq!(bob_response.status, Status::Ok);
+        let last_active_ago = bob_response.json().find("last_active_ago").unwrap().as_u64().unwrap();
+        assert!(last_active_ago > 2_000);
+        assert!(last_active_ago < 2_500);
+
+        let alice_response = test.get(&alice_presence_path);
+        assert_eq!(alice_response.status, Status::Ok);
+        let last_active_ago = alice_response.json().find("last_active_ago").unwrap().as_u64().unwrap();
+        assert!(last_active_ago > 4_000);
+        assert!(last_active_ago < 4_500);
     }
 }

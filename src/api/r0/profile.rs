@@ -239,8 +239,6 @@ mod tests {
     use test::Test;
     use iron::status::Status;
     use query::SyncOptions;
-    use std::time::Duration;
-    use std::thread;
 
     #[test]
     fn get_displayname_non_existent_user() {
@@ -510,9 +508,6 @@ mod tests {
             timeout: 0
         };
 
-        // The precision is in seconds.
-        thread::sleep(Duration::from_secs(2));
-
         let response = test.sync(&carl.token, options);
         let array = response
             .json()
@@ -560,9 +555,6 @@ mod tests {
             timeout: 0
         };
 
-        // The precision is in seconds.
-        thread::sleep(Duration::from_secs(2));
-
         let response = test.sync(&carl.token, options);
         let array = response
             .json()
@@ -595,9 +587,6 @@ mod tests {
             set_presence: None,
             timeout: 0
         };
-
-        // The precision is in seconds.
-        thread::sleep(Duration::from_secs(2));
 
         let response = test.sync(&carl.token, options);
         let array = response
