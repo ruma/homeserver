@@ -17,5 +17,5 @@ parts:
   ruma:
     source: .
     plugin: rust
-    rust-channel: nightly
-    build-packages: [gcc, libpq-dev, libsodium-dev, libssl-dev, openssl]
+    rust-revision: nightly-2016-12-19
+    build-packages: [gcc, libpq-dev, libsodium-dev, libssl-dev, openssl, pkg-config]
