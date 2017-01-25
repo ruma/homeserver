@@ -70,6 +70,13 @@ CREATE TABLE rooms (
   created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
+CREATE TABLE transactions (
+    path TEXT NOT NULL,
+    access_token TEXT NOT NULL,
+    response TEXT NOT NULL,
+    PRIMARY KEY (path, access_token)
+);
+
 CREATE TABLE users (
   id TEXT NOT NULL PRIMARY KEY,
   password_hash TEXT NOT NULL,

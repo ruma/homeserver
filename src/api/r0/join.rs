@@ -529,7 +529,7 @@ mod tests {
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&alice.token, &room_id, "Hi");
+        let response = test.send_message(&alice.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
@@ -593,7 +593,7 @@ mod tests {
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob.token, &room_id, "Hi");
+        let response = test.send_message(&bob.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
@@ -621,7 +621,7 @@ mod tests {
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob.token, &room_id, "Hi");
+        let response = test.send_message(&bob.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),

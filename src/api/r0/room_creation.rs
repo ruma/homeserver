@@ -275,7 +275,7 @@ mod tests {
                     "state_default": 0,
                     "users": {{  }},
                     "users_default": 0
-                }} 
+                }}
             }}]
         }}"#, bob.id);
 
@@ -284,10 +284,10 @@ mod tests {
         let response = test.join_room(&bob.token, &room_id);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&alice.token, &room_id, "Hi");
+        let response = test.send_message(&alice.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob.token, &room_id, "Hi");
+        let response = test.send_message(&bob.token, &room_id, "Hi", 2);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
@@ -470,7 +470,7 @@ mod tests {
 
         assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
         assert_eq!(test.invite(&bob.token, &room_id, &carl.id).status, Status::Ok);
-        assert_eq!(test.send_message(&bob.token, &room_id, "Hi").status, Status::Ok);
-        assert_eq!(test.send_message(&alice.token, &room_id, "Hi").status, Status::Ok);
+        assert_eq!(test.send_message(&bob.token, &room_id, "Hi", 1).status, Status::Ok);
+        assert_eq!(test.send_message(&alice.token, &room_id, "Hi", 1).status, Status::Ok);
     }
 }

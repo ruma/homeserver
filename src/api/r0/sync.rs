@@ -214,11 +214,11 @@ mod tests {
         let test = Test::new();
         let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.send_message(&carl.token, &room_id, "Hi Test 1");
+        let response = test.send_message(&carl.token, &room_id, "Hi Test 1", 1);
         assert_eq!(response.status, Status::Ok);
         let event_id_1 = response.json().find("event_id").unwrap().as_str().unwrap();
 
-        let response = test.send_message(&carl.token, &room_id, "Hi Test 2");
+        let response = test.send_message(&carl.token, &room_id, "Hi Test 2", 2);
         assert_eq!(response.status, Status::Ok);
         let event_id_2 = response.json().find("event_id").unwrap().as_str().unwrap();
 
@@ -286,7 +286,7 @@ mod tests {
         let test = Test::new();
         let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.send_message(&carl.token, &room_id, "Hi Test");
+        let response = test.send_message(&carl.token, &room_id, "Hi Test", 1);
         assert_eq!(response.status, Status::Ok);
 
         let options = SyncOptions {
@@ -320,7 +320,7 @@ mod tests {
         let response = test.sync(&carl.token, options);
         let next_batch = Test::get_next_batch(&response);
 
-        test.send_message(&carl.token, &room_id, "test 1");
+        test.send_message(&carl.token, &room_id, "test 1", 1);
         assert_eq!(response.status, Status::Ok);
 
         let options = SyncOptions {

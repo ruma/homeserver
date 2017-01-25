@@ -24,7 +24,7 @@ use ruma_events::room::topic::TopicEvent;
 use ruma_events::{CustomRoomEvent, CustomStateEvent, EventType};
 use ruma_identifiers::{RoomId, EventId};
 use serde::Deserialize;
-use serde_json::{Value, from_value};
+use serde_json::{Value, from_str, from_value, to_string};
 
 use db::DB;
 use config::Config;
@@ -37,9 +37,11 @@ use middleware::{
     RoomIdParam,
     TransactionIdParam,
 };
+use models::access_token::AccessToken;
 use models::event::NewEvent;
 use models::room::Room;
 use models::room_membership::RoomMembership;
+use models::transaction::Transaction;
 use models::user::User;
 use modifier::SerializableResponse;
 use schema::events;
@@ -87,7 +89,7 @@ macro_rules! state_event {
     };
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct EventResponse {
     /// A unique identifier for the event.
     event_id: String,
@@ -158,18 +160,36 @@ impl Handler for SendMessageEvent {
 
         let connection = DB::from_request(request)?;
 
+        let path = request.url.path().join("/").to_string();
+        let token = request.extensions.get::<AccessToken>()
+            .expect("AccessTokenAuth should ensure an access token").clone();
+
+        if let Some(transaction) = Transaction::find(&connection, &path, &token.value)? {
+            let response: EventResponse = from_str(&transaction.response).map_err(ApiError::from)?;
+            return Ok(Response::with((status::Ok, SerializableResponse(response))));
+        }
+
+        let response = EventResponse {
+            event_id: event_id.opaque_id().to_string(),
+        };
+
         connection.transaction(|| {
             verify_permissions(&connection, &room_id, &user, &event_type)?;
 
             insert(&room_event)
                 .into(events::table)
                 .execute(&*connection)
-                .map_err(ApiError::from)
-        }).map_err(ApiError::from)?;
+                .map_err(ApiError::from)?;
 
-        let response = EventResponse {
-            event_id: event_id.opaque_id().to_string(),
-        };
+            let serialized_response = to_string(&response).map_err(ApiError::from)?;
+
+            Transaction::create(
+                &connection,
+                path.clone(),
+                token.value.clone(),
+                serialized_response,
+            )
+        }).map_err(ApiError::from)?;
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))
     }
@@ -537,7 +557,7 @@ mod tests {
         let bob = test.create_user();
 
         let room_id = test.create_room(&alice.token);
-        let response = test.send_message(&bob.token, &room_id, "Hello");
+        let response = test.send_message(&bob.token, &room_id, "Hello", 1);
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
@@ -553,7 +573,7 @@ mod tests {
 
         let room_options = format!(r#"{{ "invite": [ "{}" ] }}"#, bob.id);
         let room_id = test.create_room_with_params(&alice.token, &room_options);
-        let response = test.send_message(&bob.token, &room_id, "Hello");
+        let response = test.send_message(&bob.token, &room_id, "Hello", 1);
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
@@ -579,7 +599,7 @@ mod tests {
 
         let event_content = format!(r#"{{
                                     "ban": 100,"events": {{
-                                        "m.room.message": 100 
+                                        "m.room.message": 100
                                     }},
                                     "events_default": 0,
                                     "invite": 100,
@@ -595,7 +615,7 @@ mod tests {
         let response = test.put(&state_event_path, &event_content);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob.token, &room_id, "Hello");
+        let response = test.send_message(&bob.token, &room_id, "Hello", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().find("error").unwrap().as_str().unwrap(),
@@ -605,7 +625,7 @@ mod tests {
         let event_content = format!(r#"{{
                                     "ban": 100,
                                     "events": {{
-                                        "m.room.message": 0 
+                                        "m.room.message": 0
                                     }},
                                     "events_default": 0,
                                     "invite": 100,
@@ -622,7 +642,26 @@ mod tests {
         let response = test.put(&state_event_path, &event_content);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.send_message(&bob.token, &room_id, "Hello again");
+        let response = test.send_message(&bob.token, &room_id, "Hello again", 2);
         assert_eq!(response.status, Status::Ok);
+    }
+
+    #[test]
+    fn create_events_with_transactions() {
+        let test = Test::new();
+        let (alice, room_id) = test.initial_fixtures("{}");
+
+        let response = test.send_message(&alice.token, &room_id, "Hi", 1);
+        let first_event_id = response.json().find("event_id").unwrap().as_str().unwrap();
+
+        // Using the same transaction ID.
+        let response = test.send_message(&alice.token, &room_id, "Hi again", 1);
+        let second_event_id = response.json().find("event_id").unwrap().as_str().unwrap();
+        assert_eq!(first_event_id, second_event_id);
+
+        // Using a different transaction ID.
+        let response = test.send_message(&alice.token, &room_id, "Hi once again", 2);
+        let third_event_id = response.json().find("event_id").unwrap().as_str().unwrap();
+        assert_ne!(third_event_id, second_event_id);
     }
 }
