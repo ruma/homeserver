@@ -33,7 +33,7 @@ extern crate toml;
 extern crate unicase;
 extern crate url;
 
-use clap::{App, AppSettings, SubCommand};
+use clap::{App, AppSettings, Arg, SubCommand};
 
 use config::Config;
 use crypto::generate_macaroon_secret_key;
@@ -72,6 +72,12 @@ fn main() {
         .subcommand(
             SubCommand::with_name("run")
                 .about("Runs the Ruma server")
+                .arg(Arg::with_name("config")
+                     .short("c")
+                     .long("config")
+                     .value_name("PATH")
+                     .help("Path to a configuration file")
+                     .takes_value(true))
         )
         .subcommand(
             SubCommand::with_name("secret")
@@ -80,8 +86,8 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
-        ("run", Some(_)) => {
-            let config = match Config::from_file() {
+        ("run", Some(submatches)) => {
+            let config = match Config::from_file(submatches.value_of("config")) {
                 Ok(config) => config,
                 Err(error) => {
                     println!("Failed to load configuration file: {}", error);

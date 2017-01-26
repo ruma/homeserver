@@ -15,6 +15,9 @@ use toml;
 
 use error::{ApiError, CliError};
 
+/// Default paths where Ruma will look for a configuration file if left unspecified.
+static DEFAULT_CONFIG_FILES: [&'static str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
+
 /// The user's configuration as loaded from the configuration file.
 ///
 /// Refer to `Config` for the description of the fields.
@@ -48,18 +51,29 @@ pub struct Config {
 
 impl Config {
     /// Load the user's configuration file.
-    pub fn from_file() -> Result<Config, CliError> {
-        let config: RawConfig;
-
-        if Self::json_exists() {
-            config = Self::load_json()?;
-        } else if Self::toml_exists() {
-            config = Self::load_toml()?;
-        } else if Self::yaml_exists() {
-            config = Self::load_yaml()?;
+    ///
+    /// If a path is given, it will try to load the configuration there.
+    /// Otherwise, try to load a file from the defaults locations.
+    pub fn from_file(path: Option<&str>) -> Result<Config, CliError> {
+        let config_path = if let Some(ref path_str) = path {
+            let path = Path::new(path_str);
+            if !path.is_file() {
+                return Err(CliError::new(format!("Configuration file `{}` not found.", path_str)));
+            }
+            path
         } else {
-            return Err(CliError::new("No configuration file was found."));
-        }
+            DEFAULT_CONFIG_FILES.iter()
+                .map(Path::new)
+                .find(|path| path.is_file())
+                .ok_or(CliError::new("No configuration file was found."))?
+        };
+
+        let config = match config_path.extension().and_then(|ext| ext.to_str()) {
+            Some("json") => Self::load_json(&config_path),
+            Some("toml") => Self::load_toml(&config_path),
+            Some("yml") | Some("yaml") => Self::load_yaml(&config_path),
+            _ => Err(CliError::new("Unsupported configuration file format")),
+        }?;
 
         let macaroon_secret_key = match decode(&config.macaroon_secret_key) {
             Ok(bytes) => match bytes.len() {
@@ -79,8 +93,8 @@ impl Config {
     }
 
     /// Load the `RawConfig` from a JSON configuration file.
-    fn load_json() -> Result<RawConfig, CliError> {
-        let contents = Self::read_file_contents("ruma.json");
+    fn load_json(path: &Path) -> Result<RawConfig, CliError> {
+        let contents = Self::read_file_contents(path);
         match serde_json::from_str(&contents) {
             Ok(config) => Ok(config),
             Err(error) => Err(CliError::from(error)),
@@ -88,8 +102,8 @@ impl Config {
     }
 
     /// Load the `RawConfig` from a TOML configuration file.
-    fn load_toml() -> Result<RawConfig, CliError> {
-        let contents = Self::read_file_contents("ruma.toml");
+    fn load_toml(path: &Path) -> Result<RawConfig, CliError> {
+        let contents = Self::read_file_contents(path);
         let mut parser = toml::Parser::new(&contents);
         let data  = parser.parse();
 
@@ -111,13 +125,8 @@ impl Config {
     }
 
     /// Load the `RawConfig` from a YAML configuration file.
-    fn load_yaml() -> Result<RawConfig, CliError> {
-        let contents = if Path::new("ruma.yaml").is_file() {
-            Self::read_file_contents("ruma.yaml")
-        } else {
-            Self::read_file_contents("ruma.yml")
-        };
-
+    fn load_yaml(path: &Path) -> Result<RawConfig, CliError> {
+        let contents = Self::read_file_contents(path);
         match serde_yaml::from_str(&contents) {
             Ok(config) => Ok(config),
             Err(error) => Err(CliError::from(error)),
@@ -125,26 +134,11 @@ impl Config {
     }
 
     /// Read the contents of a file.
-    fn read_file_contents(path: &str) -> String {
+    fn read_file_contents(path: &Path) -> String {
         let mut file = File::open(path).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
         contents
-    }
-
-    /// Check if there is a configuration file in JSON.
-    fn json_exists() -> bool {
-        Path::new("ruma.json").is_file()
-    }
-
-    /// Check if there is a configuration file in TOML.
-    fn toml_exists() -> bool {
-        Path::new("ruma.toml").is_file()
-    }
-
-    /// Check if there is a configuration file in YAML.
-    fn yaml_exists() -> bool {
-        Path::new("ruma.yml").is_file() || Path::new("ruma.yaml").is_file()
     }
 
     /// Extract the `Config` stored in the request.
