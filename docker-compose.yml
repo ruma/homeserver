@@ -1,7 +1,7 @@
 version: "2"
 services:
   rust:
-    image: "rumaio/ruma-dev@sha256:27ff4daf076128a8df5da99b52ce20190fede76f823f3fa1f937fcef773bf0e9"
+    image: "rumaio/ruma-dev@sha256:22ac646ba89de7020c4d612546ccd79b6090cbbce2bca5dd87790566cbd4685f"
     environment:
       # Workaround for https://github.com/rust-lang/cargo/issues/3340
       # Can be removed if a fixed Cargo ever gets released. >:(
