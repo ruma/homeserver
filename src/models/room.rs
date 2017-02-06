@@ -479,7 +479,7 @@ impl Room {
                 RoomAlias::create(connection, homeserver_domain, &new_room_alias)?;
             }
 
-            if let Some(invite_list) = creation_options.invite_list.clone() {
+            if let Some(ref invite_list) = creation_options.invite_list {
                 RoomMembership::create_memberships(connection, &room, invite_list, homeserver_domain)?;
             }
 

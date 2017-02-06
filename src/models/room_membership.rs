@@ -1,9 +1,7 @@
 //! Matrix room membership.
 
-use std::collections::HashSet;
 use std::convert::TryInto;
 use std::error::Error;
-use std::iter::FromIterator;
 
 use diesel::{
     Connection,
@@ -37,7 +35,7 @@ use models::event::{NewEvent, Event};
 use models::user::User;
 use models::profile::Profile;
 use models::room::Room;
-use schema::{events, users, room_memberships};
+use schema::{events, room_memberships};
 
 /// Room membership update or create data.
 #[derive(Debug, Clone)]
@@ -93,7 +91,7 @@ impl RoomMembership {
     -> Result<RoomMembership, ApiError> {
         RoomMembership::verify_creation_priviledges(connection, &options)?;
 
-        let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
+        let profile = Profile::find_by_uid(connection, &options.user_id)?;
 
         let new_member_event = RoomMembership::create_new_room_member_event(
             homeserver_domain,
@@ -127,7 +125,7 @@ impl RoomMembership {
         for option in options {
             RoomMembership::verify_creation_priviledges(connection, &option)?;
 
-            let profile = Profile::find_by_uid(connection, option.user_id.clone())?;
+            let profile = Profile::find_by_uid(connection, &option.user_id)?;
 
             let new_member_event = RoomMembership::create_new_room_member_event(
                 homeserver_domain,
@@ -246,7 +244,7 @@ impl RoomMembership {
     /// After the update a new `MemberEvent` is created.
     pub fn update(&mut self, connection: &PgConnection, homeserver_domain: &str, options: RoomMembershipOptions)
     -> Result<RoomMembership, ApiError> {
-        let profile = Profile::find_by_uid(connection, options.user_id.clone())?;
+        let profile = Profile::find_by_uid(connection, &options.user_id)?;
 
         let event = RoomMembership::create_new_room_member_event(
             homeserver_domain,
@@ -313,11 +311,9 @@ impl RoomMembership {
     pub fn create_memberships(
         connection: &PgConnection,
         room: &Room,
-        invite_list: Vec<UserId>,
+        invite_list: &Vec<UserId>,
         homeserver_domain: &str
     ) -> Result<(), ApiError> {
-        let user_ids = HashSet::from_iter(invite_list.clone());
-
         for invitee in invite_list {
             if invitee.hostname().to_string() != homeserver_domain {
                 return Err(
@@ -325,24 +321,7 @@ impl RoomMembership {
                 );
             }
         }
-
-        let users: Vec<User> = users::table
-            .filter(users::id.eq(any(
-                user_ids.iter().cloned().collect::<Vec<UserId>>()))
-            )
-            .get_results(connection)
-            .map_err(ApiError::from)?;
-
-        let loaded_user_ids: HashSet<UserId> = users
-            .iter()
-            .map(|user| user.id.clone())
-            .collect();
-
-        let missing_user_ids: Vec<UserId> = user_ids
-            .difference(&loaded_user_ids)
-            .cloned()
-            .collect();
-
+        let missing_user_ids = User::find_missing_users(connection, invite_list)?;
         if !missing_user_ids.is_empty() {
             return Err(
                 ApiError::bad_json(format!(
@@ -356,10 +335,10 @@ impl RoomMembership {
             )
         }
 
-        let options = users.iter().map(|user| {
+        let options = invite_list.iter().map(|user_id| {
             RoomMembershipOptions {
                 room_id: room.id.clone(),
-                user_id: user.id.clone(),
+                user_id: user_id.clone(),
                 sender: room.user_id.clone(),
                 membership: "invite".to_string(),
             }
@@ -384,32 +363,81 @@ impl RoomMembership {
                 _ => ApiError::from(err),
             })?;
 
-        events.into_iter() .map(TryInto::try_into). collect()
+        events.into_iter().map(TryInto::try_into).collect()
     }
 
     /// Return `RoomMembership`'s for given `UserId` order by `RoomId`.
     pub fn find_by_user_id_order_by_room_id(connection: &PgConnection, user_id: &UserId) -> Result<Vec<RoomMembership>, ApiError> {
-        let room_memberships: Vec<RoomMembership> = room_memberships::table
+        room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .order(room_memberships::room_id)
             .get_results(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
-            })?;
-        Ok(room_memberships)
+            })
     }
 
     /// Return `RoomMembership`'s for given `UserId` and `MembershipState`.
     pub fn find_by_uid_and_state(connection: &PgConnection, user_id: UserId, membership: &str) -> Result<Vec<RoomMembership>, ApiError> {
-        let room_memberships: Vec<RoomMembership> = room_memberships::table
+        room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .filter(room_memberships::membership.eq(membership))
             .get_results(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
-            })?;
-        Ok(room_memberships)
+            })
+    }
+
+    /// Return `RoomId`'s for given `UserId` and `MembershipState`.
+    pub fn find_room_ids_by_uid_and_state(
+        connection: &PgConnection,
+        user_id: &UserId,
+        membership: &str
+    ) -> Result<Vec<RoomId>, ApiError> {
+        room_memberships::table
+            .filter(room_memberships::user_id.eq(user_id))
+            .filter(room_memberships::membership.eq(membership))
+            .select(room_memberships::room_id)
+            .get_results(connection)
+            .map_err(ApiError::from)
+    }
+
+    /// Return `RoomId`'s for given `UserId`'s.
+    pub fn find_common_rooms(
+        connection: &PgConnection,
+        user_id: &UserId,
+        observed_user_id: &UserId,
+        membership: &str
+    ) -> Result<Vec<RoomId>, ApiError> {
+        let rooms = room_memberships::table
+            .filter(room_memberships::user_id.eq(user_id))
+            .filter(room_memberships::membership.eq(membership))
+            .select(room_memberships::room_id);
+
+        room_memberships::table
+            .filter(room_memberships::user_id.eq(observed_user_id))
+            .filter(room_memberships::membership.eq(membership))
+            .filter(room_memberships::room_id.eq(any(rooms)))
+            .select(room_memberships::room_id)
+            .get_results(connection)
+            .map_err(ApiError::from)
+    }
+
+    /// Filter `RoomId`'s for `UserId` and membership state.
+    pub fn filter_rooms_by_state(
+        connection: &PgConnection,
+        room_ids: &Vec<RoomId>,
+        user_id: &UserId,
+        membership: &str
+    ) -> Result<Vec<RoomId>, ApiError> {
+        room_memberships::table
+            .filter(room_memberships::user_id.eq(user_id))
+            .filter(room_memberships::membership.eq(membership))
+            .filter(room_memberships::room_id.eq(any(room_ids)))
+            .select(room_memberships::room_id)
+            .get_results(connection)
+            .map_err(ApiError::from)
     }
 }

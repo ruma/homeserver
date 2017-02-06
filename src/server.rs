@@ -17,8 +17,10 @@ use api::r0::{
     DeleteTag,
     GetAvatarUrl,
     GetDisplayName,
-    GetRoomAlias,
     GetFilter,
+    GetPresenceList,
+    GetPresenceStatus,
+    GetRoomAlias,
     GetTags,
     InviteToRoom,
     JoinRoom,
@@ -28,10 +30,12 @@ use api::r0::{
     Logout,
     Members,
     PostFilter,
+    PostPresenceList,
     Profile,
     PutAccountData,
     PutAvatarUrl,
     PutDisplayName,
+    PutPresenceStatus,
     PutRoomAccountData,
     PutRoomAlias,
     PutTag,
@@ -127,6 +131,10 @@ impl<'a> Server<'a> {
         r0_router.get("/user/:user_id/filter/:filter_id", GetFilter::chain(), "get_filter");
         r0_router.post("/user/:user_id/filter", PostFilter::chain(), "post_filter");
         r0_router.get("/sync", Sync::chain(), "sync");
+        r0_router.get("/presence/:user_id/status", GetPresenceStatus::chain(), "get_presence_status");
+        r0_router.put("/presence/:user_id/status", PutPresenceStatus::chain(), "put_presence_status");
+        r0_router.get("/presence/list/:user_id", GetPresenceList::chain(), "get_presence_list");
+        r0_router.post("/presence/list/:user_id", PostPresenceList::chain(), "post_presence_list");
 
         let mut r0 = Chain::new(r0_router);
 

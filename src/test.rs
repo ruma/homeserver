@@ -319,9 +319,10 @@ impl Test {
         };
         path = if options.full_state { format!("{}&full_state=true", path) } else { path };
         path = match options.set_presence {
-            PresenceState::Offline => path,
-            PresenceState::Online => format!("{}&set_presence=online", path),
-            PresenceState::Unavailable => format!("{}&set_presence=unavailable", path),
+            Some(PresenceState::Offline) => format!("{}&set_presence=offline", path),
+            Some(PresenceState::Online) => format!("{}&set_presence=online", path),
+            Some(PresenceState::Unavailable) => format!("{}&set_presence=unavailable", path),
+            None => path,
         };
         path = match options.since {
             Some(batch) => format!("{}&since={}", path, batch.to_string()),
@@ -339,6 +340,18 @@ impl Test {
         for key in keys.into_iter() {
             assert!(json.find(key).is_some());
         }
+    }
+
+    /// Update presence of a user.
+    pub fn update_presence(&self, access_token: &str, user_id: &str, body: &str) -> Response {
+        let presence_status_path = format!(
+            "/_matrix/client/r0/presence/{}/status?access_token={}",
+            user_id,
+            access_token
+        );
+        let response = self.put(&presence_status_path , body);
+        assert_eq!(response.status, Status::Ok);
+        response
     }
 }
 
