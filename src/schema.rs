@@ -108,6 +108,14 @@ table! {
 }
 
 table! {
+    transactions (path, access_token) {
+        path -> Text,
+        access_token -> Text,
+        response -> Text,
+    }
+}
+
+table! {
     filters {
         id -> BigSerial,
         user_id -> Text,

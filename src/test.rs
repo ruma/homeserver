@@ -282,10 +282,11 @@ impl Test {
     }
 
     /// Send a message to room.
-    pub fn send_message(&self, access_token: &str, room_id: &str, message: &str) -> Response {
+    pub fn send_message(&self, access_token: &str, room_id: &str, message: &str, txn_id: u64) -> Response {
         let create_event_path = format!(
-            "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
+            "/_matrix/client/r0/rooms/{}/send/m.room.message/{}?access_token={}",
             room_id,
+            txn_id,
             access_token
         );
         let body = format!(r#"{{"body":"{}","msgtype":"m.text"}}"#, message);
