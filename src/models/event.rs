@@ -5,10 +5,14 @@ use std::convert::{TryInto, TryFrom};
 use diesel::{
     ExpressionMethods,
     FilterDsl,
+    FindDsl,
+    GroupByDsl,
     LoadDsl,
     OrderDsl,
-    TextExpressionMethods
+    SelectDsl,
+    TextExpressionMethods,
 };
+use diesel::expression::dsl::{any, max};
 use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::PgConnection;
@@ -18,8 +22,9 @@ use ruma_events::{
     Event as RumaEventsEvent,
     EventType,
     RoomEvent,
-    StateEvent,
+    StateEvent as RumaStateEventTrait,
 };
+use ruma_events::collections::all::StateEvent;
 use ruma_events::call::answer::AnswerEvent;
 use ruma_events::call::candidates::CandidatesEvent;
 use ruma_events::call::hangup::HangupEvent;
@@ -115,7 +120,71 @@ impl Event {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
             })?;
+
         Ok(events)
+    }
+
+    /// Look up an event given its `EventId`.
+    pub fn find(connection: &PgConnection, event_id: &EventId) -> Result<Option<Event>, ApiError> {
+        match events::table.find(event_id).first(connection) {
+            Ok(event) => Ok(Some(event)),
+            Err(DieselError::NotFound) => Ok(None),
+            Err(err) => Err(ApiError::from(err)),
+        }
+    }
+
+    /// Return the latest state events for a room.
+    ///
+    /// A pivot event is used to specify the latest moment in time that it will be
+    /// used to extract the state snapshot. If the pivot event is not present,
+    /// the latest state events are extracted.
+    pub fn get_room_state_events_until(
+        connection: &PgConnection,
+        room_id: &RoomId,
+        pivot_event: Option<Event>
+    ) -> Result<Vec<Event>, ApiError> {
+        let state_events: Vec<String> = vec![
+            EventType::RoomAliases,
+            EventType::RoomAvatar,
+            EventType::RoomCanonicalAlias,
+            EventType::RoomCreate,
+            EventType::RoomGuestAccess,
+            EventType::RoomHistoryVisibility,
+            EventType::RoomJoinRules,
+            EventType::RoomMember,
+            EventType::RoomName,
+            EventType::RoomPowerLevels,
+            EventType::RoomThirdPartyInvite,
+            EventType::RoomTopic,
+        ].iter().map(EventType::to_string).collect();
+
+        match pivot_event {
+            Some(event) => {
+                let ordering = events::table
+                    .select(max(events::ordering))
+                    .filter(events::room_id.eq(room_id))
+                    .filter(events::event_type.eq(any(state_events)))
+                    .filter(events::ordering.lt(event.ordering))
+                    .group_by(events::event_type);
+
+                events::table
+                    .filter(events::ordering.eq(any(&ordering)))
+                    .get_results(connection)
+                    .map_err(ApiError::from)
+            },
+            None => {
+                let ordering = events::table
+                    .select(max(events::ordering))
+                    .filter(events::room_id.eq(room_id))
+                    .filter(events::event_type.eq(any(state_events)))
+                    .group_by(events::event_type);
+
+                events::table
+                    .filter(events::ordering.eq(any(&ordering)))
+                    .get_results(connection)
+                    .map_err(ApiError::from)
+            }
+        }
     }
 }
 
@@ -271,5 +340,29 @@ impl TryInto<MemberEvent> for Event {
             unsigned: None,
             user_id: self.user_id,
         })
+    }
+}
+
+impl TryInto<StateEvent> for Event {
+    type Err = ApiError;
+
+    fn try_into(self) -> Result<StateEvent, Self::Err> {
+        let state_event = match EventType::from(self.event_type.as_ref()) {
+            EventType::RoomAliases => StateEvent::RoomAliases(self.try_into()?),
+            EventType::RoomAvatar => StateEvent::RoomAvatar(self.try_into()?),
+            EventType::RoomCanonicalAlias => StateEvent::RoomCanonicalAlias(self.try_into()?),
+            EventType::RoomCreate => StateEvent::RoomCreate(self.try_into()?),
+            EventType::RoomGuestAccess => StateEvent::RoomGuestAccess(self.try_into()?),
+            EventType::RoomHistoryVisibility => StateEvent::RoomHistoryVisibility(self.try_into()?),
+            EventType::RoomJoinRules => StateEvent::RoomJoinRules(self.try_into()?),
+            EventType::RoomMember => StateEvent::RoomMember(self.try_into()?),
+            EventType::RoomName => StateEvent::RoomName(self.try_into()?),
+            EventType::RoomPowerLevels => StateEvent::RoomPowerLevels(self.try_into()?),
+            EventType::RoomThirdPartyInvite => StateEvent::RoomThirdPartyInvite(self.try_into()?),
+            EventType::RoomTopic => StateEvent::RoomTopic(self.try_into()?),
+            _ => Err(ApiError::bad_event(format!("Unknown state event type {}", self.event_type)))?,
+        };
+
+        Ok(state_event)
     }
 }
