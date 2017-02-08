@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::sync::{ONCE_INIT, Once};
 use std::convert::TryFrom;
 
@@ -5,8 +6,9 @@ use env_logger;
 use diesel::Connection;
 use diesel::migrations::setup_database;
 use diesel::pg::PgConnection;
+use flate2::read::GzDecoder;
 use iron;
-use iron::headers::{ContentType, Headers};
+use iron::headers::{ContentEncoding, ContentType, Encoding, Headers};
 use iron::method::Method;
 use iron::status::Status;
 use iron_test::{request, response};
@@ -390,7 +392,22 @@ impl Response {
     pub fn from_iron_response(response: iron::response::Response) -> Response {
         let headers = response.headers.clone();
         let status = response.status.expect("Response had no status").clone();
-        let body = response::extract_body_to_string(response);
+        let body_as_bytes = response::extract_body_to_bytes(response);
+
+        let body = match headers.get::<ContentEncoding>() {
+            Some(header) => {
+                // Decompress gzipped response when necessary.
+                if header.0.contains(&Encoding::Gzip) {
+                    let mut decoded_body = String::new();
+                    let mut decoder = GzDecoder::new(body_as_bytes.as_slice()).unwrap();
+                    let _ = decoder.read_to_string(&mut decoded_body);
+                    decoded_body
+                } else {
+                    String::from_utf8(body_as_bytes).unwrap()
+                }
+            },
+            None => String::from_utf8(body_as_bytes).unwrap()
+        };
 
         let json = match from_str(&body) {
             Ok(json) => Some(json),
