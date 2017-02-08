@@ -110,7 +110,7 @@ Legend:
     <th align="left" colspan="3">Getting events for a room</th>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/9">#9</a></td>
     <td>GET /rooms/:room_id/state</td>
   </tr>

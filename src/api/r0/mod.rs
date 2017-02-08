@@ -16,6 +16,7 @@ pub use self::presence::{GetPresenceList, GetPresenceStatus, PostPresenceList, P
 pub use self::profile::{Profile, GetAvatarUrl, PutAvatarUrl, GetDisplayName, PutDisplayName};
 pub use self::registration::Register;
 pub use self::room_creation::CreateRoom;
+pub use self::room_info::RoomState;
 pub use self::tags::{DeleteTag, GetTags, PutTag};
 pub use self::sync::Sync;
 pub use self::versions::Versions;
@@ -33,6 +34,7 @@ mod presence;
 mod profile;
 mod registration;
 mod room_creation;
+mod room_info;
 mod tags;
 mod sync;
 mod versions;
