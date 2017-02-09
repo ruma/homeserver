@@ -41,7 +41,6 @@ You can also build and run Ruma in one step with `script/cargo run`.
 
 Ruma currently requires the nightly version of Rust because it uses the following unstable features, listed below with links to the GitHub issues tracking stabilization:
 
-* [`proc_macro`](https://github.com/rust-lang/rust/issues/35900).
 * [`try_from`](https://github.com/rust-lang/rust/issues/33417)
 
 When all of these features are stabilized, Ruma will target stable Rust.
