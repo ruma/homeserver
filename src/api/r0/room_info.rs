@@ -135,68 +135,68 @@ mod tests {
         assert!(events.len() > 0);
 
         for e in events.iter() {
-            match e.find("type").unwrap().as_str().unwrap() {
+            match e.get("type").unwrap().as_str().unwrap() {
                 "m.room.aliases" => {
                     assert!(
-                        e.find_path(&["content", "aliases"]).unwrap()
+                        e.pointer("/content/aliases").unwrap()
                         .as_array().unwrap()
                         .contains(&Value::String("#alias_1:ruma.test".to_string()))
                     );
                 },
                 "m.room.canonical_alias" => {
                     assert_eq!(
-                        e.find_path(&["content", "alias"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/alias").unwrap().as_str().unwrap(),
                         "#canonical_alias:ruma.test"
                     );
                 },
                 "m.room.create" => {
                     assert_eq!(
-                        e.find_path(&["content", "creator"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/creator").unwrap().as_str().unwrap(),
                         alice.id
                     );
 
                     assert_eq!(
-                        e.find_path(&["content", "federate"]).unwrap().as_bool().unwrap(),
+                        e.pointer("/content/federate").unwrap().as_bool().unwrap(),
                         true
                     );
                 },
                 "m.room.history_visibility" => {
                     assert_eq!(
-                        e.find_path(&["content", "history_visibility"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/history_visibility").unwrap().as_str().unwrap(),
                         "shared"
                     );
                 },
                 "m.room.join_rules" => {
                     assert_eq!(
-                        e.find_path(&["content", "join_rule"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/join_rule").unwrap().as_str().unwrap(),
                         "invite"
                     );
                 },
                 "m.room.member" => {
                     assert_eq!(
-                        e.find_path(&["content", "membership"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/membership").unwrap().as_str().unwrap(),
                         "join"
                     );
 
                     assert_eq!(
-                        e.find("sender").unwrap().as_str().unwrap(),
+                        e.get("sender").unwrap().as_str().unwrap(),
                         format!("{}", alice.id)
                     );
                 },
                 "m.room.name" => {
                     assert_eq!(
-                        e.find_path(&["content", "name"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/name").unwrap().as_str().unwrap(),
                         "Test Name"
                     );
                 },
                 "m.room.power_levels" => {
-                    let ban = e.find_path(&["content", "ban"]).unwrap().as_u64().unwrap();
-                    let invite = e.find_path(&["content", "invite"]).unwrap().as_u64().unwrap();
-                    let users = e.find_path(&["content", "users"]).unwrap().as_object().unwrap();
-                    let creator = e.find("sender").unwrap().as_str().unwrap();
+                    let ban = e.pointer("/content/ban").unwrap().as_u64().unwrap();
+                    let invite = e.pointer("/content/invite").unwrap().as_u64().unwrap();
+                    let users = e.pointer("/content/users").unwrap().as_object().unwrap();
+                    let creator = e.get("sender").unwrap().as_str().unwrap();
 
                     // Admin rights.
-                    assert_eq!(users.get(&alice.id).unwrap(), &Value::U64(100));
+                    assert_eq!(users.get(&alice.id).unwrap(), &Value::from(100));
                     assert_eq!(creator, alice.id);
 
                     // The default values.
@@ -205,7 +205,7 @@ mod tests {
                 },
                 "m.room.topic" => {
                     assert_eq!(
-                        e.find_path(&["content", "topic"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Test Topic"
                     );
                 },
@@ -246,9 +246,9 @@ mod tests {
         assert!(events.len() > 0);
 
         for e in events.iter() {
-            match e.find("type").unwrap().as_str().unwrap() {
+            match e.get("type").unwrap().as_str().unwrap() {
                 "m.room.aliases" => {
-                    let aliases = e.find_path(&["content", "aliases"]).unwrap().as_array().unwrap();
+                    let aliases = e.pointer("/content/aliases").unwrap().as_array().unwrap();
 
                     assert!(aliases.contains(&Value::String("#alias_1:ruma.test".to_string())));
                     assert!(aliases.contains(&Value::String("#alias_2:ruma.test".to_string())));
@@ -290,10 +290,10 @@ mod tests {
         assert!(events.len() > 0);
 
         for e in events.iter() {
-            match e.find("type").unwrap().as_str().unwrap() {
+            match e.get("type").unwrap().as_str().unwrap() {
                 "m.room.topic" => {
                     assert_eq!(
-                        e.find_path(&["content", "topic"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Topic for Bob"
                     );
                 }
@@ -316,10 +316,10 @@ mod tests {
         assert!(events.len() > 0);
 
         for e in events.iter() {
-            match e.find("type").unwrap().as_str().unwrap() {
+            match e.get("type").unwrap().as_str().unwrap() {
                 "m.room.topic" => {
                     assert_eq!(
-                        e.find_path(&["content", "topic"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Topic for Bob"
                     );
                 }
@@ -341,10 +341,10 @@ mod tests {
         assert!(events.len() > 0);
 
         for e in events.iter() {
-            match e.find("type").unwrap().as_str().unwrap() {
+            match e.get("type").unwrap().as_str().unwrap() {
                 "m.room.topic" => {
                     assert_eq!(
-                        e.find_path(&["content", "topic"]).unwrap().as_str().unwrap(),
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Topic for Alice"
                     );
                 }

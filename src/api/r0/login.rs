@@ -60,9 +60,9 @@ mod tests {
             r#"{"auth": {"type": "m.login.password", "user": "carl", "password": "secret"}}"#,
         );
 
-        assert!(response.json().find("access_token").is_some());
-        assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
+        assert!(response.json().get("access_token").is_some());
+        assert_eq!(response.json().get("home_server").unwrap().as_str().unwrap(), "ruma.test");
+        assert_eq!(response.json().get("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
     }
 
     #[test]

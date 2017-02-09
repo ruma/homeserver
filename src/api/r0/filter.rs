@@ -62,7 +62,7 @@ impl Handler for PostFilter {
 
         let connection = DB::from_request(request)?;
 
-        let id = Filter::create(&connection, user_id, filter. to_json().to_string())?;
+        let id = Filter::create(&connection, user_id, filter.to_json().map_err(ApiError::from)?.to_string())?;
 
         let response = PostFilterResponse {
             filter_id: id.to_string(),

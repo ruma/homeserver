@@ -2,10 +2,6 @@ version: "2"
 services:
   rust:
     image: "rumaio/ruma-dev@sha256:22ac646ba89de7020c4d612546ccd79b6090cbbce2bca5dd87790566cbd4685f"
-    environment:
-      # Workaround for https://github.com/rust-lang/cargo/issues/3340
-      # Can be removed if a fixed Cargo ever gets released. >:(
-      SSL_CERT_FILE: "/etc/ssl/certs/ca-certificates.crt"
     links:
       - "postgres"
     volumes:

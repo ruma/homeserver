@@ -274,7 +274,7 @@ mod tests {
 
         let response = test.post(&room_join_path, r"{}");
         assert_eq!(response.status, Status::Ok);
-        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap().to_string(), room_id);
+        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap().to_string(), room_id);
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
 
         let response = test.post(&room_join_path, r"{}");
         assert_eq!(response.status, Status::Ok);
-        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap().to_string(), room_id);
+        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap().to_string(), room_id);
     }
 
     #[test]
@@ -311,7 +311,7 @@ mod tests {
         let response = test.post(&room_join_path, r"{}");
 
         assert_eq!(response.status, Status::Ok);
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -329,7 +329,7 @@ mod tests {
         let response = test.post(&room_join_path, r"{}");
 
         assert_eq!(response.status, Status::Ok);
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -346,7 +346,7 @@ mod tests {
         let response = test.post(&room_join_path, r"{}");
 
         assert_eq!(response.status, Status::Ok);
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -367,7 +367,7 @@ mod tests {
         let response = test.post(&room_join_path, r"{}");
 
         assert_eq!(response.status, Status::Ok);
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The inviter hasn't joined the room yet"
         );
     }
@@ -449,7 +449,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The invited user @mark:ruma.test was not found on this server"
         );
     }
@@ -495,7 +495,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The invited user has already joined"
         );
     }
@@ -510,7 +510,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The room was not found on this server"
         );
     }
@@ -532,7 +532,7 @@ mod tests {
         let response = test.send_message(&alice.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("The user {} has not joined the room", alice.id));
     }
 
@@ -550,7 +550,7 @@ mod tests {
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The room was not found on this server"
         );
     }
@@ -570,7 +570,7 @@ mod tests {
         let response = test.post(&leave_room_path, r#"{}"#);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "User not in room or uninvited"
         );
     }
@@ -596,7 +596,7 @@ mod tests {
         let response = test.send_message(&bob.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("The user {} has not joined the room", bob.id));
     }
 
@@ -624,7 +624,7 @@ mod tests {
         let response = test.send_message(&bob.token, &room_id, "Hi", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("The user {} has not joined the room", bob.id));
     }
 }

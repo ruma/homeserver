@@ -137,7 +137,7 @@ mod tests {
 
         let response = test.post(&create_room_path, "{}");
 
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -149,14 +149,14 @@ mod tests {
                                        user.token);
 
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_str();
+        let room_id = response.json().get("room_id").unwrap().as_str();
 
         assert!(room_id.is_some());
 
         let alias_response = test.get("/_matrix/client/r0/directory/room/my_room");
 
         assert_eq!(
-            alias_response.json().find("room_id").unwrap().as_str().unwrap(),
+            alias_response.json().get("room_id").unwrap().as_str().unwrap(),
             room_id.unwrap()
         );
     }
@@ -171,7 +171,7 @@ mod tests {
 
         let response = test.post(&create_room_path, r#"{"visibility": "public"}"#);
 
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod tests {
 
         let response = test.post(&create_room_path, r#"{"visibility": "private"}"#);
 
-        assert!(response.json().find("room_id").unwrap().as_str().is_some());
+        assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
         let response = test.post(&create_room_path, r#"{"visibility": "bogus"}"#);
 
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "M_BAD_JSON"
         );
     }
@@ -242,11 +242,11 @@ mod tests {
         );
 
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "M_BAD_JSON"
         );
 
-        let error = response.json().find("error").unwrap().as_str().unwrap().to_string();
+        let error = response.json().get("error").unwrap().as_str().unwrap().to_string();
 
         assert!(error.starts_with("Unknown users in invite list:"));
         assert!(error.contains("@carl:ruma.test"));
@@ -290,7 +290,7 @@ mod tests {
         let response = test.send_message(&bob.token, &room_id, "Hi", 2);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "Insufficient power level to create this event."
         );
     }
@@ -311,7 +311,7 @@ mod tests {
         let response = test.invite(&bob.token, &room_id, &carl.id);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "Insufficient power level to invite"
         );
     }
@@ -389,12 +389,12 @@ mod tests {
         let second_alias_response = test.get_room_by_alias("alias_2");
 
         assert_eq!(
-            first_alias_response.json().find("room_id").unwrap().as_str().unwrap(),
+            first_alias_response.json().get("room_id").unwrap().as_str().unwrap(),
             room_id
         );
 
         assert_eq!(
-            second_alias_response.json().find("room_id").unwrap().as_str().unwrap(),
+            second_alias_response.json().get("room_id").unwrap().as_str().unwrap(),
             room_id
         );
     }

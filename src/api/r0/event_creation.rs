@@ -467,7 +467,7 @@ mod tests {
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
 
-        assert!(response.json().find("event_id").unwrap().as_str().is_some());
+        assert!(response.json().get("event_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -486,9 +486,9 @@ mod tests {
 
         let json = response.json();
 
-        assert_eq!(json.find("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
+        assert_eq!(json.get("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
         assert_eq!(
-            json.find("error").unwrap().as_str().unwrap(),
+            json.get("error").unwrap().as_str().unwrap(),
             "Event content did not match expected structure for event of type m.call.answer."
         );
     }
@@ -509,9 +509,9 @@ mod tests {
 
         let json = response.json();
 
-        assert_eq!(json.find("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
+        assert_eq!(json.get("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
         assert_eq!(
-            json.find("error").unwrap().as_str().unwrap(),
+            json.get("error").unwrap().as_str().unwrap(),
             "Events of type m.room.topic cannot be created with this API."
         );
     }
@@ -530,7 +530,7 @@ mod tests {
 
         let response = test.put(&create_event_path, r#"{"foo":"bar"}"#);
 
-        assert!(response.json().find("event_id").unwrap().as_str().is_some());
+        assert!(response.json().get("event_id").unwrap().as_str().is_some());
     }
 
     #[test]
@@ -561,7 +561,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("The user {} is not a member of the room", bob.id));
     }
 
@@ -577,7 +577,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("The user {} has not joined the room", bob.id));
     }
 
@@ -615,7 +615,7 @@ mod tests {
         let response = test.send_message(&bob.token, &room_id, "Hello", 1);
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "Insufficient power level to create this event."
         );
 
@@ -645,16 +645,16 @@ mod tests {
         let (alice, room_id) = test.initial_fixtures("{}");
 
         let response = test.send_message(&alice.token, &room_id, "Hi", 1);
-        let first_event_id = response.json().find("event_id").unwrap().as_str().unwrap();
+        let first_event_id = response.json().get("event_id").unwrap().as_str().unwrap();
 
         // Using the same transaction ID.
         let response = test.send_message(&alice.token, &room_id, "Hi again", 1);
-        let second_event_id = response.json().find("event_id").unwrap().as_str().unwrap();
+        let second_event_id = response.json().get("event_id").unwrap().as_str().unwrap();
         assert_eq!(first_event_id, second_event_id);
 
         // Using a different transaction ID.
         let response = test.send_message(&alice.token, &room_id, "Hi once again", 2);
-        let third_event_id = response.json().find("event_id").unwrap().as_str().unwrap();
+        let third_event_id = response.json().get("event_id").unwrap().as_str().unwrap();
         assert_ne!(third_event_id, second_event_id);
     }
 }

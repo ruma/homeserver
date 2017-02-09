@@ -179,13 +179,13 @@ impl Test {
     pub fn create_user(&self) -> TestUser {
         let response = self.register_user(&format!(r#"{{"password": "secret"}}"#));
 
-        let access_token = response.json().find("access_token")
+        let access_token = response.json().get("access_token")
             .unwrap()
             .as_str()
             .unwrap()
             .to_string();
 
-        let user_id = response.json().find("user_id")
+        let user_id = response.json().get("user_id")
             .unwrap()
             .as_str()
             .unwrap()
@@ -198,7 +198,7 @@ impl Test {
     pub fn create_room_with_params(&self, access_token: &str, body: &str) -> String {
         self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), body)
             .json()
-            .find("room_id")
+            .get("room_id")
             .unwrap()
             .as_str()
             .unwrap()
@@ -285,7 +285,7 @@ impl Test {
         assert_eq!(response.status, Status::Ok);
         response
             .json()
-            .find("filter_id")
+            .get("filter_id")
             .unwrap()
             .as_str()
             .unwrap()
@@ -333,7 +333,7 @@ impl Test {
     pub fn get_next_batch(response: &Response) -> Batch {
         response
             .json()
-            .find("next_batch")
+            .get("next_batch")
             .unwrap()
             .as_str()
             .unwrap()
@@ -368,7 +368,7 @@ impl Test {
     /// Test existent of keys in json.
     pub fn assert_json_keys(json: &Value, keys: Vec<&str>) {
         for key in keys.into_iter() {
-            assert!(json.find(key).is_some());
+            assert!(json.get(key).is_some());
         }
     }
 

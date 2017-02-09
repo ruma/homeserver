@@ -63,7 +63,7 @@ pub fn get_now() -> i64 {
 /// Return `time` in milliseconds with a same epoch as PostgreSQL.
 pub fn get_milliseconds(time: NaiveDateTime) -> i64 {
     let epoch = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
-    let duration: Duration = time - epoch;
+    let duration: Duration = time.signed_duration_since(epoch);
     duration.num_milliseconds()
 }
 

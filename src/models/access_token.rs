@@ -95,7 +95,7 @@ impl Key for AccessToken {
 }
 
 fn create_macaroon(macaroon_secret_key: &[u8], user_id: &UserId) -> Result<String, ApiError> {
-    let expiration = match UTC::now().checked_add(Duration::hours(1)) {
+    let expiration = match UTC::now().checked_add_signed(Duration::hours(1)) {
         Some(datetime) => datetime,
         None => return Err(
             ApiError::unknown("Failed to generate access token expiration datetime.".to_string())

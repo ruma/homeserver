@@ -138,7 +138,7 @@ mod tests {
 
         let response = test.get(&get_tags_path);
         assert_eq!(response.status, Status::Ok);
-        let chunk = response.json().find("tags").unwrap();
+        let chunk = response.json().get("tags").unwrap();
         assert!(chunk.is_object());
         let chunk = chunk.as_object().unwrap();
         assert_eq!(chunk.len(), 1);
@@ -223,7 +223,7 @@ mod tests {
         );
 
         let response = test.get(&get_tags_path);
-        let chunk = response.json().find("tags").unwrap();
+        let chunk = response.json().get("tags").unwrap();
         let chunk = chunk.as_object().unwrap();
         let content = chunk.get("test").unwrap();
         assert_eq!(content.to_string(), r#"{"order":"test2"}"#);
@@ -257,7 +257,7 @@ mod tests {
 
         let response = test.get(&get_tags_path);
         assert_eq!(response.status, Status::Ok);
-        let chunk = response.json().find("tags").unwrap();
+        let chunk = response.json().get("tags").unwrap();
         let chunk = chunk.as_object().unwrap();
         assert_eq!(chunk.len(), 0);
     }

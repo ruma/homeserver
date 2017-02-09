@@ -7,6 +7,7 @@ use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 use ruma_events::presence::PresenceState;
 use serde_json::from_str;
+use url::Url;
 
 use config::Config;
 use db::DB;
@@ -29,7 +30,7 @@ impl Handler for Sync {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let url = request.url.clone().into_generic_url();
+        let url: Url = request.url.clone().into();
         let query_pairs = url.query_pairs().into_owned();
 
         let mut filter = None;
@@ -118,7 +119,7 @@ mod tests {
         };
         let response = test.sync(&carl.token, options);
         let next_batch = Test::get_next_batch(&response);
-        let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]).unwrap();
+        let room = response.json().pointer(&format!("/rooms/join/{}", room_id)).unwrap();
         assert!(room.is_object());
 
         let options = SyncOptions {
@@ -129,7 +130,7 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&carl.token, options);
-        let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]);
+        let room = response.json().pointer(&format!("/rooms/join/{}", room_id));
         assert_eq!(room, None);
     }
 
@@ -157,11 +158,11 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&carl.token, options);
-        let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]).unwrap();
+        let room = response.json().pointer(&format!("/rooms/join/{}", room_id)).unwrap();
         Test::assert_json_keys(room, vec!["timeline", "state", "ephemeral"]);
-        Test::assert_json_keys(room.find("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
-        Test::assert_json_keys(room.find("state").unwrap(), vec!["events"]);
-        Test::assert_json_keys(room.find("ephemeral").unwrap(), vec!["events"]);
+        Test::assert_json_keys(room.get("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
+        Test::assert_json_keys(room.get("state").unwrap(), vec!["events"]);
+        Test::assert_json_keys(room.get("ephemeral").unwrap(), vec!["events"]);
     }
 
     /// [https://github.com/matrix-org/sytest/blob/0eba37fc567d65f0a005090548c8df4d0e43775f/tests/31sync/03joined.pl#L81]
@@ -190,11 +191,11 @@ mod tests {
         };
         let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
-        let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]).unwrap();
+        let room = response.json().pointer(&format!("/rooms/join/{}", room_id)).unwrap();
         Test::assert_json_keys(room, vec!["timeline", "state", "ephemeral"]);
-        Test::assert_json_keys(room.find("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
-        Test::assert_json_keys(room.find("state").unwrap(), vec!["events"]);
-        Test::assert_json_keys(room.find("ephemeral").unwrap(), vec!["events"]);
+        Test::assert_json_keys(room.get("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
+        Test::assert_json_keys(room.get("state").unwrap(), vec!["events"]);
+        Test::assert_json_keys(room.get("ephemeral").unwrap(), vec!["events"]);
 
         let options = SyncOptions {
             filter: Some(from_str(r#"{"room":{"timeline":{"limit":10}}}"#).unwrap()),
@@ -204,7 +205,7 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&carl.token, options);
-        let room = response.json().find_path(&["rooms", "join", room_id.as_ref()]);
+        let room = response.json().pointer(&format!("/rooms/join/{}", room_id));
         assert_eq!(room, None);
     }
 
@@ -216,11 +217,11 @@ mod tests {
 
         let response = test.send_message(&carl.token, &room_id, "Hi Test 1", 1);
         assert_eq!(response.status, Status::Ok);
-        let event_id_1 = response.json().find("event_id").unwrap().as_str().unwrap();
+        let event_id_1 = response.json().get("event_id").unwrap().as_str().unwrap();
 
         let response = test.send_message(&carl.token, &room_id, "Hi Test 2", 2);
         assert_eq!(response.status, Status::Ok);
-        let event_id_2 = response.json().find("event_id").unwrap().as_str().unwrap();
+        let event_id_2 = response.json().get("event_id").unwrap().as_str().unwrap();
 
         let options = SyncOptions {
             filter: Some(from_str(r#"{"room":{"timeline":{"limit":2}}}"#).unwrap()),
@@ -230,18 +231,20 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&carl.token, options);
-        let json = response.json();
-        let timeline = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline"]).unwrap();
-        assert_eq!(timeline.find("limited").unwrap().as_bool().unwrap(), true);
-        let events = timeline.find("events").unwrap();
+        let timeline = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/timeline", room_id))
+            .unwrap();
+        assert_eq!(timeline.get("limited").unwrap().as_bool().unwrap(), true);
+        let events = timeline.get("events").unwrap();
         assert!(events.is_array());
         let events = events.as_array().unwrap();
         assert_eq!(events.len(), 2);
         let mut events = events.into_iter();
         let event = events.next().unwrap();
-        assert_eq!(EventId::try_from(event.find("event_id").unwrap().as_str().unwrap()).unwrap().opaque_id(), event_id_1);
+        assert_eq!(EventId::try_from(event.get("event_id").unwrap().as_str().unwrap()).unwrap().opaque_id(), event_id_1);
         let event = events.next().unwrap();
-        assert_eq!(EventId::try_from(event.find("event_id").unwrap().as_str().unwrap()).unwrap().opaque_id(), event_id_2);
+        assert_eq!(EventId::try_from(event.get("event_id").unwrap().as_str().unwrap()).unwrap().opaque_id(), event_id_2);
     }
 
     /// [https://github.com/matrix-org/sytest/blob/0eba37fc567d65f0a005090548c8df4d0e43775f/tests/31sync/04timeline.pl#L223]
@@ -258,9 +261,11 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&carl.token, options);
-        let json = response.json();
-        let timeline = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline"]).unwrap();
-        assert_eq!(timeline.find("limited").unwrap().as_bool().unwrap(), false);
+        let timeline = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/timeline", room_id))
+            .unwrap();
+        assert_eq!(timeline.get("limited").unwrap().as_bool().unwrap(), false);
     }
 
     #[test]
@@ -275,8 +280,8 @@ mod tests {
 
         let response = test.get(&sync_path);
         assert_eq!(response.status, Status::Ok);
-        let rooms = response.json().find("rooms").unwrap();
-        let join = rooms.find("join").unwrap();
+        let rooms = response.json().get("rooms").unwrap();
+        let join = rooms.get("join").unwrap();
         assert!(join.is_object());
         assert_eq!(join.as_object().unwrap().len(), 0);
     }
@@ -298,8 +303,10 @@ mod tests {
         };
         let response = test.sync(&carl.token, options);
         assert_eq!(response.status, Status::Ok);
-        let json = response.json();
-        let events = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline", "events"]).unwrap();
+        let events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/timeline/events", room_id))
+            .unwrap();
         assert!(events.is_array());
         //TODO: This should be 6, but some unhandled events.
         assert_eq!(events.as_array().unwrap().len(), 3);
@@ -331,8 +338,10 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&carl.token, options);
-        let json = response.json();
-        let events = json.find_path(&["rooms", "join", room_id.as_ref(), "timeline", "events"]).unwrap();
+        let events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/timeline/events", room_id))
+            .unwrap();
         assert!(events.is_array());
         assert_eq!(events.as_array().unwrap().len(), 1);
     }
@@ -353,7 +362,7 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
         Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence"]);
-        assert_eq!(json.find("presence").unwrap().as_str().unwrap(), "offline");
+        assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "offline");
 
         let options = SyncOptions {
             filter: None,
@@ -373,9 +382,9 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
         Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence"]);
-        assert_eq!(json.find("presence").unwrap().as_str().unwrap(), "online");
+        assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "online");
     }
-    
+
     #[test]
     fn basic_presence_state() {
         let test = Test::new();
@@ -406,24 +415,17 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&alice.token, options);
-        let array = response
-            .json()
-            .find("presence")
-            .unwrap()
-            .find("events")
-            .unwrap()
-            .as_array()
-            .unwrap();
+        let array = response.json().pointer("/presence/events").unwrap().as_array().unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 2);
 
         assert_eq!(
-            events.next().unwrap().find_path(&["content", "user_id"]).unwrap().as_str().unwrap(),
+            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
             bob.id
         );
 
         assert_eq!(
-            events.next().unwrap().find_path(&["content", "user_id"]).unwrap().as_str().unwrap(),
+            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
             carl.id
         );
 
@@ -436,14 +438,7 @@ mod tests {
             timeout: 0
         };
         let response = test.sync(&alice.token, options);
-        let array = response
-            .json()
-            .find("presence")
-            .unwrap()
-            .find("events")
-            .unwrap()
-            .as_array()
-            .unwrap();
+        let array = response.json().pointer("/presence/events").unwrap().as_array().unwrap();
         assert_eq!(array.len(), 0);
     }
 

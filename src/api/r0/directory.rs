@@ -125,12 +125,12 @@ mod tests {
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        user.token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = response.json().get("room_id").unwrap().as_str().unwrap();
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap(), room_id);
-        assert!(response.json().find("servers").unwrap().is_array());
+        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap(), room_id);
+        assert!(response.json().get("servers").unwrap().is_array());
     }
 
     #[test]
@@ -146,7 +146,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "M_NOT_FOUND"
         );
     }
@@ -216,8 +216,8 @@ mod tests {
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().find("room_id").unwrap().as_str().unwrap(), room_id);
-        assert!(response.json().find("servers").unwrap().is_array());
+        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap(), room_id);
+        assert!(response.json().get("servers").unwrap().is_array());
     }
 
     #[test]
@@ -242,7 +242,7 @@ mod tests {
         let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
                                        user.token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
-        let room_id = response.json().find("room_id").unwrap().as_str().unwrap();
+        let room_id = response.json().get("room_id").unwrap().as_str().unwrap();
 
         let put_room_alias_path = format!(
             "/_matrix/client/r0/directory/room/my_room?access_token={}", user.token
@@ -252,7 +252,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Conflict);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "IO_RUMA_ALIAS_TAKEN"
         );
     }

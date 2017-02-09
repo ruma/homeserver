@@ -1,4 +1,7 @@
 //! Matrix filter.
+
+use std::fmt::{Formatter, Result as FmtResult};
+
 use diesel::{
     ExpressionMethods,
     FilterDsl,
@@ -8,6 +11,8 @@ use diesel::{
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::{RoomId, UserId};
+use serde::{Deserializer, Serializer};
+use serde::de::{Error as SerdeError, Unexpected, Visitor};
 
 use error::ApiError;
 use schema::filters;
@@ -121,10 +126,7 @@ pub enum EventFormat {
 }
 
 impl ::serde::Serialize for EventFormat {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-        where S: ::serde::Serializer,
-    {
-        // Serialize the enum as a string.
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         serializer.serialize_str(match *self {
             EventFormat::Client => "client",
             EventFormat::Federation => "federation",
@@ -133,28 +135,26 @@ impl ::serde::Serialize for EventFormat {
 }
 
 impl ::serde::Deserialize for EventFormat {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
-        where D: ::serde::Deserializer,
-    {
-        struct Visitor;
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
+        struct EventFormatVisitor;
 
-        impl ::serde::de::Visitor for Visitor {
+        impl Visitor for EventFormatVisitor {
             type Value = EventFormat;
 
-            fn visit_str<E>(&mut self, value: &str) -> Result<EventFormat, E>
-                where E: ::serde::de::Error,
-            {
+            fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+                write!(formatter, "an event format")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<EventFormat, E> where E: SerdeError {
                 match value {
                     "client" => Ok(EventFormat::Client),
                     "federation" => Ok(EventFormat::Federation),
-                    _ => Err(E::invalid_value(&format!("unknown {} variant: {}",
-                                                       stringify!( EventFormat), value))),
+                    _ => Err(E::invalid_value(Unexpected::Str(value), &self)),
                 }
             }
         }
 
-        // Deserialize the enum from a string.
-        deserializer.deserialize_str(Visitor)
+        deserializer.deserialize_str(EventFormatVisitor)
     }
 }
 

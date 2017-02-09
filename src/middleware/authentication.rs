@@ -4,6 +4,7 @@ use bodyparser;
 use iron::{BeforeMiddleware, IronError, IronResult, Plugin, Request};
 use ruma_identifiers::UserId;
 use serde_json::Value;
+use url::Url;
 
 use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
 use config::Config;
@@ -34,7 +35,7 @@ impl UIAuth {
 impl BeforeMiddleware for AccessTokenAuth {
     fn before(&self, request: &mut Request) -> IronResult<()> {
         let connection = DB::from_request(request)?;
-        let url = request.url.clone().into_generic_url();
+        let url: Url = request.url.clone().into();
         let mut query_pairs = url.query_pairs();
 
         if let Some((_, ref token)) = query_pairs.find(|&(ref key, _)| key == "access_token") {
@@ -68,7 +69,7 @@ impl BeforeMiddleware for UIAuth {
             .expect("bodyparser did not find JSON in the body");
         let config = Config::from_request(request)?;
 
-        if let Some(auth_json) = json.find("auth") {
+        if let Some(auth_json) = json.get("auth") {
             if is_m_login_password(auth_json) {
                 if let Ok((user_id, password)) = get_user_id_and_password(auth_json, &config) {
                     let auth_params = AuthParams::Password(PasswordAuthParams {
@@ -92,8 +93,8 @@ impl BeforeMiddleware for UIAuth {
 }
 
 fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, String), ()> {
-    let username = json.find("user").and_then(|username_json| username_json.as_str());
-    let password = json.find("password").and_then(|password_json| password_json.as_str());
+    let username = json.get("user").and_then(|username_json| username_json.as_str());
+    let password = json.get("password").and_then(|password_json| password_json.as_str());
 
     match (username, password) {
         (Some(username), Some(password)) => {
@@ -110,7 +111,7 @@ fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, St
 }
 
 fn is_m_login_password(json: &Value) -> bool {
-    if let Some(type_string) = json.find("type").and_then(|type_json| type_json.as_str()) {
+    if let Some(type_string) = json.get("type").and_then(|type_json| type_json.as_str()) {
         return type_string == "m.login.password";
     }
 

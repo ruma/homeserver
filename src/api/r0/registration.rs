@@ -1,6 +1,7 @@
 //! Endpoints for user account registration.
 
 use std::convert::TryFrom;
+use std::fmt::{Formatter, Result as FmtResult};
 
 use bodyparser;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
@@ -50,14 +51,17 @@ struct RegistrationResponse {
 middleware_chain!(Register, [JsonRequest]);
 
 impl Deserialize for RegistrationKind {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error> where D: Deserializer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
         struct RegistrationKindVisitor;
 
         impl Visitor for RegistrationKindVisitor {
             type Value = RegistrationKind;
 
-            fn visit_str<E>(&mut self, value: &str) -> Result<RegistrationKind, E>
-            where E: SerdeError {
+            fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+                write!(formatter, "a registration kind")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<RegistrationKind, E> where E: SerdeError {
                 match value {
                     "guest" => Ok(RegistrationKind::Guest),
                     "user" => Ok(RegistrationKind::User),
@@ -135,9 +139,9 @@ mod tests {
             r#"{"password": "secret"}"#,
         );
 
-        assert!(response.json().find("access_token").is_some());
-        assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert!(response.json().find("user_id").is_some());
+        assert!(response.json().get("access_token").is_some());
+        assert_eq!(response.json().get("home_server").unwrap().as_str().unwrap(), "ruma.test");
+        assert!(response.json().get("user_id").is_some());
     }
 
     #[test]
@@ -148,9 +152,9 @@ mod tests {
             r#"{"bind_email": true, "kind": "user", "username":"carl", "password": "secret"}"#
         );
 
-        assert!(response.json().find("access_token").is_some());
-        assert_eq!(response.json().find("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert_eq!(response.json().find("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
+        assert!(response.json().get("access_token").is_some());
+        assert_eq!(response.json().get("home_server").unwrap().as_str().unwrap(), "ruma.test");
+        assert_eq!(response.json().get("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
     }
 
     #[test]
@@ -162,7 +166,7 @@ mod tests {
         );
 
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "M_GUEST_ACCESS_FORBIDDEN"
         );
     }
@@ -183,7 +187,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "This user_id already exists"
         );
     }

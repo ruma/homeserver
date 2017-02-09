@@ -223,7 +223,7 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
         Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence"]);
-        assert_eq!(json.find("presence").unwrap().as_str().unwrap(), "online");
+        assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "online");
     }
 
     #[test]
@@ -242,8 +242,8 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
         Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence", "status_msg"]);
-        assert_eq!(json.find("presence").unwrap().as_str().unwrap(), "online");
-        assert_eq!(json.find("status_msg").unwrap().as_str().unwrap(), "Oscar!");
+        assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "online");
+        assert_eq!(json.get("status_msg").unwrap().as_str().unwrap(), "Oscar!");
     }
 
     #[test]
@@ -336,12 +336,12 @@ mod tests {
         assert_eq!(events.len(), 2);
 
         assert_eq!(
-            events.next().unwrap().find_path(&["content", "user_id"]).unwrap().as_str().unwrap(),
+            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
             bob.id
         );
 
         assert_eq!(
-            events.next().unwrap().find_path(&["content", "user_id"]).unwrap().as_str().unwrap(),
+            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
             carl.id
         );
     }
@@ -471,13 +471,13 @@ mod tests {
 
         let bob_response = test.get(&bob_presence_path);
         assert_eq!(bob_response.status, Status::Ok);
-        let last_active_ago = bob_response.json().find("last_active_ago").unwrap().as_u64().unwrap();
+        let last_active_ago = bob_response.json().get("last_active_ago").unwrap().as_u64().unwrap();
         assert!(last_active_ago > 2_000);
         assert!(last_active_ago < 2_500);
 
         let alice_response = test.get(&alice_presence_path);
         assert_eq!(alice_response.status, Status::Ok);
-        let last_active_ago = alice_response.json().find("last_active_ago").unwrap().as_u64().unwrap();
+        let last_active_ago = alice_response.json().get("last_active_ago").unwrap().as_u64().unwrap();
         assert!(last_active_ago > 4_000);
         assert!(last_active_ago < 4_500);
     }

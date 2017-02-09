@@ -291,11 +291,11 @@ mod tests {
         // Invalid UserId.
         assert_eq!(response.status, Status::BadRequest);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "IO_RUMA_INVALID_PARAM"
         );
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "Parameter 'user_id' is not valid: leading sigil is missing"
         );
 
@@ -354,7 +354,7 @@ mod tests {
         assert_eq!(test.put(&path, &content).status, Status::Forbidden);
 
         assert_eq!(
-            test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
+            test.put(&path, &content).json().get("error").unwrap().as_str().unwrap(),
             "The given user_id does not correspond to the authenticated user"
         );
     }
@@ -377,11 +377,11 @@ mod tests {
 
         assert_eq!(response.status, Status::BadRequest);
         assert_eq!(
-            response.json().find("errcode").unwrap().as_str().unwrap(),
+            response.json().get("errcode").unwrap().as_str().unwrap(),
             "IO_RUMA_INVALID_PARAM"
         );
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "Parameter 'room_id' is not valid: leading sigil is missing"
         );
     }
@@ -404,7 +404,7 @@ mod tests {
         assert_eq!(test.put(&path, &content).status, Status::Forbidden);
 
         assert_eq!(
-            test.put(&path, &content).json().find("error").unwrap().as_str().unwrap(),
+            test.put(&path, &content).json().get("error").unwrap().as_str().unwrap(),
             "No membership entry was found."
         );
     }

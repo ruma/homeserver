@@ -65,7 +65,7 @@ mod tests {
 
         let response = test.get(&room_members_path);
         assert_eq!(response.status, Status::Ok);
-        let chunk = response.json().find("chunk").unwrap();
+        let chunk = response.json().get("chunk").unwrap();
         assert!(chunk.is_array());
         let chunk = chunk.as_array().unwrap();
         assert_eq!(chunk.len(), 1);

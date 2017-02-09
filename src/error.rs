@@ -356,7 +356,7 @@ impl ApiErrorCode {
 }
 
 impl Serialize for ApiErrorCode {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match *self {
             ApiErrorCode::AliasTaken => "IO_RUMA_ALIAS_TAKEN",
             ApiErrorCode::BadEvent => "IO_RUMA_BAD_EVENT",

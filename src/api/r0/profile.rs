@@ -256,7 +256,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("No profile found for {}", user_id)
         );
     }
@@ -277,7 +277,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("No profile found for {}", user_id)
         );
     }
@@ -304,7 +304,7 @@ mod tests {
         let response = test.get(&get_avatar_url_path);
         assert_eq!(response.status, Status::Ok);
         assert_eq!(
-            response.json().find("avatar_url").unwrap().as_str().unwrap(),
+            response.json().get("avatar_url").unwrap().as_str().unwrap(),
             r#"mxc://matrix.org/wefh34uihSDRGhw34"#
         );
     }
@@ -331,7 +331,7 @@ mod tests {
         let response = test.get(&get_displayname_path);
         assert_eq!(response.status, Status::Ok);
         assert_eq!(
-            response.json().find("displayname").unwrap().as_str().unwrap(),
+            response.json().get("displayname").unwrap().as_str().unwrap(),
             r#"Bogus"#
         );
     }
@@ -352,7 +352,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The given user_id does not correspond to the authenticated user"
         );
     }
@@ -376,7 +376,7 @@ mod tests {
 
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             "The given user_id does not correspond to the authenticated user"
         );
     }
@@ -414,11 +414,11 @@ mod tests {
 
         assert_eq!(response.status, Status::Ok);
         assert_eq!(
-            response.json().find("avatar_url").unwrap().as_str().unwrap(),
+            response.json().get("avatar_url").unwrap().as_str().unwrap(),
             "mxc://matrix.org/some/url"
         );
         assert_eq!(
-            response.json().find("displayname").unwrap().as_str().unwrap(),
+            response.json().get("displayname").unwrap().as_str().unwrap(),
             "Carl"
         );
     }
@@ -439,7 +439,7 @@ mod tests {
 
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
-            response.json().find("error").unwrap().as_str().unwrap(),
+            response.json().get("error").unwrap().as_str().unwrap(),
             format!("No profile found for {}", user_id)
         );
     }
@@ -477,18 +477,18 @@ mod tests {
         let response = test.sync(&carl.token, options);
         let array = response
             .json()
-            .find("presence")
+            .get("presence")
             .unwrap()
-            .find("events")
+            .get("events")
             .unwrap()
             .as_array()
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().find("content").unwrap();
+        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.find("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.find("avatar_url").unwrap().as_str().unwrap(), "mxc://matrix.org/some/url");
+        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        assert_eq!(content.get("avatar_url").unwrap().as_str().unwrap(), "mxc://matrix.org/some/url");
 
         let next_batch = Test::get_next_batch(&response);
 
@@ -511,18 +511,18 @@ mod tests {
         let response = test.sync(&carl.token, options);
         let array = response
             .json()
-            .find("presence")
+            .get("presence")
             .unwrap()
-            .find("events")
+            .get("events")
             .unwrap()
             .as_array()
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().find("content").unwrap();
+        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.find("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.find("avatar_url").unwrap().as_str().unwrap(), "mxc://matrix.org/some/new");
+        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        assert_eq!(content.get("avatar_url").unwrap().as_str().unwrap(), "mxc://matrix.org/some/new");
     }
 
     #[test]
@@ -558,18 +558,18 @@ mod tests {
         let response = test.sync(&carl.token, options);
         let array = response
             .json()
-            .find("presence")
+            .get("presence")
             .unwrap()
-            .find("events")
+            .get("events")
             .unwrap()
             .as_array()
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().find("content").unwrap();
+        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.find("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.find("displayname").unwrap().as_str().unwrap(), "Alice");
+        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        assert_eq!(content.get("displayname").unwrap().as_str().unwrap(), "Alice");
 
         let next_batch = Test::get_next_batch(&response);
 
@@ -591,17 +591,17 @@ mod tests {
         let response = test.sync(&carl.token, options);
         let array = response
             .json()
-            .find("presence")
+            .get("presence")
             .unwrap()
-            .find("events")
+            .get("events")
             .unwrap()
             .as_array()
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().find("content").unwrap();
+        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.find("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.find("displayname").unwrap().as_str().unwrap(), "Bogus");
+        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        assert_eq!(content.get("displayname").unwrap().as_str().unwrap(), "Bogus");
     }
 }
