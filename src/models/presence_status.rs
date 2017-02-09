@@ -76,7 +76,7 @@ impl PresenceStatus {
         presence: Option<PresenceState>,
         status_msg: Option<String>
     ) -> Result<(), ApiError> {
-        let event_id = &EventId::new(&homeserver_domain).map_err(ApiError::from)?;
+        let event_id = &EventId::new(homeserver_domain).map_err(ApiError::from)?;
 
         connection.transaction::<(), ApiError, _>(|| {
             let status = PresenceStatus::find_by_uid(connection, user_id)?;
@@ -154,7 +154,7 @@ impl PresenceStatus {
     /// specific point in time.
     pub fn get_users(
         connection: &PgConnection,
-        users: &Vec<UserId>,
+        users: &[UserId],
         since: Option<i64>,
     ) -> Result<Vec<PresenceStatus>, ApiError> {
         match since {

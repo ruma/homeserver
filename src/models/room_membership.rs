@@ -311,7 +311,7 @@ impl RoomMembership {
     pub fn create_memberships(
         connection: &PgConnection,
         room: &Room,
-        invite_list: &Vec<UserId>,
+        invite_list: &[UserId],
         homeserver_domain: &str
     ) -> Result<(), ApiError> {
         for invitee in invite_list {
@@ -428,7 +428,7 @@ impl RoomMembership {
     /// Filter `RoomId`'s for `UserId` and membership state.
     pub fn filter_rooms_by_state(
         connection: &PgConnection,
-        room_ids: &Vec<RoomId>,
+        room_ids: &[RoomId],
         user_id: &UserId,
         membership: &str
     ) -> Result<Vec<RoomId>, ApiError> {

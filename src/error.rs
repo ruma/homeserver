@@ -87,7 +87,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::AliasTaken,
-            error: message.unwrap_or("Alias already taken.".to_string()),
+            error: message.unwrap_or_else(|| "Alias already taken.".to_string()),
         }
     }
 
@@ -96,7 +96,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::BadEvent,
-            error: message.unwrap_or("Invalid event data.".to_string()),
+            error: message.unwrap_or_else(|| "Invalid event data.".to_string()),
         }
     }
 
@@ -105,7 +105,9 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::BadJson,
-            error: message.unwrap_or("Invalid or missing key-value pairs in JSON.".to_string()),
+            error: message.unwrap_or_else(|| {
+                "Invalid or missing key-value pairs in JSON.".to_string()
+            }),
         }
     }
 
@@ -114,7 +116,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::GuestAccessForbidden,
-            error: message.unwrap_or("Guest accounts are forbidden.".to_string()),
+            error: message.unwrap_or_else(|| "Guest accounts are forbidden.".to_string()),
         }
     }
 
@@ -139,7 +141,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::NotFound,
-            error: message.unwrap_or("No resource was found for this request.".to_string()),
+            error: message.unwrap_or_else(|| "No resource was found for this request.".to_string()),
         }
     }
 
@@ -148,7 +150,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::NotJson,
-            error: message.unwrap_or("No JSON found in request body.".to_string()),
+            error: message.unwrap_or_else(|| "No JSON found in request body.".to_string()),
         }
     }
 
@@ -157,9 +159,9 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::NotJson,
-            error: message.unwrap_or(
+            error: message.unwrap_or_else(|| {
                 "Request's Content-Type header must be application/json.".to_string()
-            ),
+            }),
         }
     }
 
@@ -168,7 +170,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Forbidden,
-            error: message.unwrap_or("Authentication is required.".to_string()),
+            error: message.unwrap_or_else(|| "Authentication is required.".to_string()),
         }
     }
 
@@ -177,7 +179,9 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Unimplemented,
-            error: message.unwrap_or("The homeserver does not implement this API.".to_string()),
+            error: message.unwrap_or_else(|| {
+                "The homeserver does not implement this API.".to_string()
+            }),
         }
     }
 
@@ -186,7 +190,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::LimitExceeded,
-            error: message.unwrap_or("Too many retry!".to_string()),
+            error: message.unwrap_or_else(|| "Too many retry!".to_string()),
         }
     }
 
@@ -195,7 +199,7 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Unknown,
-            error: message.unwrap_or("An unknown server-side error occurred.".to_string()),
+            error: message.unwrap_or_else(|| "An unknown server-side error occurred.".to_string()),
         }
     }
 }

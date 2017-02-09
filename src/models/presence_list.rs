@@ -40,7 +40,7 @@ impl PresenceList {
     pub fn update(
         connection: &PgConnection,
         user_id: &UserId,
-        invite: &Vec<UserId>,
+        invite: &[UserId],
         drop: Vec<UserId>
     ) -> Result<(), ApiError> {
         connection.transaction::<(()), ApiError, _>(|| {
@@ -85,7 +85,7 @@ impl PresenceList {
             )?;
 
             let mut invites: Vec<PresenceList> = Vec::new();
-            for ref observed_user in invite.clone() {
+            for observed_user in invite {
                 if observed_user != user_id {
                     let rooms = RoomMembership::filter_rooms_by_state(
                         connection,
@@ -102,7 +102,7 @@ impl PresenceList {
                 }
                 invites.push(PresenceList {
                     user_id: user_id.clone(),
-                    observed_user_id: observed_user.clone(),
+                    observed_user_id: (*observed_user).clone(),
                 });
             }
             insert(&invites)
@@ -142,7 +142,9 @@ impl PresenceList {
         let observed_users = PresenceList::find_observed_users(connection, user_id)?;
         let users_status = PresenceStatus::get_users(connection, &observed_users, since)?;
 
-        let observed_users = users_status.iter().map(|ref status| status.user_id.clone()).collect();
+        let observed_users: Vec<UserId> = users_status.iter().map(|status| {
+            status.user_id.clone()
+        }).collect();
         let profiles = Profile::get_profiles(connection, &observed_users)?;
 
         let mut events = Vec::new();
@@ -155,13 +157,12 @@ impl PresenceList {
             let last_active_ago = get_now() - last_update;
 
             let profile: Option<&Profile> = profiles.iter()
-                .filter(|profile| profile.id == status.user_id)
-                .next();
+                .find(|profile| profile.id == status.user_id);
 
             let mut avatar_url = None;
             let mut displayname = None;
 
-            if let Some(ref profile) = profile {
+            if let Some(profile) = profile {
                 avatar_url = profile.avatar_url.clone();
                 displayname = profile.displayname.clone();
             }

@@ -149,7 +149,7 @@ impl Profile {
     }
 
     /// Return `Profile`s for a list of `UserId`'s.
-    pub fn get_profiles(connection: &PgConnection, users: &Vec<UserId>) -> Result<Vec<Profile>, ApiError> {
+    pub fn get_profiles(connection: &PgConnection, users: &[UserId]) -> Result<Vec<Profile>, ApiError> {
         profiles::table
             .filter(profiles::id.eq(any(users)))
             .get_results(connection)

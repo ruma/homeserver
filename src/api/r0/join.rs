@@ -139,7 +139,7 @@ impl Handler for LeaveRoom {
                             &connection,
                             &config.domain,
                             room_membership_options)?;
-                        Ok(Response::with((Status::Ok)))
+                        Ok(Response::with(Status::Ok))
                     },
                     "ban" => {
                         Err(ApiError::unauthorized("User is banned from the room".to_string()))?

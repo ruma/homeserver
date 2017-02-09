@@ -55,7 +55,7 @@ impl Config {
     /// If a path is given, it will try to load the configuration there.
     /// Otherwise, try to load a file from the defaults locations.
     pub fn from_file(path: Option<&str>) -> Result<Config, CliError> {
-        let config_path = if let Some(ref path_str) = path {
+        let config_path = if let Some(path_str) = path {
             let path = Path::new(path_str);
             if !path.is_file() {
                 return Err(CliError::new(format!("Configuration file `{}` not found.", path_str)));
@@ -65,13 +65,13 @@ impl Config {
             DEFAULT_CONFIG_FILES.iter()
                 .map(Path::new)
                 .find(|path| path.is_file())
-                .ok_or(CliError::new("No configuration file was found."))?
+                .ok_or_else(|| CliError::new("No configuration file was found."))?
         };
 
         let config = match config_path.extension().and_then(|ext| ext.to_str()) {
-            Some("json") => Self::load_json(&config_path),
-            Some("toml") => Self::load_toml(&config_path),
-            Some("yml") | Some("yaml") => Self::load_yaml(&config_path),
+            Some("json") => Self::load_json(config_path),
+            Some("toml") => Self::load_toml(config_path),
+            Some("yml") | Some("yaml") => Self::load_yaml(config_path),
             _ => Err(CliError::new("Unsupported configuration file format")),
         }?;
 
@@ -84,8 +84,8 @@ impl Config {
         };
 
         Ok(Config {
-            bind_address: config.bind_address.unwrap_or("127.0.0.1".to_string()),
-            bind_port: config.bind_port.unwrap_or("3000".to_string()),
+            bind_address: config.bind_address.unwrap_or_else(|| "127.0.0.1".to_string()),
+            bind_port: config.bind_port.unwrap_or_else(|| "3000".to_string()),
             domain: config.domain,
             macaroon_secret_key: macaroon_secret_key,
             postgres_url: config.postgres_url,

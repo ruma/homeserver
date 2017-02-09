@@ -161,8 +161,8 @@ impl Handler for SendMessageEvent {
         let connection = DB::from_request(request)?;
 
         let path = request.url.path().join("/").to_string();
-        let token = request.extensions.get::<AccessToken>()
-            .expect("AccessTokenAuth should ensure an access token").clone();
+        let token = (*request.extensions.get::<AccessToken>()
+            .expect("AccessTokenAuth should ensure an access token")).clone();
 
         if let Some(transaction) = Transaction::find(&connection, &path, &token.value)? {
             let response: EventResponse = from_str(&transaction.response).map_err(ApiError::from)?;

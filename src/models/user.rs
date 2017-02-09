@@ -127,7 +127,7 @@ impl User {
     /// Return `UserId`s for given `user_ids` base on the existence of a single user.
     pub fn find_missing_users(
         connection: &PgConnection,
-        user_ids: &Vec<UserId>
+        user_ids: &[UserId],
     ) -> Result<Vec<UserId>, ApiError> {
         let possible_missing_user_ids: HashSet<UserId> = user_ids
             .iter()

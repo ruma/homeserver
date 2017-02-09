@@ -16,7 +16,7 @@ use error::ApiError;
 use schema::access_tokens;
 
 /// A User access token.
-#[derive(AsChangeset, Debug, Identifiable, Queryable)]
+#[derive(AsChangeset, Clone, Debug, Identifiable, Queryable)]
 #[table_name = "access_tokens"]
 pub struct AccessToken {
     /// The access token's ID.
