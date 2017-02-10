@@ -79,6 +79,7 @@ A configuration file would look something like this, in the JSON format:
 
 ``` json
 {
+  "version": "1",
   "domain": "example.com",
   "macaroon_secret_key": "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8=",
   "postgres_url": "postgres://username:password@example.com:5432/ruma"
@@ -100,6 +101,10 @@ The complete list of attributes in the configuration is as follows:
   Changing this value will invalidate any previously generated macaroons, effectively ending all user sessions.
 * **postgres_url** (string, required):
   A [PostgreSQL connection string](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING) for Ruma's PostgreSQL database.
+* **version** (string, required):
+  The version of the Ruma configuration file format that this configuration represents.
+  This field allows Ruma to make backwards-incompatible changes to the configuration file format over time without breaking existing deployments.
+  Currently the only valid value is "1".
 
 ## Usage
 

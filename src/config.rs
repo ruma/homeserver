@@ -21,8 +21,15 @@ static DEFAULT_CONFIG_FILES: [&'static str; 4] = ["ruma.json", "ruma.toml", "rum
 /// The user's configuration as loaded from the configuration file.
 ///
 /// Refer to `Config` for the description of the fields.
-#[derive(Deserialize, RustcDecodable)]
-struct RawConfig {
+#[derive(Deserialize)]
+#[serde(tag="version")]
+enum RawConfig {
+    #[serde(rename="1")]
+    V1(V1Config),
+}
+
+#[derive(Deserialize)]
+struct V1Config {
     bind_address: Option<String>,
     bind_port: Option<String>,
     domain: String,
@@ -68,14 +75,16 @@ impl Config {
                 .ok_or_else(|| CliError::new("No configuration file was found."))?
         };
 
-        let config = match config_path.extension().and_then(|ext| ext.to_str()) {
+        let raw_config = match config_path.extension().and_then(|ext| ext.to_str()) {
             Some("json") => Self::load_json(config_path),
             Some("toml") => Self::load_toml(config_path),
             Some("yml") | Some("yaml") => Self::load_yaml(config_path),
             _ => Err(CliError::new("Unsupported configuration file format")),
         }?;
 
-        let macaroon_secret_key = match decode(&config.macaroon_secret_key) {
+        let RawConfig::V1(v1_config) = raw_config;
+
+        let macaroon_secret_key = match decode(&v1_config.macaroon_secret_key) {
             Ok(bytes) => match bytes.len() {
                 32 => bytes,
                 _ => Err(CliError::new("macaroon_secret_key must be 32 bytes."))?,
@@ -84,11 +93,11 @@ impl Config {
         };
 
         Ok(Config {
-            bind_address: config.bind_address.unwrap_or_else(|| "127.0.0.1".to_string()),
-            bind_port: config.bind_port.unwrap_or_else(|| "3000".to_string()),
-            domain: config.domain,
+            bind_address: v1_config.bind_address.unwrap_or_else(|| "127.0.0.1".to_string()),
+            bind_port: v1_config.bind_port.unwrap_or_else(|| "3000".to_string()),
+            domain: v1_config.domain,
             macaroon_secret_key: macaroon_secret_key,
-            postgres_url: config.postgres_url,
+            postgres_url: v1_config.postgres_url,
         })
     }
 
@@ -104,23 +113,9 @@ impl Config {
     /// Load the `RawConfig` from a TOML configuration file.
     fn load_toml(path: &Path) -> Result<RawConfig, CliError> {
         let contents = Self::read_file_contents(path);
-        let mut parser = toml::Parser::new(&contents);
-        let data  = parser.parse();
-
-        if data.is_none() {
-            for err in &parser.errors {
-                let (loline, locol) = parser.to_linecol(err.lo);
-                let (hiline, hicol) = parser.to_linecol(err.hi);
-                println!("ruma.toml: {}:{}-{}:{} error: {}", loline, locol, hiline, hicol, err.desc);
-            }
-
-            return Err(CliError::new("Unable to parse ruma.toml."));
-        }
-
-        let config = toml::Value::Table(data.unwrap());
-        match toml::decode(config) {
-            Some(t) => Ok(t),
-            None => Err(CliError::new("Error while decoding ruma.toml.")),
+        match toml::from_str(&contents) {
+            Ok(config) => Ok(config),
+            Err(error) => Err(CliError::from(error)),
         }
     }
 
@@ -149,4 +144,29 @@ impl Config {
 
 impl Key for Config {
     type Value = Config;
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json;
+
+    use super::RawConfig;
+
+    #[test]
+    fn deserialize_v1_config() {
+        let raw_config: RawConfig = serde_json::from_str(r#"
+            {
+                "version": "1",
+                "domain": "example.com",
+                "macaroon_secret_key": "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8=",
+                "postgres_url": "postgres://username:password@example.com:5432/ruma"
+            }
+        "#).unwrap();
+
+        let RawConfig::V1(v1_config) = raw_config;
+
+        assert_eq!(v1_config.domain, "example.com");
+        assert_eq!(v1_config.macaroon_secret_key, "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8=");
+        assert_eq!(v1_config.postgres_url, "postgres://username:password@example.com:5432/ruma");
+    }
 }
