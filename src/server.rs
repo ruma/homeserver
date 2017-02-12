@@ -88,7 +88,7 @@ impl<'a> Server<'a> {
         r0_router.post("/login", Login::chain(), "login");
         r0_router.post("/logout", Logout::chain(), "logout");
         r0_router.post("/register", Register::chain(), "register");
-        r0_router.post("/tokenrefresh", unimplemented, "token_refresh");
+        r0_router.post("/tokenrefresh", deprecated, "token_refresh");
         r0_router.put(
             "/user/:user_id/account_data/:type",
             PutAccountData::chain(),
@@ -193,6 +193,6 @@ impl<'a> Server<'a> {
     }
 }
 
-fn unimplemented(_request: &mut Request) -> IronResult<Response> {
-    Err(IronError::from(ApiError::unimplemented(None)))
+fn deprecated(_: &mut Request) -> IronResult<Response> {
+    Err(IronError::from(ApiError::unauthorized("tokenrefresh is no longer supported".to_string())))
 }

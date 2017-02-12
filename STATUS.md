@@ -30,7 +30,7 @@ Legend:
     <td>POST /login</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td></td>
     <td>POST /tokenrefresh</td>
   </tr>
