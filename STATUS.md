@@ -205,7 +205,7 @@ Legend:
     <td>POST /rooms/:room_id/join</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/25">#25</a></td>
     <td>POST /rooms/:room_id/kick</td>
   </tr>

@@ -25,6 +25,7 @@ use api::r0::{
     InviteToRoom,
     JoinRoom,
     JoinRoomWithIdOrAlias,
+    KickFromRoom,
     LeaveRoom,
     Login,
     Logout,
@@ -119,6 +120,7 @@ impl<'a> Server<'a> {
         r0_router.post("/rooms/:room_id/join", JoinRoom::chain(), "join_room");
         r0_router.post("/rooms/:room_id/invite", InviteToRoom::chain(), "invite_to_room");
         r0_router.post("/join/:room_id_or_alias", JoinRoomWithIdOrAlias::chain(), "join_room_with_alias");
+        r0_router.post("rooms/:room_id/kick", KickFromRoom::chain(), "kick_from_room");
         r0_router.post("rooms/:room_id/leave", LeaveRoom::chain(), "leave_room");
         r0_router.get("/rooms/:room_id/members", Members::chain(), "members");
         r0_router.get("/rooms/:room_id/state", RoomState::chain(), "get_room_state");
