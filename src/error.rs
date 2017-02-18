@@ -10,7 +10,7 @@ use std::time::SystemTimeError;
 
 use argon2rs::verifier::DecodeError;
 use base64::Base64Error;
-use diesel::result::{TransactionError, Error as DieselError};
+use diesel::result::Error as DieselError;
 use iron::{IronError, Response};
 use iron::headers::ContentType;
 use iron::modifier::Modifier;
@@ -254,17 +254,6 @@ impl From<SystemTimeError> for ApiError {
         debug!("Converting to ApiError from: {:?}", error);
 
         ApiError::unknown(None)
-    }
-}
-
-impl From<TransactionError<ApiError>> for ApiError {
-    fn from(error: TransactionError<ApiError>) -> ApiError {
-        debug!("Converting to ApiError from: {:?}", error);
-
-        match error {
-            TransactionError::CouldntCreateTransaction(_) => ApiError::unknown(None),
-            TransactionError::UserReturnedError(api_error) => api_error,
-        }
     }
 }
 

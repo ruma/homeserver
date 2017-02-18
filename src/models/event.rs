@@ -168,7 +168,7 @@ impl Event {
                     .group_by(events::event_type);
 
                 events::table
-                    .filter(events::ordering.eq(any(&ordering)))
+                    .filter(events::ordering.nullable().eq(any(&ordering)))
                     .get_results(connection)
                     .map_err(ApiError::from)
             },
@@ -180,7 +180,7 @@ impl Event {
                     .group_by(events::event_type);
 
                 events::table
-                    .filter(events::ordering.eq(any(&ordering)))
+                    .filter(events::ordering.nullable().eq(any(&ordering)))
                     .get_results(connection)
                     .map_err(ApiError::from)
             }
