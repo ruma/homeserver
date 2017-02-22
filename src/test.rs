@@ -232,6 +232,28 @@ impl Test {
         self.post(&path, &body)
     }
 
+    /// Kick a `User` from a `Room`.
+    pub fn kick_from_room(
+        &self,
+        access_token: &str,
+        room_id: &str,
+        user_id: &str,
+        reason: Option<&str>
+    ) -> Response {
+        let body = format!(
+            r#"{{"user_id": "{}", "reason": "{}"}}"#,
+            user_id,
+            reason.unwrap_or("")
+        );
+        let path = format!(
+            "/_matrix/client/r0/rooms/{}/kick?access_token={}",
+            room_id,
+            access_token
+        );
+
+        self.post(&path, &body)
+    }
+
     /// Look up a `RoomId` using an alias.
     pub fn get_room_by_alias(&self, alias: &str) -> Response {
         self.get(&format!("/_matrix/client/r0/directory/room/{}", alias))
