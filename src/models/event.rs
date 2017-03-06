@@ -24,11 +24,11 @@ use ruma_events::{
     RoomEvent,
     StateEvent as RumaStateEventTrait,
 };
-use ruma_events::collections::all::StateEvent;
 use ruma_events::call::answer::AnswerEvent;
 use ruma_events::call::candidates::CandidatesEvent;
 use ruma_events::call::hangup::HangupEvent;
 use ruma_events::call::invite::InviteEvent;
+use ruma_events::collections::all::StateEvent;
 use ruma_events::room::aliases::AliasesEvent;
 use ruma_events::room::avatar::AvatarEvent;
 use ruma_events::room::canonical_alias::CanonicalAliasEvent;
@@ -42,11 +42,41 @@ use ruma_events::room::name::NameEvent;
 use ruma_events::room::power_levels::PowerLevelsEvent;
 use ruma_events::room::third_party_invite::ThirdPartyInviteEvent;
 use ruma_events::room::topic::TopicEvent;
+use ruma_events::stripped::{
+    StrippedRoomAliases,
+    StrippedRoomAvatar,
+    StrippedRoomCanonicalAlias,
+    StrippedRoomCreate,
+    StrippedRoomGuestAccess,
+    StrippedRoomHistoryVisibility,
+    StrippedRoomJoinRules,
+    StrippedRoomMember,
+    StrippedRoomName,
+    StrippedRoomPowerLevels,
+    StrippedRoomThirdPartyInvite,
+    StrippedRoomTopic,
+    StrippedState,
+};
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde_json::{Value, from_str, from_value, to_string};
 
 use error::ApiError;
 use schema::events;
+
+const STATE_EVENTS: [EventType; 12] = [
+    EventType::RoomAliases,
+    EventType::RoomAvatar,
+    EventType::RoomCanonicalAlias,
+    EventType::RoomCreate,
+    EventType::RoomGuestAccess,
+    EventType::RoomHistoryVisibility,
+    EventType::RoomJoinRules,
+    EventType::RoomMember,
+    EventType::RoomName,
+    EventType::RoomPowerLevels,
+    EventType::RoomThirdPartyInvite,
+    EventType::RoomTopic,
+];
 
 /// A new event, not yet saved.
 #[derive(Debug, Clone, Insertable)]
@@ -69,7 +99,7 @@ pub struct NewEvent {
 }
 
 /// A Matrix event.
-#[derive(Debug, Queryable)]
+#[derive(Clone, Debug, Queryable)]
 pub struct Event {
     /// The unique event ID.
     pub id: EventId,
@@ -108,20 +138,34 @@ impl Event {
         TryInto::try_into(event).map_err(ApiError::from)
     }
 
-    /// Return `RoomEvent`'s by `RoomId` and since.
+    /// Return all `RoomEvent`'s for a `RoomId` after a specific point in time.
     pub fn find_room_events(connection: &PgConnection, room_id: &RoomId, since: i64) -> Result<Vec<Event>, ApiError> {
-        let events: Vec<Event> = events::table
+        events::table
             .filter(events::event_type.like("m.room.%"))
             .filter(events::ordering.gt(since))
             .filter(events::room_id.eq(room_id))
-            .order(events::room_id)
             .get_results(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
                 _ => ApiError::from(err),
-            })?;
+            })
+    }
 
-        Ok(events)
+    /// Return all `RoomEvent`'s for a `RoomId` up to a specific point in time.
+    pub fn find_room_events_until(
+        connection: &PgConnection,
+        room_id: &RoomId,
+        until: &i64
+    ) -> Result<Vec<Event>, ApiError> {
+        events::table
+            .filter(events::event_type.like("m.room.%"))
+            .filter(events::ordering.lt(until))
+            .filter(events::room_id.eq(room_id))
+            .get_results(connection)
+            .map_err(|err| match err {
+                DieselError::NotFound => ApiError::not_found(None),
+                _ => ApiError::from(err),
+            })
     }
 
     /// Look up an event given its `EventId`.
@@ -133,60 +177,58 @@ impl Event {
         }
     }
 
-    /// Return the latest state events for a room.
-    ///
-    /// A pivot event is used to specify the latest moment in time that it will be
-    /// used to extract the state snapshot. If the pivot event is not present,
-    /// the latest state events are extracted.
+    /// Return the room's state before a specified event.
     pub fn get_room_state_events_until(
         connection: &PgConnection,
         room_id: &RoomId,
-        pivot_event: Option<Event>
+        until: &Event,
     ) -> Result<Vec<Event>, ApiError> {
-        let state_events: Vec<String> = vec![
-            EventType::RoomAliases,
-            EventType::RoomAvatar,
-            EventType::RoomCanonicalAlias,
-            EventType::RoomCreate,
-            EventType::RoomGuestAccess,
-            EventType::RoomHistoryVisibility,
-            EventType::RoomJoinRules,
-            EventType::RoomMember,
-            EventType::RoomName,
-            EventType::RoomPowerLevels,
-            EventType::RoomThirdPartyInvite,
-            EventType::RoomTopic,
-        ].iter().map(EventType::to_string).collect();
+        let state_events: Vec<String> = STATE_EVENTS.iter()
+            .map(EventType::to_string)
+            .collect();
 
-        match pivot_event {
-            Some(event) => {
-                let ordering = events::table
-                    .select(max(events::ordering))
-                    .filter(events::room_id.eq(room_id))
-                    .filter(events::event_type.eq(any(state_events)))
-                    .filter(events::ordering.lt(event.ordering))
-                    .group_by(events::event_type);
+        let ordering = events::table
+            .select(max(events::ordering))
+            .filter(events::room_id.eq(room_id))
+            .filter(events::event_type.eq(any(state_events)))
+            .filter(events::ordering.lt(until.ordering))
+            .group_by(events::event_type);
 
-                events::table
-                    .filter(events::ordering.nullable().eq(any(&ordering)))
-                    .get_results(connection)
-                    .map_err(ApiError::from)
-            },
-            None => {
-                let ordering = events::table
-                    .select(max(events::ordering))
-                    .filter(events::room_id.eq(room_id))
-                    .filter(events::event_type.eq(any(state_events)))
-                    .group_by(events::event_type);
+        events::table
+            .filter(events::ordering.nullable().eq(any(&ordering)))
+            .get_results(connection)
+            .map_err(ApiError::from)
+    }
 
-                events::table
-                    .filter(events::ordering.nullable().eq(any(&ordering)))
-                    .get_results(connection)
-                    .map_err(ApiError::from)
-            }
-        }
+    /// Returns the room's current state.
+    pub fn get_room_full_state(connection: &PgConnection, room_id: &RoomId) -> Result<Vec<Event>, ApiError> {
+        Event::get_room_state_events_since(connection, room_id, -1)
+    }
+
+    /// Return the state changes in a room after a specific point in time.
+    pub fn get_room_state_events_since(
+        connection: &PgConnection,
+        room_id: &RoomId,
+        since: i64
+    ) -> Result<Vec<Event>, ApiError> {
+        let state_events: Vec<String> = STATE_EVENTS.iter()
+            .map(EventType::to_string)
+            .collect();
+
+        let ordering = events::table
+            .select(max(events::ordering))
+            .filter(events::room_id.eq(room_id))
+            .filter(events::event_type.eq(any(state_events)))
+            .filter(events::ordering.gt(since))
+            .group_by(events::event_type);
+
+        events::table
+            .filter(events::ordering.nullable().eq(any(&ordering)))
+            .get_results(connection)
+            .map_err(ApiError::from)
     }
 }
+
 
 macro_rules! impl_try_from_room_event_for_new_event {
     ($ty:ty) => {
@@ -251,6 +293,7 @@ macro_rules! impl_try_into_room_event_for_event {
         }
     };
 }
+
 macro_rules! impl_try_into_state_event_for_event {
     ($ty:ident) => {
         impl TryInto<$ty> for Event {
@@ -266,6 +309,22 @@ macro_rules! impl_try_into_state_event_for_event {
                     room_id: self.room_id,
                     unsigned: None,
                     user_id: self.user_id,
+                })
+            }
+        }
+    };
+}
+
+macro_rules! impl_try_into_stripped_state_event_for_event {
+    ($ty:ident) => {
+        impl TryInto<$ty> for Event {
+            type Err = ApiError;
+
+            fn try_into(self) -> Result<$ty, Self::Err> {
+                Ok($ty {
+                    content: from_str(&self.content).map_err(ApiError::from)?,
+                    state_key: "".to_string(),
+                    event_type: EventType::from(self.event_type.as_ref()),
                 })
             }
         }
@@ -291,6 +350,19 @@ impl_try_into_state_event_for_event!(PowerLevelsEvent);
 impl_try_into_state_event_for_event!(ThirdPartyInviteEvent);
 impl_try_into_state_event_for_event!(TopicEvent);
 impl_try_into_state_event_for_event!(CustomStateEvent);
+
+impl_try_into_stripped_state_event_for_event!(StrippedRoomAliases);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomAvatar);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomCanonicalAlias);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomCreate);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomGuestAccess);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomHistoryVisibility);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomJoinRules);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomMember);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomName);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomPowerLevels);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomThirdPartyInvite);
+impl_try_into_stripped_state_event_for_event!(StrippedRoomTopic);
 
 impl_try_from_room_event_for_new_event!(AnswerEvent);
 impl_try_from_room_event_for_new_event!(CandidatesEvent);
@@ -364,5 +436,29 @@ impl TryInto<StateEvent> for Event {
         };
 
         Ok(state_event)
+    }
+}
+
+impl TryInto<StrippedState> for Event {
+    type Err = ApiError;
+
+    fn try_into(self) -> Result<StrippedState, Self::Err> {
+        let stripped_state_event = match EventType::from(self.event_type.as_ref()) {
+            EventType::RoomAliases => StrippedState::RoomAliases(self.try_into()?),
+            EventType::RoomAvatar => StrippedState::RoomAvatar(self.try_into()?),
+            EventType::RoomCanonicalAlias => StrippedState::RoomCanonicalAlias(self.try_into()?),
+            EventType::RoomCreate => StrippedState::RoomCreate(self.try_into()?),
+            EventType::RoomGuestAccess => StrippedState::RoomGuestAccess(self.try_into()?),
+            EventType::RoomHistoryVisibility => StrippedState::RoomHistoryVisibility(self.try_into()?),
+            EventType::RoomJoinRules => StrippedState::RoomJoinRules(self.try_into()?),
+            EventType::RoomMember => StrippedState::RoomMember(self.try_into()?),
+            EventType::RoomName => StrippedState::RoomName(self.try_into()?),
+            EventType::RoomPowerLevels => StrippedState::RoomPowerLevels(self.try_into()?),
+            EventType::RoomThirdPartyInvite => StrippedState::RoomThirdPartyInvite(self.try_into()?),
+            EventType::RoomTopic => StrippedState::RoomTopic(self.try_into()?),
+            _ => Err(ApiError::bad_event(format!("Unknown state event type {}", self.event_type)))?,
+        };
+
+        Ok(stripped_state_event)
     }
 }

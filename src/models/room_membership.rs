@@ -10,7 +10,6 @@ use diesel::{
     FilterDsl,
     FindDsl,
     LoadDsl,
-    OrderDsl,
     SaveChangesDsl,
     SelectDsl,
     insert,
@@ -349,7 +348,7 @@ impl RoomMembership {
         Ok(())
     }
 
-    /// Return member events for given `room_id`.
+    /// Return member events for a given `RoomId`.
     pub fn get_events_by_room(connection: &PgConnection, room_id: RoomId) -> Result<Vec<MemberEvent>, ApiError> {
         let event_ids = room_memberships::table
             .filter(room_memberships::room_id.eq(room_id))
@@ -366,11 +365,10 @@ impl RoomMembership {
         events.into_iter().map(TryInto::try_into).collect()
     }
 
-    /// Return `RoomMembership`'s for given `UserId` order by `RoomId`.
-    pub fn find_by_user_id_order_by_room_id(connection: &PgConnection, user_id: &UserId) -> Result<Vec<RoomMembership>, ApiError> {
+    /// Return all `RoomMembership`'s for given `UserId`.
+    pub fn find_all_by_uid(connection: &PgConnection, user_id: &UserId) -> Result<Vec<RoomMembership>, ApiError> {
         room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
-            .order(room_memberships::room_id)
             .get_results(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
@@ -378,8 +376,12 @@ impl RoomMembership {
             })
     }
 
-    /// Return `RoomMembership`'s for given `UserId` and `MembershipState`.
-    pub fn find_by_uid_and_state(connection: &PgConnection, user_id: UserId, membership: &str) -> Result<Vec<RoomMembership>, ApiError> {
+    /// Return all `RoomMembership`'s for given `UserId` and `MembershipState`.
+    pub fn find_by_uid_and_state(
+        connection: &PgConnection,
+        user_id: UserId,
+        membership: &str
+    ) -> Result<Vec<RoomMembership>, ApiError> {
         room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .filter(room_memberships::membership.eq(membership))
