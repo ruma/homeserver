@@ -102,6 +102,7 @@ mod tests {
     use ruma_identifiers::EventId;
     use serde_json::from_str;
 
+    use models::filter::ContentFilter;
     use query::{SyncOptions};
 
     /// [https://github.com/matrix-org/sytest/blob/0eba37fc567d65f0a005090548c8df4d0e43775f/tests/31sync/03joined.pl#L3]
@@ -269,6 +270,539 @@ mod tests {
     }
 
     #[test]
+    fn sync_joined_room_state() {
+        let test = Test::new();
+        let alice = test.create_user();
+        let bob = test.create_user();
+
+        let room_options = format!(r#"{{
+            "invite": ["{}"],
+            "initial_state": [{{
+                "state_key": "",
+                "type": "m.room.topic",
+                "content": {{ "topic": "Initial Topic" }}
+            }}]
+        }}"#, bob.id);
+
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+
+        let options = SyncOptions {
+            filter: None,
+            since: None,
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let response = test.sync(&alice.token, options.clone());
+        let alice_next_batch = Test::get_next_batch(&response);
+        assert_eq!(response.status, Status::Ok);
+
+        let state_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        for e in state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.create" => {
+                    assert_eq!(
+                        e.pointer("/content/creator").unwrap().as_str().unwrap(),
+                        alice.id
+                    );
+                },
+                "m.room.history_visibility" => {
+                    assert_eq!(
+                        e.pointer("/content/history_visibility").unwrap().as_str().unwrap(),
+                        "shared"
+                    );
+                },
+                "m.room.member" => {
+                    assert_eq!(
+                        e.get("sender").unwrap().as_str().unwrap(),
+                        bob.id
+                    );
+
+                    assert_eq!(
+                        e.pointer("/content/membership").unwrap().as_str().unwrap(),
+                        "join"
+                    );
+                },
+                "m.room.power_levels" => {
+                    assert_eq!(
+                        e.pointer("/content/kick").unwrap().as_u64().unwrap(),
+                        50
+                    );
+                },
+                "m.room.topic" => {
+                    assert_eq!(
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                        "Initial Topic"
+                    );
+                },
+                _ => {}
+            }
+        }
+
+        let response = test.send_state_event(
+            &alice.token,
+            &room_id,
+            "m.room.topic",
+            r#"{ "topic": "Updated Topic" }"#
+        );
+        assert_eq!(response.status, Status::Ok);
+
+        let response = test.sync(&bob.token, options.clone());
+        assert_eq!(response.status, Status::Ok);
+
+        let state_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert_eq!(state_events.len(), 6);
+
+        for e in state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.topic" => {
+                    assert_eq!(
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                        "Updated Topic"
+                    );
+                },
+                _ => {}
+            }
+        }
+
+        let options = SyncOptions {
+            filter: None,
+            since: Some(alice_next_batch),
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let response = test.sync(&alice.token, options);
+        assert_eq!(response.status, Status::Ok);
+
+        let state_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert_eq!(state_events.len(), 1);
+        assert_eq!(
+            state_events[0].get("type").unwrap().as_str().unwrap(),
+            "m.room.topic"
+        );
+        assert_eq!(
+            state_events[0].pointer("/content/topic").unwrap().as_str().unwrap(),
+            "Updated Topic"
+        );
+    }
+
+    #[test]
+    fn sync_invited_room_state() {
+        let test = Test::new();
+        let alice = test.create_user();
+        let bob = test.create_user();
+
+        let room_options = format!(r#"{{
+            "invite": ["{}"],
+            "initial_state": [{{
+                "state_key": "",
+                "type": "m.room.name",
+                "content": {{ "name": "Initial Name" }}
+            }}]
+        }}"#, bob.id);
+
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+
+        let options = SyncOptions {
+            filter: None,
+            since: None,
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let alice_sync_response = test.sync(&alice.token, options.clone());
+        assert_eq!(alice_sync_response.status, Status::Ok);
+
+        let joined_state_events = alice_sync_response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(joined_state_events.len() > 0);
+
+        for e in joined_state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.name" => {
+                    assert_eq!(
+                        e.pointer("/content/name").unwrap().as_str().unwrap(),
+                        "Initial Name"
+                    );
+                },
+                _ => {}
+            }
+        }
+
+        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_next_batch = Test::get_next_batch(&bob_sync_response);
+        assert_eq!(bob_sync_response.status, Status::Ok);
+
+        let invited_state_events = bob_sync_response
+            .json()
+            .pointer(&format!("/rooms/invite/{}/invite_state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(invited_state_events.len() > 0);
+
+        for e in invited_state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.name" => {
+                    assert_eq!(
+                        e.pointer("/content/name").unwrap().as_str().unwrap(),
+                        "Initial Name"
+                    );
+                },
+                "m.room.create" => {
+                    assert_eq!(
+                        e.pointer("/content/creator").unwrap().as_str().unwrap(),
+                        alice.id
+                    );
+                }
+                _ => {}
+            }
+        }
+
+        let room_name_event_response = test.send_state_event(
+            &alice.token,
+            &room_id,
+            "m.room.name",
+            r#"{ "name": "Updated Name" }"#
+        );
+        assert_eq!(room_name_event_response.status, Status::Ok);
+
+        let options = SyncOptions {
+            filter: None,
+            since: Some(bob_next_batch),
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let bob_sync_response = test.sync(&bob.token, options.clone());
+        assert_eq!(bob_sync_response.status, Status::Ok);
+
+        let invited_state_events = bob_sync_response
+            .json()
+            .pointer(&format!("/rooms/invite/{}/invite_state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(invited_state_events.len() > 1);
+
+        for e in invited_state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.name" => {
+                    assert_eq!(
+                        e.pointer("/content/name").unwrap().as_str().unwrap(),
+                        "Updated Name"
+                    );
+                },
+                _ => {},
+            }
+        }
+    }
+
+    #[test]
+    fn sync_left_room_state() {
+        let test = Test::new();
+        let alice = test.create_user();
+        let bob = test.create_user();
+
+        let room_options = format!(r#"{{ "invite": ["{}"] }}"#, bob.id);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+
+        let options = SyncOptions {
+            filter: None,
+            since: None,
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_next_batch = Test::get_next_batch(&bob_sync_response);
+        assert_eq!(bob_sync_response.status, Status::Ok);
+
+        let state_events = bob_sync_response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(state_events.len() > 0);
+
+        assert_eq!(test.leave_room(&bob.token, &room_id).status, Status::Ok);
+
+        let response = test.send_state_event(
+            &alice.token,
+            &room_id,
+            "m.room.topic",
+            r#"{ "topic": "New Topic" }"#
+        );
+        assert_eq!(response.status, Status::Ok);
+
+        // Bob syncs and uses a custom filter to include the left rooms in the response.
+        let include_leave_filter: ContentFilter = from_str(r#"{"room":{"include_leave":true}}"#).unwrap();
+
+        let options = SyncOptions {
+            filter: Some(include_leave_filter.clone()),
+            since: Some(bob_next_batch),
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_next_batch = Test::get_next_batch(&bob_sync_response);
+        assert_eq!(bob_sync_response.status, Status::Ok);
+
+        let left_state_events = bob_sync_response
+            .json()
+            .pointer(&format!("/rooms/leave/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
+
+        for e in left_state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.topic" => {
+                    assert_eq!(
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                        "New Topic"
+                    );
+                },
+                _ => { },
+            }
+        }
+
+        let response = test.send_state_event(
+            &alice.token,
+            &room_id,
+            "m.room.topic",
+            r#"{ "topic": "Another Topic" }"#
+        );
+        assert_eq!(response.status, Status::Ok);
+
+        // Bob syncs with the default settings. i.e without a custom filter.
+        let options = SyncOptions {
+            filter: None,
+            since: Some(bob_next_batch),
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let bob_sync_response = test.sync(&bob.token, options.clone());
+        assert_eq!(bob_sync_response.status, Status::Ok);
+
+        let leave_rooms = bob_sync_response
+            .json()
+            .pointer("/rooms/leave").unwrap()
+            .as_object().unwrap();
+        assert_eq!(leave_rooms.len(), 0);
+
+        // Sync with the custom filter to include the left rooms.
+        // Bob can't access the latest state changes because he left the room.
+        let options = SyncOptions {
+            filter: Some(include_leave_filter.clone()),
+            since: None,
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let bob_sync_response = test.sync(&bob.token, options.clone());
+        assert_eq!(bob_sync_response.status, Status::Ok);
+
+        let left_state_events = bob_sync_response
+            .json()
+            .pointer(&format!("/rooms/leave/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        for e in left_state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.topic" => {
+                    assert_eq!(
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                        "New Topic"
+                    );
+                },
+                _ => { },
+            }
+        }
+    }
+
+    #[test]
+    fn sync_left_room_timeline() {
+        let test = Test::new();
+        let alice = test.create_user();
+        let bob = test.create_user();
+
+        let room_options = format!(r#"{{ "invite": ["{}"] }}"#, bob.id);
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
+
+        // Alice sends a message visible by Bob.
+        assert_eq!(test.send_message(&alice.token, &room_id, "Hi Bob", 1).status, Status::Ok);
+
+        // Bob leaves the room and can no longer receive new messages in his timeline.
+        assert_eq!(test.leave_room(&bob.token, &room_id).status, Status::Ok);
+
+        // Alice sends a message not visible to Bob.
+        assert_eq!(test.send_message(&alice.token, &room_id, "Goodbye Bob", 2).status, Status::Ok);
+
+        // Full timeline sync up to the point that Bob left the room.
+        let include_leave_filter = from_str(r#"{"room":{"include_leave":true}}"#).unwrap();
+        let options = SyncOptions {
+            filter: Some(include_leave_filter),
+            since: None,
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let response = test.sync(&bob.token, options);
+        assert_eq!(response.status, Status::Ok);
+
+        let left_room_timeline_events = response
+            .json()
+            .pointer(&format!("/rooms/leave/{}/timeline/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(left_room_timeline_events.len() > 1);
+
+        let last_room_event = left_room_timeline_events.last().unwrap();
+        assert_eq!(last_room_event.get("type").unwrap().as_str().unwrap(), "m.room.message");
+        assert_eq!(last_room_event.get("sender").unwrap().as_str().unwrap(), alice.id);
+        assert_eq!(last_room_event.pointer("/content/body").unwrap().as_str().unwrap(), "Hi Bob");
+    }
+
+    #[test]
+    fn full_state() {
+        let test = Test::new();
+        let alice = test.create_user();
+
+        let room_options = r#"{
+            "initial_state": [{
+                "state_key": "",
+                "type": "m.room.topic",
+                "content": { "topic": "Initial Topic" }
+            }, {
+                "state_key": "",
+                "type": "m.room.name",
+                "content": { "name": "Initial Name" }
+            }]
+        }"#;
+
+        let room_id = test.create_room_with_params(&alice.token, &room_options);
+
+        let options = SyncOptions {
+            filter: None,
+            since: None,
+            full_state: false,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let response = test.sync(&alice.token, options);
+        let next_batch = Test::get_next_batch(&response);
+        assert_eq!(response.status, Status::Ok);
+
+        let state_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(state_events.len() > 0);
+
+        let timeline_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/timeline/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert!(timeline_events.len() > 0);
+
+        let initial_state_events_len = state_events.len();
+        assert!(initial_state_events_len > 0);
+
+        // Sync without any timeline events and with all the state events.
+        let options = SyncOptions {
+            filter: None,
+            since: Some(next_batch),
+            full_state: true,
+            set_presence: None,
+            timeout: 0,
+        };
+
+        let response = test.sync(&alice.token, options);
+        assert_eq!(response.status, Status::Ok);
+
+        let state_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert_eq!(state_events.len(), initial_state_events_len);
+
+        for e in state_events.iter() {
+            let event_type = e.get("type").unwrap().as_str().unwrap();
+
+            match event_type {
+                "m.room.topic" => {
+                    assert_eq!(
+                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                        "Initial Topic"
+                    );
+                },
+                "m.room.name" => {
+                    assert_eq!(
+                        e.pointer("/content/name").unwrap().as_str().unwrap(),
+                        "Initial Name"
+                    );
+                },
+                _ => { }
+            }
+        }
+
+        let timeline_events = response
+            .json()
+            .pointer(&format!("/rooms/join/{}/timeline/events", room_id)).unwrap()
+            .as_array().unwrap();
+
+        assert_eq!(timeline_events.len(), 0);
+    }
+
+    #[test]
     fn initial_state() {
         let test = Test::new();
         let user = test.create_user();
@@ -308,8 +842,7 @@ mod tests {
             .pointer(&format!("/rooms/join/{}/timeline/events", room_id))
             .unwrap();
         assert!(events.is_array());
-        //TODO: This should be 6, but some unhandled events.
-        assert_eq!(events.as_array().unwrap().len(), 3);
+        assert_eq!(events.as_array().unwrap().len(), 6);
     }
 
     #[test]

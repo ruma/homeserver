@@ -49,14 +49,15 @@ impl Handler for RoomState {
         match membership_state.as_ref() {
             "join" => {
                 events.append(
-                    &mut Event::get_room_state_events_until(&connection, &room_id, None)?
+                    &mut Event::get_room_full_state(&connection, &room_id)?
                 );
             },
             "leave" => {
-                let last_event = Event::find(&connection, &membership.unwrap().event_id)?;
+                let last_event = Event::find(&connection, &membership.unwrap().event_id)?
+                    .expect("A room membership should be associated with an event");
 
                 events.append(
-                    &mut Event::get_room_state_events_until(&connection, &room_id, last_event)?
+                    &mut Event::get_room_state_events_until(&connection, &room_id, &last_event)?
                 );
             },
             _ => {}

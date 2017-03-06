@@ -9,12 +9,11 @@ use std::iter::Iterator;
 use std::str::FromStr;
 
 use diesel::pg::PgConnection;
-use ruma_events::room::member::MemberEvent;
-use ruma_events::room::message::MessageEvent;
-use ruma_events::room::history_visibility::HistoryVisibilityEvent;
+use ruma_events::EventType;
+use ruma_events::stripped::StrippedState;
+use ruma_events::collections::all::{RoomEvent, StateEvent};
 use ruma_events::presence::PresenceEvent;
 use ruma_events::presence::PresenceState;
-use ruma_events::collections::all::{RoomEvent, StateEvent};
 use ruma_identifiers::RoomId;
 use serde_json::Value;
 
@@ -26,19 +25,26 @@ use models::presence_list::PresenceList;
 use models::presence_status::PresenceStatus;
 use models::user::User;
 
+/// Counts of unread notifications for a room.
 #[derive(Debug, Clone, Serialize)]
 struct UnreadNotificationCounts {
+    /// The number of unread notifications for a room with the highlight flag set.
     highlight_count: u64,
+    /// The total number of unread notifications for a room.
     notification_count: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
 struct Timeline {
-    limited: bool,
-    prev_batch: String,
+    /// List of events.
     events: Vec<RoomEvent>,
+    /// True if the number of events returned was limited by the limit on the filter.
+    limited: bool,
+    /// A token that can be supplied to to the from parameter of the `rooms/{roomId}/messages` endpoint.
+    prev_batch: String,
 }
 
+/// Generic placeholder for the different event types.
 #[derive(Debug, Clone, Serialize)]
 struct Events<T> {
     events: Vec<T>,
@@ -46,36 +52,53 @@ struct Events<T> {
 
 #[derive(Debug, Clone, Serialize)]
 struct LeftRoom {
-    timeline: Timeline,
+    /// The state updates for the room up to the start of the timeline.
     state: Events<StateEvent>,
+    /// The timeline of messages and state changes in the room up to the point when the user left.
+    timeline: Timeline,
 }
 
 #[derive(Debug, Clone, Serialize)]
 struct InvitedRoom {
-    invite_state: Events<Value>,
+    /// The state of a room that the user has been invited to.
+    invite_state: Events<StrippedState>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 struct JoinedRoom {
+    /// Counts of unread notifications for this room.
     unread_notifications: UnreadNotificationCounts,
+    /// The timeline of messages and state changes in the room.
     timeline: Timeline,
+    /// Updates to the state, between the time indicated by the since parameter,
+    /// and the start of the timeline (or all state up to the start of the timeline,
+    /// if since is not given, or full_state is true).
     state: Events<StateEvent>,
+    /// The private data that this user has attached to this room.
     account_data: Events<Value>,
+    /// The ephemeral events in the room that aren't recorded in the timeline or
+    /// state of the room. e.g. typing.
     ephemeral: Events<Value>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 struct Rooms {
-    join: HashMap<RoomId, JoinedRoom>,
-    leave: HashMap<RoomId, LeftRoom>,
+    /// The rooms that the user has been invited to.
     invite: HashMap<RoomId, InvitedRoom>,
+    /// The rooms that the user has joined.
+    join: HashMap<RoomId, JoinedRoom>,
+    /// The rooms that the user has left or been banned from.
+    leave: HashMap<RoomId, LeftRoom>,
 }
 
 /// A Sync response.
 #[derive(Debug, Clone, Serialize)]
 pub struct Sync {
+    /// The batch token to supply in the since param of the next /sync request.
     next_batch: String,
+    /// The updates to the presence status of other users.
     presence: Events<PresenceEvent>,
+    /// Updates to rooms.
     rooms: Rooms,
 }
 
@@ -125,7 +148,7 @@ impl FromStr for Batch {
 }
 
 /// A Sync query options.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SyncOptions {
     /// The ID of a filter created using the filter API or a filter JSON object encoded as a string.
     pub filter: Option<ContentFilter>,
@@ -159,6 +182,7 @@ impl Sync {
         options: SyncOptions
     ) -> Result<Sync, ApiError> {
         let mut context = Context::Initial;
+
         if let Some(ref batch) = options.since {
             context = if options.full_state {
                 Context::FullState(batch)
@@ -171,6 +195,7 @@ impl Sync {
             Some(filter) => filter.room,
             None => None
         };
+
         let (presence_key, presence) = Sync::get_presence_events(
             connection,
             homeserver_domain,
@@ -188,6 +213,7 @@ impl Sync {
             },
             rooms: rooms,
         };
+
         Ok(state)
     }
 
@@ -203,6 +229,7 @@ impl Sync {
             Some(set_presence) => set_presence,
             None => PresenceState::Online,
         };
+
         PresenceStatus::upsert(connection, homeserver_domain, &user.id, Some(set_presence), None)?;
 
         let since = match *context {
@@ -231,26 +258,41 @@ impl Sync {
         let mut invite = HashMap::new();
         let mut leave = HashMap::new();
 
-        let room_memberships = RoomMembership::find_by_user_id_order_by_room_id(connection, &user.id)?;
+        let room_memberships = RoomMembership::find_all_by_uid(connection, &user.id)?;
 
-        let since = match *context {
-            Context::Incremental(batch) => batch.room_key,
-            Context::FullState(_) | Context::Initial => -1,
+        let (is_full_state, since) = match *context {
+            Context::Incremental(batch) => (false, batch.room_key),
+            Context::FullState(batch) => (true, batch.room_key),
+            Context::Initial => (false, -1),
         };
-        let timeline_filter = match room_filter {
-            Some(filter) => filter.timeline,
-            None => None,
+
+        let (timeline_filter, include_leave) = match room_filter {
+            Some(filter) => (filter.timeline, filter.include_leave),
+            None => (None, false),
         };
 
         for room_membership in room_memberships {
-            let events: Vec<Event> = Event::find_room_events(connection, &room_membership.room_id, since)?;
-            if events.is_empty() {
-                continue;
-            }
             match room_membership.membership.as_str() {
                 "join" => {
-                    let (i, timeline) = Sync::convert_events_to_timeline(events, &timeline_filter)?;
-                    room_ordering = cmp::max(i, room_ordering);
+                    let events: Vec<Event> = Event::find_room_events(connection, &room_membership.room_id, since)?;
+
+                    let room_state_events: Vec<Event> = if is_full_state {
+                        Event::get_room_full_state(connection, &room_membership.room_id)?
+                    } else {
+                        Event::get_room_state_events_since(connection, &room_membership.room_id, since)?
+                    };
+
+                    if events.is_empty() && room_state_events.is_empty() {
+                        continue;
+                    }
+
+                    let (ordering, timeline) = Sync::convert_events_to_timeline(events, &timeline_filter)?;
+                    room_ordering = cmp::max(ordering, room_ordering);
+
+                    let state_events: Vec<StateEvent> = room_state_events.iter().cloned()
+                        .map(|e| e.try_into())
+                        .collect::<Result<Vec<StateEvent>, ApiError>>()?;
+
                     join.insert(room_membership.room_id, JoinedRoom {
                         unread_notifications: UnreadNotificationCounts {
                             highlight_count: 0,
@@ -258,7 +300,7 @@ impl Sync {
                         },
                         timeline: timeline,
                         state: Events {
-                            events: Vec::new(),
+                            events: state_events,
                         },
                         account_data: Events {
                             events: Vec::new(),
@@ -269,19 +311,48 @@ impl Sync {
                     });
                 },
                 "invite" => {
+                    let room_state_events = Event::get_room_full_state(connection, &room_membership.room_id)?;
+
+                    let state_events: Vec<StrippedState> = room_state_events.iter().cloned()
+                        .map(|e| e.try_into())
+                        .collect::<Result<Vec<StrippedState>, ApiError>>()?;
+
                     invite.insert(room_membership.room_id, InvitedRoom {
                         invite_state: Events {
-                            events: Vec::new(),
+                            events: state_events,
                         },
                     });
                 },
-                "leave" => {
-                    let (i, timeline) = Sync::convert_events_to_timeline(events, &timeline_filter)?;
-                    room_ordering = cmp::max(i, room_ordering);
+                "leave" | "ban" => {
+                    if !include_leave {
+                        continue;
+                    }
+
+                    let last_event = Event::find(&connection, &room_membership.event_id)?
+                        .expect("A room membership should be associated with an event");
+
+                    let events = Event::find_room_events_until(
+                        connection,
+                        &room_membership.room_id,
+                        &last_event.ordering,
+                    )?;
+
+                    let (ordering, timeline) = Sync::convert_events_to_timeline(events, &timeline_filter)?;
+                    room_ordering = cmp::max(ordering, room_ordering);
+
+                    let room_state_events = Event::get_room_state_events_until(
+                        connection,
+                        &room_membership.room_id,
+                        &last_event,
+                    )?;
+                    let state_events: Vec<StateEvent> = room_state_events.iter().cloned()
+                        .map(|e| e.try_into())
+                        .collect::<Result<Vec<StateEvent>, ApiError>>()?;
+
                     leave.insert(room_membership.room_id, LeftRoom {
                         timeline: timeline,
                         state: Events {
-                            events: Vec::new(),
+                            events: state_events,
                         },
                     });
                 },
@@ -297,6 +368,9 @@ impl Sync {
     }
 
     /// Converting events in the correct format for timeline.
+    ///
+    /// Also returns the max ordering from the given events that will be used
+    /// as the `next_batch` token.
     fn convert_events_to_timeline(
         events: Vec<Event>,
         timeline_filter: &Option<RoomEventFilter>
@@ -326,24 +400,31 @@ impl Sync {
 
         for event in events.into_iter().skip(count) {
             room_ordering = cmp::max(room_ordering, event.ordering);
-            let value = match event.event_type.as_ref() {
-                "m.room.member" => {
-                    let member_event: MemberEvent = event.try_into()?;
-                    RoomEvent::RoomMember(member_event)
-                },
-                "m.room.message" => {
-                    let message_event: MessageEvent = event.try_into()?;
-                    RoomEvent::RoomMessage(message_event)
-                },
-                "m.room.history_visibility" => {
-                    let history_visibility_event: HistoryVisibilityEvent = event.try_into()?;
-                    RoomEvent::RoomHistoryVisibility(history_visibility_event)
-                },
+
+            let value = match EventType::from(event.event_type.as_ref()) {
+                EventType::CallAnswer => RoomEvent::CallAnswer(event.try_into()?),
+                EventType::CallCandidates => RoomEvent::CallCandidates(event.try_into()?),
+                EventType::CallHangup => RoomEvent::CallHangup(event.try_into()?),
+                EventType::CallInvite => RoomEvent::CallInvite(event.try_into()?),
+                EventType::RoomAliases => RoomEvent::RoomAliases(event.try_into()?),
+                EventType::RoomAvatar => RoomEvent::RoomAvatar(event.try_into()?),
+                EventType::RoomCanonicalAlias => RoomEvent::RoomCanonicalAlias(event.try_into()?),
+                EventType::RoomCreate => RoomEvent::RoomCreate(event.try_into()?),
+                EventType::RoomGuestAccess => RoomEvent::RoomGuestAccess(event.try_into()?),
+                EventType::RoomHistoryVisibility => RoomEvent::RoomHistoryVisibility(event.try_into()?),
+                EventType::RoomJoinRules => RoomEvent::RoomJoinRules(event.try_into()?),
+                EventType::RoomMember => RoomEvent::RoomMember(event.try_into()?),
+                EventType::RoomMessage => RoomEvent::RoomMessage(event.try_into()?),
+                EventType::RoomName => RoomEvent::RoomName(event.try_into()?),
+                EventType::RoomPowerLevels => RoomEvent::RoomPowerLevels(event.try_into()?),
+                EventType::RoomThirdPartyInvite => RoomEvent::RoomThirdPartyInvite(event.try_into()?),
+                EventType::RoomTopic => RoomEvent::RoomTopic(event.try_into()?),
                 _ => {
                     println!("unhandled {:?}", event.event_type);
                     continue;
                 },
             };
+
             timeline_events.push(value);
         }
 
