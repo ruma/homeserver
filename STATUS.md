@@ -120,12 +120,12 @@ Legend:
     <td>GET /rooms/:room_id/members</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/11">#11</a></td>
     <td>GET /rooms/:room_id/state/:event_type/:state_key</td>
   </tr>
   <tr>
-    <td align="center">:no_entry_sign:</td>
+    <td align="center">:white_check_mark:</td>
     <td><a href="https://github.com/ruma/ruma/issues/12">#12</a></td>
     <td>GET /rooms/:room_id/state/:event_type</td>
   </tr>

@@ -6,22 +6,22 @@ pub use self::account::{
     PutAccountData,
     PutRoomAccountData,
 };
-pub use self::directory::{GetRoomAlias, DeleteRoomAlias, PutRoomAlias};
+pub use self::directory::{DeleteRoomAlias, GetRoomAlias, PutRoomAlias};
 pub use self::event_creation::{SendMessageEvent, StateMessageEvent};
+pub use self::filter::{GetFilter, PostFilter};
 pub use self::join::{InviteToRoom, JoinRoom, JoinRoomWithIdOrAlias, KickFromRoom, LeaveRoom};
 pub use self::login::Login;
 pub use self::logout::Logout;
 pub use self::members::Members;
 pub use self::presence::{GetPresenceList, GetPresenceStatus, PostPresenceList, PutPresenceStatus};
-pub use self::profile::{Profile, GetAvatarUrl, PutAvatarUrl, GetDisplayName, PutDisplayName};
 pub use self::pushers::{GetPushers, SetPushers};
+pub use self::profile::{GetAvatarUrl, GetDisplayName, Profile, PutAvatarUrl, PutDisplayName};
 pub use self::registration::Register;
 pub use self::room_creation::CreateRoom;
-pub use self::room_info::RoomState;
-pub use self::tags::{DeleteTag, GetTags, PutTag};
+pub use self::room_info::{GetStateEvent, RoomState};
 pub use self::sync::Sync;
+pub use self::tags::{DeleteTag, GetTags, PutTag};
 pub use self::versions::Versions;
-pub use self::filter::{GetFilter, PostFilter};
 
 mod account;
 mod directory;
@@ -37,6 +37,6 @@ mod pushers;
 mod registration;
 mod room_creation;
 mod room_info;
-mod tags;
 mod sync;
+mod tags;
 mod versions;
