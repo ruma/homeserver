@@ -144,6 +144,7 @@ impl Event {
             .filter(events::event_type.like("m.room.%"))
             .filter(events::ordering.gt(since))
             .filter(events::room_id.eq(room_id))
+            .order(events::ordering.asc())
             .get_results(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
@@ -161,6 +162,7 @@ impl Event {
             .filter(events::event_type.like("m.room.%"))
             .filter(events::ordering.lt(until))
             .filter(events::room_id.eq(room_id))
+            .order(events::ordering.asc())
             .get_results(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(None),
