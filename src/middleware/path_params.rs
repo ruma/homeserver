@@ -28,9 +28,17 @@ impl BeforeMiddleware for RoomIdParam {
     fn before(&self, request: &mut Request) -> IronResult<()> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
         let room_id = match params.find("room_id") {
-            Some(room_id) => RoomId::try_from(room_id).map_api_err(|err| {
-                ApiError::invalid_param("room_id", err.description())
-            }),
+            Some(room_id) => {
+                let decoded_room_id = percent_decode(room_id.as_bytes())
+                    .decode_utf8()
+                    .map_err(|err| {
+                        ApiError::invalid_param("room_id", err.description())
+                    })?;
+
+                RoomId::try_from(&decoded_room_id).map_api_err(|err| {
+                    ApiError::invalid_param("room_id", err.description())
+                })
+            },
             None => Err(ApiError::missing_param("room_id"))
         }?;
         request.extensions.insert::<RoomIdParam>(room_id);
@@ -52,9 +60,10 @@ impl BeforeMiddleware for RoomIdOrAliasParam {
             Some(room_id_or_alias) => {
                 let decoded_room_id_or_alias = percent_decode(room_id_or_alias.as_bytes())
                     .decode_utf8()
-                    .map_err(|_| {
-                        ApiError::invalid_param("room_id_or_alias", "Unable to be url decoded.")
+                    .map_err(|err| {
+                        ApiError::invalid_param("room_id_or_alias", err.description())
                     })?;
+
                 RoomIdOrAliasId::try_from(&decoded_room_id_or_alias).map_api_err(|err| {
                     ApiError::invalid_param("room_id_or_alias", err.description())
                 })
@@ -79,9 +88,17 @@ impl BeforeMiddleware for UserIdParam {
             .expect("Params object is missing").clone();
 
         let user_id = match params.find("user_id") {
-            Some(user_id) => UserId::try_from(user_id).map_api_err(|err| {
-                ApiError::invalid_param("user_id", err.description())
-            }),
+            Some(user_id) => {
+                let decoded_user_id = percent_decode(user_id.as_bytes())
+                    .decode_utf8()
+                    .map_err(|err| {
+                        ApiError::invalid_param("user_id", err.description())
+                    })?;
+
+                UserId::try_from(&decoded_user_id).map_api_err(|err| {
+                    ApiError::invalid_param("user_id", err.description())
+                })
+            },
             None => Err(ApiError::missing_param("user_id"))
         }?;
 
