@@ -218,7 +218,7 @@ mod tests {
         assert!(
             test.post(
                 "/_matrix/client/r0/login",
-                format!(r#"{{"auth": {{"type": "m.login.password", "user": "{}", "password": "hidden"}}}}"#, user.name).as_str(),
+                format!(r#"{{"type": "m.login.password", "user": "{}", "password": "hidden"}}"#, user.name).as_str(),
             ).status.is_success()
         )
     }
@@ -228,7 +228,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let login = format!(r#"{{"auth": {{"type": "m.login.password", "user": "{}", "password": "secret"}}}}"#, user.name);
+        let login = format!(r#"{{"type": "m.login.password", "user": "{}", "password": "secret"}}"#, user.name);
         let deactivate = format!("/_matrix/client/r0/account/deactivate?access_token={}", user.token);
 
         assert!(
