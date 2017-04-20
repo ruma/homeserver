@@ -103,7 +103,7 @@ pub struct Sync {
 }
 
 /// A State Ordering.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Batch {
     /// The room ordering key.
     pub room_key: i64,
@@ -253,12 +253,16 @@ impl Sync {
         room_filter: Option<RoomFilter>,
         context: &Context,
     ) -> Result<(i64, Rooms), ApiError> {
-        let mut room_ordering = 0;
         let mut join = HashMap::new();
         let mut invite = HashMap::new();
         let mut leave = HashMap::new();
 
         let room_memberships = RoomMembership::find_all_by_uid(connection, &user.id)?;
+
+        let mut room_ordering = match *context {
+            Context::Incremental(batch) | Context::FullState(batch) => batch.room_key,
+            Context::Initial => 0,
+        };
 
         let (is_full_state, since) = match *context {
             Context::Incremental(batch) => (false, batch.room_key),

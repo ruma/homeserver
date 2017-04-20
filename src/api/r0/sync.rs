@@ -105,6 +105,42 @@ mod tests {
     use models::filter::ContentFilter;
     use query::{SyncOptions};
 
+    #[test]
+    fn sync_without_new_events() {
+        let test = Test::new();
+        let (alice, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
+
+        let options = SyncOptions {
+            filter: None,
+            since: None,
+            full_state: false,
+            set_presence: Some(PresenceState::Online),
+            timeout: 0
+        };
+
+        let response = test.sync(&alice.token, options);
+        assert_eq!(response.status, Status::Ok);
+
+        let first_batch = Test::get_next_batch(&response);
+
+        // Sync again without any new events.
+        // The next_batch token should be the same.
+        let options = SyncOptions {
+            filter: None,
+            since: Some(first_batch.clone()),
+            full_state: false,
+            set_presence: None,
+            timeout: 0
+        };
+
+        let response = test.sync(&alice.token, options);
+        assert_eq!(response.status, Status::Ok);
+
+        let second_batch = Test::get_next_batch(&response);
+
+        assert_eq!(first_batch, second_batch);
+    }
+
     /// [https://github.com/matrix-org/sytest/blob/0eba37fc567d65f0a005090548c8df4d0e43775f/tests/31sync/03joined.pl#L3]
     #[test]
     fn can_sync_a_joined_room() {
