@@ -137,7 +137,10 @@ impl PresenceList {
         user_id: &UserId,
         since: Option<i64>
     ) -> Result<(i64, Vec<PresenceEvent>), ApiError> {
-        let mut max_ordering = -1;
+        let mut presence_key = match since {
+            Some(since) => since,
+            None => 0,
+        };
 
         let observed_users = PresenceList::find_observed_users(connection, user_id)?;
         let users_status = PresenceStatus::get_users(connection, &observed_users, since)?;
@@ -151,7 +154,7 @@ impl PresenceList {
 
         for status in users_status {
             let last_update = status.updated_at.0;
-            max_ordering = cmp::max(last_update, max_ordering);
+            presence_key = cmp::max(last_update, presence_key);
 
             let presence_state: PresenceState = status.presence.parse().unwrap();
             let last_active_ago = get_now() - last_update;
@@ -183,6 +186,6 @@ impl PresenceList {
             events.push(event);
         }
 
-        Ok((max_ordering, events))
+        Ok((presence_key, events))
     }
 }
