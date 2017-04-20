@@ -241,6 +241,20 @@ mod tests {
     use query::SyncOptions;
 
     #[test]
+    fn get_new_user_profile() {
+        let test = Test::new();
+        let alice = test.create_user();
+
+        let profile_path = format!(
+            "/_matrix/client/r0/profile/{}?access_token={}",
+            alice.id,
+            alice.token
+        );
+
+        assert_eq!(test.get(&profile_path).status, Status::Ok);
+    }
+
+    #[test]
     fn get_displayname_non_existent_user() {
         let test = Test::new();
         let carl = test.create_user();
