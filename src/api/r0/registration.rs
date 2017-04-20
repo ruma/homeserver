@@ -13,6 +13,7 @@ use crypto::hash_password;
 use db::DB;
 use error::ApiError;
 use middleware::{JsonRequest, MiddlewareChain};
+use models::profile::Profile;
 use models::user::{NewUser, User};
 use modifier::SerializableResponse;
 
@@ -115,6 +116,14 @@ impl Handler for Register {
             &new_user,
             &config.macaroon_secret_key,
         )?;
+
+        let new_profile = Profile {
+            id: user.id.clone(),
+            avatar_url: None,
+            displayname: None,
+        };
+
+        Profile::create(&connection, &new_profile)?;
 
         let response = RegistrationResponse {
             access_token: access_token.value,
