@@ -235,9 +235,9 @@ impl Event {
 macro_rules! impl_try_from_room_event_for_new_event {
     ($ty:ty) => {
         impl TryFrom<$ty> for NewEvent {
-            type Err = ApiError;
+            type Error = ApiError;
 
-            fn try_from(event: $ty) -> Result<Self, Self::Err> {
+            fn try_from(event: $ty) -> Result<Self, Self::Error> {
                 Ok(NewEvent {
                     content: to_string(event.content()).map_err(ApiError::from)?,
                     event_type: event.event_type().to_string(),
@@ -255,9 +255,9 @@ macro_rules! impl_try_from_room_event_for_new_event {
 macro_rules! impl_try_from_state_event_for_new_event {
     ($ty:ty) => {
         impl TryFrom<$ty> for NewEvent {
-            type Err = ApiError;
+            type Error = ApiError;
 
-            fn try_from(event: $ty) -> Result<Self, Self::Err> {
+            fn try_from(event: $ty) -> Result<Self, Self::Error> {
                 Ok(NewEvent {
                     content: to_string(event.content()).map_err(ApiError::from)?,
                     event_type: event.event_type().to_string(),
@@ -280,9 +280,9 @@ macro_rules! impl_try_from_state_event_for_new_event {
 macro_rules! impl_try_into_room_event_for_event {
     ($ty:ident) => {
         impl TryInto<$ty> for Event {
-            type Err = ApiError;
+            type Error = ApiError;
 
-            fn try_into(self) -> Result<$ty, Self::Err> {
+            fn try_into(self) -> Result<$ty, Self::Error> {
                 Ok($ty {
                     content: from_str(&self.content).map_err(ApiError::from)?,
                     event_id: self.id,
@@ -299,9 +299,9 @@ macro_rules! impl_try_into_room_event_for_event {
 macro_rules! impl_try_into_state_event_for_event {
     ($ty:ident) => {
         impl TryInto<$ty> for Event {
-            type Err = ApiError;
+            type Error = ApiError;
 
-            fn try_into(self) -> Result<$ty, Self::Err> {
+            fn try_into(self) -> Result<$ty, Self::Error> {
                 Ok($ty {
                     content: from_str(&self.content).map_err(ApiError::from)?,
                     prev_content: None,
@@ -320,9 +320,9 @@ macro_rules! impl_try_into_state_event_for_event {
 macro_rules! impl_try_into_stripped_state_event_for_event {
     ($ty:ident) => {
         impl TryInto<$ty> for Event {
-            type Err = ApiError;
+            type Error = ApiError;
 
-            fn try_into(self) -> Result<$ty, Self::Err> {
+            fn try_into(self) -> Result<$ty, Self::Error> {
                 Ok($ty {
                     content: from_str(&self.content).map_err(ApiError::from)?,
                     state_key: "".to_string(),
@@ -388,9 +388,9 @@ impl_try_from_state_event_for_new_event!(TopicEvent);
 impl_try_from_state_event_for_new_event!(CustomStateEvent);
 
 impl TryInto<MemberEvent> for Event {
-    type Err = ApiError;
+    type Error = ApiError;
 
-    fn try_into(self) -> Result<MemberEvent, Self::Err> {
+    fn try_into(self) -> Result<MemberEvent, Self::Error> {
         Ok(MemberEvent {
             content: from_str(&self.content)?,
             event_id: self.id,
@@ -418,9 +418,9 @@ impl TryInto<MemberEvent> for Event {
 }
 
 impl TryInto<StateEvent> for Event {
-    type Err = ApiError;
+    type Error = ApiError;
 
-    fn try_into(self) -> Result<StateEvent, Self::Err> {
+    fn try_into(self) -> Result<StateEvent, Self::Error> {
         let state_event = match EventType::from(self.event_type.as_ref()) {
             EventType::RoomAliases => StateEvent::RoomAliases(self.try_into()?),
             EventType::RoomAvatar => StateEvent::RoomAvatar(self.try_into()?),
@@ -442,9 +442,9 @@ impl TryInto<StateEvent> for Event {
 }
 
 impl TryInto<StrippedState> for Event {
-    type Err = ApiError;
+    type Error = ApiError;
 
-    fn try_into(self) -> Result<StrippedState, Self::Err> {
+    fn try_into(self) -> Result<StrippedState, Self::Error> {
         let stripped_state_event = match EventType::from(self.event_type.as_ref()) {
             EventType::RoomAliases => StrippedState::RoomAliases(self.try_into()?),
             EventType::RoomAvatar => StrippedState::RoomAvatar(self.try_into()?),

@@ -90,7 +90,7 @@ impl Handler for CreateRoom {
 
         let creation_options = CreationOptions {
             alias: create_room_request.room_alias_name,
-            federate: federate,
+            federate: Some(federate),
             initial_state: create_room_request.initial_state,
             invite_list: create_room_request.invite,
             name: create_room_request.name,

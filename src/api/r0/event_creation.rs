@@ -436,8 +436,8 @@ fn ensure_empty_state_key(state_key: &str, event_type: &EventType) -> Result<(),
 }
 
 /// Convert the JSON from the request into the correct type for the event's `content` field.
-fn extract_event_content<T: Deserialize>(event_content: Value, event_type: &EventType)
--> Result<T, ApiError> {
+fn extract_event_content<T>(event_content: Value, event_type: &EventType) -> Result<T, ApiError>
+where T: for<'de> Deserialize<'de> {
     from_value(event_content).map_api_err(|_| {
         ApiError::bad_event(
             format!(

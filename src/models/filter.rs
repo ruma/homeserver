@@ -134,11 +134,11 @@ impl ::serde::Serialize for EventFormat {
     }
 }
 
-impl ::serde::Deserialize for EventFormat {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
+impl<'de> ::serde::Deserialize<'de> for EventFormat {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         struct EventFormatVisitor;
 
-        impl Visitor for EventFormatVisitor {
+        impl<'de> Visitor<'de> for EventFormatVisitor {
             type Value = EventFormat;
 
             fn expecting(&self, formatter: &mut Formatter) -> FmtResult {

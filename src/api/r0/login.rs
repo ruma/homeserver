@@ -24,11 +24,11 @@ enum LoginType {
     Password,
 }
 
-impl Deserialize for LoginType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
+impl<'de> Deserialize<'de> for LoginType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         struct LoginTypeVisitor;
 
-        impl Visitor for LoginTypeVisitor {
+        impl<'de> Visitor<'de> for LoginTypeVisitor {
             type Value = LoginType;
 
             fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
@@ -43,7 +43,7 @@ impl Deserialize for LoginType {
             }
         }
 
-        deserializer.deserialize(LoginTypeVisitor)
+        deserializer.deserialize_any(LoginTypeVisitor)
     }
 }
 

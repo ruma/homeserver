@@ -38,7 +38,7 @@ pub struct CreationOptions {
     /// An initial alias for the room.
     pub alias: Option<String>,
     /// Whether or not the room should be federated.
-    pub federate: bool,
+    pub federate: Option<bool>,
     /// A list of state events to set in the new room.
     pub initial_state: Option<Vec<Box<StrippedState>>>,
     /// A list of users to invite to the room.

@@ -2,8 +2,7 @@
 use bodyparser;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
-use serde_json::de::from_str;
-use serde_json::value::ToJson;
+use serde_json::{from_str, to_value};
 
 use db::DB;
 use error::ApiError;
@@ -62,7 +61,7 @@ impl Handler for PostFilter {
 
         let connection = DB::from_request(request)?;
 
-        let id = Filter::create(&connection, user_id, filter.to_json().map_err(ApiError::from)?.to_string())?;
+        let id = Filter::create(&connection, user_id, to_value(&filter).map_err(ApiError::from)?.to_string())?;
 
         let response = PostFilterResponse {
             filter_id: id.to_string(),

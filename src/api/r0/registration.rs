@@ -51,11 +51,11 @@ struct RegistrationResponse {
 
 middleware_chain!(Register, [JsonRequest]);
 
-impl Deserialize for RegistrationKind {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer {
+impl<'de> Deserialize<'de> for RegistrationKind {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         struct RegistrationKindVisitor;
 
-        impl Visitor for RegistrationKindVisitor {
+        impl<'de> Visitor<'de> for RegistrationKindVisitor {
             type Value = RegistrationKind;
 
             fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
@@ -73,7 +73,7 @@ impl Deserialize for RegistrationKind {
             }
         }
 
-        deserializer.deserialize(RegistrationKindVisitor)
+        deserializer.deserialize_any(RegistrationKindVisitor)
     }
 }
 
