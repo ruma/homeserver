@@ -5,6 +5,7 @@ pub mod filter;
 pub mod presence_list;
 pub mod presence_status;
 pub mod profile;
+pub mod pusher;
 pub mod room;
 pub mod room_alias;
 pub mod room_membership;

@@ -98,7 +98,7 @@ impl Handler for GetAvatarUrl {
 pub struct PutAvatarUrl;
 
 #[derive(Clone, Debug, Deserialize)]
-struct PutAvatarUrlResquest {
+struct PutAvatarUrlRequest {
     /// The new avatar URL for this user.
     avatar_url: Option<String>,
 }
@@ -107,7 +107,7 @@ middleware_chain!(PutAvatarUrl, [JsonRequest, UserIdParam, AccessTokenAuth]);
 
 impl Handler for PutAvatarUrl {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let avatar_url_request = match request.get::<bodyparser::Struct<PutAvatarUrlResquest>>() {
+        let avatar_url_request = match request.get::<bodyparser::Struct<PutAvatarUrlRequest>>() {
             Ok(Some(avatar_url_request)) => avatar_url_request,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
@@ -232,7 +232,6 @@ impl Handler for PutDisplayName {
         Ok(Response::with(Status::Ok))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
