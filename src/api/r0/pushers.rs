@@ -9,7 +9,7 @@ use error::{ApiError, MapApiError};
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
 use models::pusher::{Pusher, PusherOptions};
 use models::user::User;
-use modifier::SerializableResponse;
+use modifier::{SerializableResponse, EmptyResponse};
 
 /// The GET `/pushers` endpoint.
 pub struct GetPushers;
@@ -71,7 +71,7 @@ impl Handler for SetPushers {
             }
         }
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 

@@ -11,7 +11,7 @@ use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomAliasIdParam};
 use models::room_alias::{RoomAlias, NewRoomAlias};
 use models::user::User;
-use modifier::SerializableResponse;
+use modifier::{SerializableResponse, EmptyResponse};
 
 /// The GET `/directory/room/:room_alias` endpoint.
 pub struct GetRoomAlias;
@@ -62,7 +62,7 @@ impl Handler for DeleteRoomAlias {
         let affected_rows = RoomAlias::delete(&connection, &room_alias_id, &user.id)?;
 
         if affected_rows > 0 {
-            Ok(Response::with((Status::Ok, "{}")))
+            Ok(Response::with(EmptyResponse(Status::Ok)))
         } else {
             Err(ApiError::not_found(
                 "Provided room alias did not exist or you do not have access to delete it.".to_string()

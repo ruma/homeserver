@@ -10,11 +10,11 @@ use config::Config;
 use db::DB;
 use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
-use modifier::SerializableResponse;
 use models::room_membership::RoomMembership;
 use models::presence_list::PresenceList;
 use models::presence_status::{PresenceStatus, get_now};
 use models::user::User;
+use modifier::{SerializableResponse, EmptyResponse};
 
 /// The PUT `/presence/:user_id/status` endpoint.
 pub struct PutPresenceStatus;
@@ -60,7 +60,7 @@ impl Handler for PutPresenceStatus {
             put_presence_status_request.status_msg
         )?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -172,7 +172,7 @@ impl Handler for PostPresenceList {
             put_presence_list_request.drop
         )?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 

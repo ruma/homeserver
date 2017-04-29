@@ -10,9 +10,9 @@ use serde_json::Value;
 use db::DB;
 use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, UserIdParam, TagParam};
-use modifier::SerializableResponse;
 use models::tags::RoomTag;
 use models::user::User;
+use modifier::{SerializableResponse, EmptyResponse};
 
 /// The GET `/user/:user_id/rooms/:room_id/tags` endpoint.
 pub struct GetTags;
@@ -81,7 +81,7 @@ impl Handler for PutTag {
 
         RoomTag::upsert(&connection, user_id, room_id, tag, content)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -110,7 +110,7 @@ impl Handler for DeleteTag {
 
         RoomTag::delete(&connection, user_id, room_id, tag)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 

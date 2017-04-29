@@ -4,6 +4,7 @@ use iron::status::Status;
 use db::DB;
 use middleware::{AccessTokenAuth, MiddlewareChain};
 use models::access_token::AccessToken;
+use modifier::EmptyResponse;
 
 /// The `/logout` endpoint.
 pub struct Logout;
@@ -19,7 +20,7 @@ impl Handler for Logout {
 
         access_token.revoke(&connection)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 

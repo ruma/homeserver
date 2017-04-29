@@ -17,7 +17,7 @@ use models::room::Room;
 use models::room_alias::RoomAlias;
 use models::room_membership::{RoomMembership, RoomMembershipOptions};
 use models::user::User;
-use modifier::SerializableResponse;
+use modifier::{SerializableResponse, EmptyResponse};
 
 
 /// The `/rooms/:room_id/join` endpoint.
@@ -139,7 +139,7 @@ impl Handler for LeaveRoom {
                             &connection,
                             &config.domain,
                             room_membership_options)?;
-                        Ok(Response::with(Status::Ok))
+                        Ok(Response::with(EmptyResponse(Status::Ok)))
                     },
                     "ban" => {
                         Err(ApiError::unauthorized("User is banned from the room".to_string()))?
@@ -216,7 +216,7 @@ impl Handler for KickFromRoom {
 
         kickee_membership.update(&connection, &config.domain, room_membership_options)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -318,7 +318,7 @@ impl Handler for InviteToRoom {
             }
         }?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 

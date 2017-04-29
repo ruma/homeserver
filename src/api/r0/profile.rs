@@ -10,7 +10,7 @@ use error::ApiError;
 use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
 use models::profile::{Profile as DataProfile};
 use models::user::User;
-use modifier::SerializableResponse;
+use modifier::{SerializableResponse, EmptyResponse};
 
 /// The `/profile/:user_id` endpoint.
 pub struct Profile;
@@ -138,7 +138,7 @@ impl Handler for PutAvatarUrl {
 
         DataProfile::update_memberships(&connection, &config.domain, user_id.clone())?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -229,7 +229,7 @@ impl Handler for PutDisplayName {
 
         DataProfile::update_memberships(&connection, &config.domain, user_id.clone())?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
