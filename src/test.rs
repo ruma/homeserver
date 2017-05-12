@@ -170,6 +170,12 @@ impl Test {
         Response::from_iron_response(response)
     }
 
+    /// Easy check for EmptyResponse modifier.
+    pub fn check_empty_response(&self, response: Response) {
+        assert_eq!(response.status, Status::Ok);
+        assert_eq!(response.body, "{}".to_string());
+    }
+
     /// Registers a new user account and returns the response of the API call.
     pub fn register_user(&self, body: &str) -> Response {
         self.post("/_matrix/client/r0/register", body)

@@ -24,6 +24,7 @@ use models::account_data::{
 };
 use models::room_membership::RoomMembership;
 use models::user::User;
+use modifier::EmptyResponse;
 
 /// The `/account/password` endpoint.
 #[derive(Debug)]
@@ -40,10 +41,10 @@ impl Handler for AccountPassword {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         let account_password_request = match request
             .get::<bodyparser::Struct<AccountPasswordRequest>>()
-        {
-            Ok(Some(account_password_request)) => account_password_request,
-            Ok(None) | Err(_) => Err(ApiError::not_json(None))?,
-        };
+            {
+                Ok(Some(account_password_request)) => account_password_request,
+                Ok(None) | Err(_) => Err(ApiError::not_json(None))?,
+            };
 
         let mut user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user")
@@ -56,7 +57,7 @@ impl Handler for AccountPassword {
         user.save_changes::<User>(&*connection)
             .map_err(|_| ApiError::unauthorized(None))?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -86,7 +87,7 @@ impl Handler for DeactivateAccount {
         AccountData::delete_by_uid(&connection, &user.id)?;
         RoomAccountData::delete_by_uid(&connection, &user.id)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -130,7 +131,7 @@ impl Handler for PutAccountData {
 
         AccountData::upsert(&connection, &new_data)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -195,7 +196,7 @@ impl Handler for PutRoomAccountData {
 
         RoomAccountData::upsert(&connection, &new_data)?;
 
-        Ok(Response::with(Status::Ok))
+        Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
 
@@ -209,19 +210,17 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        assert!(
-            test.post(
-                &format!("/_matrix/client/r0/account/password?access_token={}", user.token),
-                r#"{"new_password": "hidden"}"#
-            ).status.is_success()
+        let response = test.post(
+            &format!("/_matrix/client/r0/account/password?access_token={}", user.token),
+            r#"{"new_password": "hidden"}"#
         );
+        test.check_empty_response(response);
 
-        assert!(
-            test.post(
-                "/_matrix/client/r0/login",
-                format!(r#"{{"type": "m.login.password", "user": "{}", "password": "hidden"}}"#, user.name).as_str(),
-            ).status.is_success()
-        )
+        let response = test.post(
+            "/_matrix/client/r0/login",
+            format!(r#"{{"type": "m.login.password", "user": "{}", "password": "hidden"}}"#, user.name).as_str(),
+        );
+        assert_eq!(response.status, Status::Ok);
     }
 
     #[test]
@@ -232,13 +231,10 @@ mod tests {
         let login = format!(r#"{{"type": "m.login.password", "user": "{}", "password": "secret"}}"#, user.name);
         let deactivate = format!("/_matrix/client/r0/account/deactivate?access_token={}", user.token);
 
-        assert!(
-            test.post("/_matrix/client/r0/login", &login).status.is_success()
-        );
-
-        assert!(
-            test.post(&deactivate, r#"{}"#).status.is_success()
-        );
+        let response = test.post("/_matrix/client/r0/login", &login);
+        assert_eq!(response.status, Status::Ok);
+        let response = test.post(&deactivate, r#"{}"#);
+        test.check_empty_response(response);
 
         assert_eq!(
             test.post("/_matrix/client/r0/login", &login).status,
@@ -263,15 +259,13 @@ mod tests {
             user.id, data_type, user.token
         );
 
-        assert!(
-            test.put(&account_data_path, &content).status.is_success()
-        );
+        let response = test.put(&account_data_path, &content);
+        test.check_empty_response(response);
 
         let new_content = r#"{"email": "user@email.org", "phone": "123456789", "fax": "123456991"}"#;
 
-        assert!(
-            test.put(&account_data_path, &new_content).status.is_success()
-        );
+        let response = test.put(&account_data_path, &new_content);
+        test.check_empty_response(response);
     }
 
     #[test]
@@ -326,13 +320,16 @@ mod tests {
             user.id, room_id, data_type, user.token
         );
 
-        assert_eq!(test.join_room(&user.token, &room_id).status, Status::Ok);
+        let response = test.join_room(&user.token, &room_id);
+        assert_eq!(response.status, Status::Ok);
 
-        assert_eq!(test.put(&path, &content).status, Status::Ok);
+        let response = test.put(&path, &content);
+        test.check_empty_response(response);
 
         let new_content = r#"{"ui_color": "yellow", "show_nicknames": "true"}"#;
 
-        assert_eq!(test.put(&path, &new_content).status, Status::Ok);
+        let response = test.put(&path, &new_content);
+        test.check_empty_response(response);
     }
 
     #[test]
