@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            "Insufficient power level to invite"
+            "Insufficient power level to invite a user"
         );
     }
 

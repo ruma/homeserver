@@ -11,6 +11,7 @@ use router::Router;
 
 use api::r0::{
     AccountPassword,
+    BanFromRoom,
     CreateRoom,
     DeactivateAccount,
     DeleteRoomAlias,
@@ -23,6 +24,7 @@ use api::r0::{
     GetPushers,
     GetRoomAlias,
     GetTags,
+    ForgetRoom,
     InviteToRoom,
     JoinRoom,
     JoinRoomWithIdOrAlias,
@@ -47,6 +49,7 @@ use api::r0::{
     SetPushers,
     StateMessageEvent,
     Sync,
+    UnbanRoom,
     Versions,
 };
 use config::Config;
@@ -122,6 +125,9 @@ impl<'a> Server<'a> {
         r0_router.post("/join/:room_id_or_alias", JoinRoomWithIdOrAlias::chain(), "join_room_with_alias");
         r0_router.post("rooms/:room_id/kick", KickFromRoom::chain(), "kick_from_room");
         r0_router.post("rooms/:room_id/leave", LeaveRoom::chain(), "leave_room");
+        r0_router.post("rooms/:room_id/forget", ForgetRoom::chain(), "forget_room");
+        r0_router.post("rooms/:room_id/ban", BanFromRoom::chain(), "ban_room");
+        r0_router.post("rooms/:room_id/unban", UnbanRoom::chain(), "unban_room");
         r0_router.get("/rooms/:room_id/members", Members::chain(), "members");
         r0_router.get("/rooms/:room_id/state", RoomState::chain(), "get_room_state");
         r0_router.get("/profile/:user_id", Profile::chain(), "profile");

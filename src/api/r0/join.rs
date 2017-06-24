@@ -140,185 +140,193 @@ impl Handler for LeaveRoom {
                             &config.domain,
                             room_membership_options)?;
                         Ok(Response::with(EmptyResponse(Status::Ok)))
-                    },
+                    }
                     "ban" => {
                         Err(ApiError::unauthorized("User is banned from the room".to_string()))?
-                    },
+                    }
                     _ => Err(ApiError::unauthorized("Invalid membership state".to_string()))?,
                 }
-            },
+            }
             None => Err(ApiError::unauthorized("User not in room or uninvited".to_string()))?,
         }
     }
 }
 
-/// The `/rooms/:room_id/kick` endpoint.
-pub struct KickFromRoom;
+
+/// The `/rooms/:room_id/forget` endpoint.
+pub struct ForgetRoom;
+
+middleware_chain!(ForgetRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
+
+impl Handler for ForgetRoom {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        Ok(Response::with(EmptyResponse(Status::Ok)))
+    }
+}
+
 
 #[derive(Clone, Debug, Deserialize)]
-struct KickFromRoomRequest {
+struct SenderActionRoomRequest {
     /// The reason the user has been kicked.
+    #[serde(default)]
     pub reason: Option<String>,
     /// The fully qualified user ID of the user being kicked.
     pub user_id: UserId,
 }
 
-middleware_chain!(KickFromRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
+fn handle_membership(state: &str, request: &mut Request) -> IronResult<Response> {
+    let room_id = request.extensions.get::<RoomIdParam>()
+        .expect("RoomIdParam should ensure a room_id").clone();
 
-impl Handler for KickFromRoom {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a room_id").clone();
+    let sender = request.extensions.get::<User>()
+        .expect("AccessTokenAuth should ensure a user").clone();
+    let sender_id = sender.id;
+    let user_id = match request.get::<bodyparser::Struct<SenderActionRoomRequest>>() {
+        Ok(Some(req)) => req.user_id,
+        Ok(None) => Err(ApiError::bad_json(None))?,
+        Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
+    };
 
-        let kicker = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+    let connection = DB::from_request(request)?;
+    let config = Config::from_request(request)?;
 
-        let kickee_id = match request.get::<bodyparser::Struct<KickFromRoomRequest>>() {
-            Ok(Some(req)) => req.user_id,
-            Ok(None) => Err(ApiError::bad_json(None))?,
-            Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
-        };
-
-        let connection = DB::from_request(request)?;
-        let config = Config::from_request(request)?;
+    connection.transaction::<(), ApiError, _>(|| {
+        if User::find_active_user(&connection, &user_id)?.is_none() {
+            Err(ApiError::not_found(format!("The user {} was not found on this server", user_id)))?;
+        }
 
         let room = match Room::find(&connection, &room_id)? {
             Some(room) => room,
             None => Err(ApiError::unauthorized("The room was not found on this server".to_string()))?,
         };
 
-        match RoomMembership::find(&connection, &room_id, &kicker.id)? {
-            Some(ref membership) if membership.membership == "join" => { },
-            _ => Err(ApiError::unauthorized("The kicker is not currently in the room".to_string()))?,
-        };
+        if !RoomMembership::find(&connection, &room_id, &sender_id)?
+            .map(|m| m.membership == "join")
+            .unwrap_or(false) {
+            Err(ApiError::unauthorized("The sender is not currently in the room".to_string()))?
+        }
 
-        let mut kickee_membership = match RoomMembership::find(&connection, &room_id, &kickee_id)? {
-            Some(ref membership) if membership.membership == "join" => membership.clone(),
-            _ => Err(ApiError::unauthorized("The kickee is not currently in the room".to_string()))?,
-        };
+        let membership = RoomMembership::find(&connection, &room_id, &user_id)?;
 
         let power_levels = room.current_power_levels(&connection)?;
         let user_power_level = power_levels
             .users
-            .get(&kicker.id)
+            .get(&sender_id)
             .unwrap_or(&power_levels.users_default);
 
-        if power_levels.kick > *user_power_level {
-            Err(ApiError::unauthorized("Insufficient power level to kick a user".to_string()))?;
-        }
-
-        let room_membership_options = RoomMembershipOptions {
+        let mut room_membership_options = RoomMembershipOptions {
             room_id: room_id,
-            user_id: kickee_id,
-            sender: kicker.id,
-            membership: "leave".to_string(),
+            user_id: user_id,
+            sender: sender_id,
+            membership: state.to_string(),
         };
 
-        kickee_membership.update(&connection, &config.domain, room_membership_options)?;
+        match state {
+            "kick" => if power_levels.kick > *user_power_level {
+                Err(ApiError::unauthorized("Insufficient power level to kick a user".to_string()))?;
+            },
+            "ban" => if power_levels.ban > *user_power_level {
+                Err(ApiError::unauthorized("Insufficient power level to ban a user".to_string()))?;
+            },
+            "unban" => if power_levels.ban > *user_power_level {
+                Err(ApiError::unauthorized("Insufficient power level to unban a user".to_string()))?;
+            },
+            "invite" => if power_levels.invite > *user_power_level {
+                Err(ApiError::unauthorized("Insufficient power level to invite a user".to_string()))?;
+            },
+            _ => ()
+        };
 
-        Ok(Response::with(EmptyResponse(Status::Ok)))
+        match (state, membership) {
+            ("kick", Some(mut membership)) => {
+                room_membership_options.membership = "leave".to_string();
+                if membership.membership.as_str() == "join" {
+                    membership.update(&connection, &config.domain, room_membership_options)?;
+                } else {
+                    Err(ApiError::unauthorized("The user is not currently in the room".to_string()))?
+                }
+            }
+            ("ban", Some(mut membership)) => {
+                membership.update(&connection, &config.domain, room_membership_options)?;
+            }
+            ("unban", Some(mut membership)) => {
+                room_membership_options.membership = "leave".to_string();
+                if membership.membership.as_str() == "ban" {
+                    membership.update(&connection, &config.domain, room_membership_options)?;
+                } else {
+                    Err(ApiError::unauthorized("The user is not banned in the room".to_string()))?
+                }
+            }
+            ("invite", Some(mut membership)) => match membership.membership.as_ref() {
+                "invite" => (),
+                "ban" => Err(ApiError::unauthorized(
+                    "The invited user is banned from the room".to_string()
+                ))?,
+                "join" => Err(ApiError::unauthorized(
+                    "The invited user has already joined".to_string()
+                ))?,
+                _ => {
+                    membership.update(&connection, &config.domain, room_membership_options)?;
+                }
+            },
+            ("invite", None) => {
+                RoomMembership::create(&connection, &config.domain, room_membership_options)?;
+            }
+            (_, None) => {
+                Err(ApiError::unauthorized("The user is not currently in the room".to_string()))?
+            }
+            _ => ()
+        }
+        Ok(())
+    })?;
+    Ok(Response::with(EmptyResponse(Status::Ok)))
+}
+
+
+/// The `/rooms/:room_id/kick` endpoint.
+pub struct KickFromRoom;
+
+middleware_chain!(KickFromRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
+
+impl Handler for KickFromRoom {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        handle_membership("kick", request)
     }
 }
 
-/// The `/rooms/:room_id/invite` endpoint.
-#[derive(Debug)]
-pub struct InviteToRoom;
 
-#[derive(Clone, Debug, Deserialize)]
-struct InviteToRoomRequest {
-    /// The fully qualified user ID of the invitee.
-    pub user_id: UserId,
+/// The `/rooms/:room_id/ban` endpoint.
+pub struct BanFromRoom;
+
+middleware_chain!(BanFromRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
+
+impl Handler for BanFromRoom {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        handle_membership("ban", request)
+    }
 }
+
+
+/// The `/rooms/:room_id/invite` endpoint.
+pub struct InviteToRoom;
 
 middleware_chain!(InviteToRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for InviteToRoom {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a room_id").clone();
+        handle_membership("invite", request)
+    }
+}
 
-        let inviter = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
 
-        let invitee_id = match request.get::<bodyparser::Struct<InviteToRoomRequest>>() {
-            Ok(Some(req)) => req.user_id,
-            Ok(None) => Err(ApiError::missing_param("user_id"))?,
-            Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
-        };
+/// The `/rooms/:room_id/unban` endpoint.
+pub struct UnbanRoom;
 
-        let connection = DB::from_request(request)?;
-        let config = Config::from_request(request)?;
+middleware_chain!(UnbanRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
-        let invitee_membership = connection.transaction::<Option<RoomMembership>, ApiError, _>(|| {
-            if User::find_active_user(&connection, &invitee_id)?.is_none() {
-                return Err(
-                    ApiError::not_found(format!("The invited user {} was not found on this server", invitee_id))
-                );
-            }
-
-            if Room::find(&connection, &room_id)?.is_none() {
-                return Err(
-                    ApiError::unauthorized("The room was not found on this server".to_string())
-                );
-            }
-
-            let unauthorized_err = ApiError::unauthorized(
-                "The inviter hasn't joined the room yet".to_string()
-            );
-
-            // Check if the inviter has joined the room.
-            RoomMembership::find(&connection, &room_id, &inviter.id)
-                .and_then(|membership| match membership {
-                    Some(entry) => match entry.membership.as_ref() {
-                        "join" => Ok(()),
-                        _ => Err(unauthorized_err)
-                    },
-                    None => Err(unauthorized_err)
-                })?;
-
-            let membership = RoomMembership::find(&connection, &room_id, &invitee_id)?;
-
-            Ok(membership)
-        }).map_err(ApiError::from)?;
-
-        let new_membership_options = RoomMembershipOptions {
-            room_id: room_id,
-            user_id: invitee_id,
-            sender: inviter.id,
-            membership: "invite".to_string(),
-        };
-
-        match invitee_membership {
-            Some(mut entry) => match entry.membership.as_ref() {
-                "invite" => Ok(()),
-                "ban" => Err(ApiError::unauthorized(
-                    "The invited user is banned from the room".to_string()
-                )),
-                "join" => Err(ApiError::unauthorized(
-                    "The invited user has already joined".to_string()
-                )),
-                _ => {
-                    entry.update(
-                        &connection,
-                        &config.domain,
-                        new_membership_options
-                    )?;
-
-                    Ok(())
-                }
-            },
-            None => {
-                RoomMembership::create(
-                    &connection,
-                    &config.domain,
-                    new_membership_options
-                )?;
-
-                Ok(())
-            }
-        }?;
-
-        Ok(Response::with(EmptyResponse(Status::Ok)))
+impl Handler for UnbanRoom {
+    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+        handle_membership("unban", request)
     }
 }
 
@@ -377,7 +385,6 @@ mod tests {
         );
 
         let response = test.post(&room_join_path, r"{}");
-
         assert_eq!(response.status, Status::Ok);
         assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
@@ -395,7 +402,6 @@ mod tests {
         );
 
         let response = test.post(&room_join_path, r"{}");
-
         assert_eq!(response.status, Status::Ok);
         assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
@@ -412,7 +418,6 @@ mod tests {
         );
 
         let response = test.post(&room_join_path, r"{}");
-
         assert_eq!(response.status, Status::Ok);
         assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
@@ -433,7 +438,6 @@ mod tests {
         );
 
         let response = test.post(&room_join_path, r"{}");
-
         assert_eq!(response.status, Status::Ok);
         assert!(response.json().get("room_id").unwrap().as_str().is_some());
     }
@@ -451,7 +455,6 @@ mod tests {
         );
 
         let response = test.post(&room_join_path, r"{}");
-
         assert_eq!(response.status, Status::Forbidden);
     }
 
@@ -462,10 +465,9 @@ mod tests {
         let alice = test.create_user();
 
         let response = test.invite(&bob.token, &room_id, &alice.id);
-
         assert_eq!(response.status, Status::Ok);
 
-        assert!(test.join_room(&alice.token, &room_id).status.is_success());
+        assert_eq!(test.join_room(&alice.token, &room_id).status, Status::Ok);
     }
 
     #[test]
@@ -482,11 +484,10 @@ mod tests {
 
         // Bob invites Alice before joining.
         let response = test.invite(&bob.token, &room_id, &alice.id);
-
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            "The inviter hasn't joined the room yet"
+            "The sender is not currently in the room"
         );
     }
 
@@ -503,7 +504,6 @@ mod tests {
 
         // Empty body.
         let response = test.post(&invite_path, "{}");
-
         assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
@@ -514,11 +514,10 @@ mod tests {
 
         // User 'mark' does not exist.
         let response = test.invite(&carl.token, &room_id, "@mark:ruma.test");
-
         assert_eq!(response.status, Status::NotFound);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            "The invited user @mark:ruma.test was not found on this server"
+            "The user @mark:ruma.test was not found on this server"
         );
     }
 
@@ -528,7 +527,6 @@ mod tests {
         let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "private"}"#);
 
         let response = test.invite(&carl.token, &room_id, "mark.ruma.test");
-
         assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
@@ -543,7 +541,6 @@ mod tests {
             format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str());
 
         let response = test.invite(&bob.token, &room_id, &alice.id);
-
         assert_eq!(response.status, Status::Ok);
     }
 
@@ -560,7 +557,6 @@ mod tests {
         assert!(test.join_room(&alice.token, &room_id).status.is_success());
 
         let response = test.invite(&bob.token, &room_id, &alice.id);
-
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
@@ -601,7 +597,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", alice.id));
+            format!("The user {} has not joined the room", alice.id)
+        );
     }
 
     #[test]
@@ -665,7 +662,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", bob.id));
+            format!("The user {} has not joined the room", bob.id)
+        );
     }
 
     #[test]
@@ -693,7 +691,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", bob.id));
+            format!("The user {} has not joined the room", bob.id)
+        );
     }
 
     #[test]
@@ -718,7 +717,6 @@ mod tests {
         );
 
         let response = test.send_message(&bob.token, &room_id, "Hi", 2);
-
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
             format!("The user {} has not joined the room", &bob.id)
@@ -743,7 +741,6 @@ mod tests {
         );
 
         let response = test.kick_from_room(&bob.token, &room_id, &alice.id, None);
-
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
@@ -768,7 +765,6 @@ mod tests {
         );
 
         let response = test.kick_from_room(&alice.token, "!invalid_room:ruma.test", &bob.id, None);
-
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
@@ -787,11 +783,10 @@ mod tests {
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
         let response = test.kick_from_room(&bob.token, &room_id, &carl.id, None);
-
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            "The kicker is not currently in the room"
+            "The sender is not currently in the room"
         );
     }
 
@@ -805,11 +800,10 @@ mod tests {
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
         let response = test.kick_from_room(&alice.token, &room_id, &bob.id, None);
-
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            "The kickee is not currently in the room"
+            "The user is not currently in the room"
         );
     }
 }
