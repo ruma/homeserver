@@ -1,6 +1,6 @@
 [package]
 authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
-description = "A Matrix homeserver client API."
+description = "A Matrix homeserver."
 documentation = "https://ruma.io"
 homepage = "https://ruma.io"
 keywords = ["matrix", "chat", "messaging", "ruma"]
@@ -9,6 +9,10 @@ name = "ruma"
 readme = "README.md"
 repository = "https://github.com/ruma/ruma"
 version = "0.1.0"
+
+[[bin]]
+doc = false
+name = "ruma"
 
 [dependencies]
 argon2rs = "0.2.5"

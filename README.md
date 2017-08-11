@@ -109,7 +109,7 @@ The complete list of attributes in the configuration is as follows:
 
 ```
 ruma 0.1.0
-A Matrix homeserver client API
+A Matrix homeserver.
 
 USAGE:
     ruma [FLAGS] [SUBCOMMAND]
