@@ -134,14 +134,6 @@ Ruma includes an HTTP endpoint to serve [Swagger](http://swagger.io/) data at ht
 Point a copy of [Swagger UI](https://github.com/swagger-api/swagger-ui) at this URL to see complete documentation for the Matrix client API.
 Note that Ruma does not actually implement all these API endpoints yet.
 
-If you don't need this functionality, you can create a smaller `ruma` binary by building Ruma by running:
-
-``` bash
-cargo build --no-default-features
-```
-
-The Swagger endpoint is compiled conditionally when the "swagger" Cargo feature is enabled.
-
 ## Contributing
 
 See the [CONTRIBUTING](CONTRIBUTING.md) document.

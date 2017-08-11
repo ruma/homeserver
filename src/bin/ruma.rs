@@ -11,14 +11,14 @@ use ruma::server::Server;
 fn main() {
     env_logger::init().expect("Failed to initialize logger.");
 
-    let matches = App::new(env!("CARGO_PKG_NAME"))
+    let matches = App::new("ruma")
         .version(env!("CARGO_PKG_VERSION"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
+        .about("A Matrix homeserver.")
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("run")
-                .about("Runs the Ruma server")
+                .about("Runs the server")
                 .arg(Arg::with_name("config")
                      .short("c")
                      .long("config")

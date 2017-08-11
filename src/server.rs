@@ -54,7 +54,7 @@ use embedded_migrations::run as run_pending_migrations;
 use error::{ApiError, CliError};
 use db::DB;
 use middleware::{ResponseHeaders, MiddlewareChain};
-use swagger::mount_swagger;
+use swagger::Swagger;
 
 /// Ruma's web server.
 pub struct Server<'a> {
@@ -171,8 +171,7 @@ impl<'a> Server<'a> {
 
         mount.mount("/_matrix/client/", versions);
         mount.mount("/_matrix/client/r0/", r0);
-
-        mount_swagger(&mut mount);
+        mount.mount("/ruma/swagger.json", Swagger::chain());
 
         Ok(Server {
             config: ruma_config,
