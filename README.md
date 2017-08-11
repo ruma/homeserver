@@ -4,14 +4,13 @@
 
 **Ruma** is a [Matrix](https://matrix.org/) homeserver written in [Rust](https://www.rust-lang.org/).
 
-If you're interested in the project, please follow [ruma_io](https://twitter.com/ruma_io) on Twitter and join us in [#ruma:matrix.org](https://matrix.to/#/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
+If you're interested in the project, please take a look at the [Ruma website](https://www.ruma.io/), follow [ruma_io](https://twitter.com/ruma_io) on Twitter and chat with us in [#ruma:matrix.org](https://matrix.to/#/#ruma:matrix.org) on Matrix (also accessible via [#ruma](https://webchat.freenode.net/?channels=ruma) on the freenode IRC network.)
 
 ## Status
 
 The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix identity server, a Matrix client library, and Matrix application services.
-This repository in particular aims to implement the client API of a Matrix homeserver.
-The homeserver federation API lives at [ruma/ruma-federation](https://github.com/ruma/ruma-federation), but will not be actively developed until the federation API specification has stabilized and the client API is in a practically useful state.
-This separation of the two homeserver APIs allows users to run a private homeserver without federation if they choose, and to scale the infrastructure for their client and federation APIs separately if they choose to participate in a larger Matrix network.
+This repository in particular aims to implement a Matrix homeserver.
+The Ruma homeserver will be packaged as a single executable for small-scale deployments, and as multiple executables for large deployments that need to scale different parts of the homeserver independently.
 Additional Matrix libraries used by Ruma can be found in the [Ruma organization on GitHub](https://github.com/ruma).
 
 Ruma is currently pre-alpha and cannot realistically be used from a standard Matrix client, but it's getting closer every week!
