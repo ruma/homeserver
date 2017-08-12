@@ -340,15 +340,60 @@ impl Test {
         room_id: &str,
         event_type: &str,
         event_content: &str,
+        state_key: Option<&str>,
     ) -> Response {
-        let state_event_path = format!(
-            "/_matrix/client/r0/rooms/{}/state/{}?access_token={}",
-            room_id,
-            event_type,
-            access_token
-        );
+        let state_event_path = match state_key {
+            Some(state_key) => {
+                format!(
+                    "/_matrix/client/r0/rooms/{}/state/{}/{}?access_token={}",
+                    room_id,
+                    event_type,
+                    state_key,
+                    access_token
+                )
+            },
+            None => {
+                format!(
+                    "/_matrix/client/r0/rooms/{}/state/{}?access_token={}",
+                    room_id,
+                    event_type,
+                    access_token
+                )
+            }
+        };
 
         self.put(&state_event_path, &event_content)
+    }
+
+    /// Get a state event content from a room given its type.
+    pub fn get_state_event(
+        &self,
+        access_token: &str,
+        room_id: &str,
+        event_type: &str,
+        state_key: Option<&str>,
+    ) -> Response {
+        let state_event_path = match state_key {
+            Some(state_key) => {
+                format!(
+                    "/_matrix/client/r0/rooms/{}/state/{}/{}?access_token={}",
+                    room_id,
+                    event_type,
+                    state_key,
+                    access_token,
+                )
+            },
+            None => {
+                format!(
+                    "/_matrix/client/r0/rooms/{}/state/{}?access_token={}",
+                    room_id,
+                    event_type,
+                    access_token,
+                )
+            }
+        };
+
+        self.get(&state_event_path)
     }
 
     /// Create a User and Room.

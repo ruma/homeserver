@@ -22,6 +22,7 @@ use api::r0::{
     GetPresenceStatus,
     GetPushers,
     GetRoomAlias,
+    GetStateEvent,
     GetTags,
     InviteToRoom,
     JoinRoom,
@@ -144,6 +145,12 @@ impl<'a> Server<'a> {
         r0_router.post("rooms/:room_id/leave", LeaveRoom::chain(), "leave_room");
         r0_router.get("/rooms/:room_id/members", Members::chain(), "members");
         r0_router.get("/rooms/:room_id/state", RoomState::chain(), "get_room_state");
+        r0_router.get("/rooms/:room_id/state/:event_type", GetStateEvent::chain(), "get_state_event");
+        r0_router.get(
+            "/rooms/:room_id/state/:event_type/:state_key",
+            GetStateEvent::chain(),
+            "get_state_event_with_key"
+        );
         r0_router.get("/profile/:user_id", Profile::chain(), "profile");
         r0_router.get("/profile/:user_id/avatar_url", GetAvatarUrl::chain(), "get_avatar_url");
         r0_router.get("/profile/:user_id/displayname", GetDisplayName::chain(), "get_display_name");

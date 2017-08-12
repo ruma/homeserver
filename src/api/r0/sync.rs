@@ -387,7 +387,8 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.topic",
-            r#"{ "topic": "Updated Topic" }"#
+            r#"{ "topic": "Updated Topic" }"#,
+            None
         );
         assert_eq!(response.status, Status::Ok);
 
@@ -526,7 +527,8 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.name",
-            r#"{ "name": "Updated Name" }"#
+            r#"{ "name": "Updated Name" }"#,
+            None
         );
         assert_eq!(room_name_event_response.status, Status::Ok);
 
@@ -599,7 +601,8 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.topic",
-            r#"{ "topic": "New Topic" }"#
+            r#"{ "topic": "New Topic" }"#,
+            None
         );
         assert_eq!(response.status, Status::Ok);
 
@@ -643,7 +646,8 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.topic",
-            r#"{ "topic": "Another Topic" }"#
+            r#"{ "topic": "Another Topic" }"#,
+            None
         );
         assert_eq!(response.status, Status::Ok);
 
