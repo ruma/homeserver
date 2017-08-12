@@ -12,5 +12,5 @@ doc:
 
 .PHONY: ci
 ci:
-	@script/cargo build -v
+	@script/cargo build --all -v
 	@script/cargo test -v
