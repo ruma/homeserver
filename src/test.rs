@@ -120,7 +120,7 @@ impl Test {
             .connection_customizer(Box::new(TestTransactionConnectionCustomizer))
             .build();
 
-        let server = match Server::with_options(&config, r2d2_config, false) {
+        let server = match Server::new(&config).mount_all_with_options(r2d2_config, false) {
             Ok(server) => server,
             Err(error) => panic!("Failed to create Iron server: {}", error),
         };

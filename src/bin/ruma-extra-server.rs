@@ -5,7 +5,6 @@ extern crate ruma;
 use clap::{App, AppSettings, Arg, SubCommand};
 
 use ruma::config::Config;
-use ruma::crypto::generate_macaroon_secret_key;
 use ruma::server::Server;
 
 fn main() {
@@ -13,9 +12,9 @@ fn main() {
         eprintln!("Failed to initialize logger: {}", error);
     }
 
-    let matches = App::new("ruma")
+    let matches = App::new("ruma-extra-server")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A Matrix homeserver.")
+        .about("Extra APIs for Ruma.")
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
@@ -27,10 +26,6 @@ fn main() {
                      .value_name("PATH")
                      .help("Path to a configuration file")
                      .takes_value(true))
-        )
-        .subcommand(
-            SubCommand::with_name("secret")
-                .about("Generates a random value to be used as a macaroon secret key")
         )
         .get_matches();
 
@@ -45,23 +40,12 @@ fn main() {
                 }
             };
 
-            match Server::new(&config).mount_all() {
-                Ok(server) => {
-                    if let Err(error) = server.run() {
-                        eprintln!("{}", error);
-                    }
-                },
-                Err(error) => {
-                    eprintln!("Failed to create server: {}", error);
+            let server = Server::new(&config).mount_extra();
 
-                    return;
-                }
+            if let Err(error) = server.run() {
+                eprintln!("Server failed: {}", error);
             }
         }
-        ("secret", Some(_)) => match generate_macaroon_secret_key() {
-            Ok(key) => println!("{}", key),
-            Err(error) => eprintln!("Failed to generate macaroon secret key: {}", error),
-        },
         _ => println!("{}", matches.usage()),
     };
 }

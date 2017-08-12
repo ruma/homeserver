@@ -64,18 +64,38 @@ pub struct Server<'a> {
 
 impl<'a> Server<'a> {
     /// Create a new `Server` from a `Config`.
-    pub fn new(config: &Config)
-    -> Result<Server, CliError> {
-        Server::with_options(config, R2D2Config::default(), true)
+    pub fn new(config: &'a Config) -> Self {
+        Server {
+            config,
+            mount: Mount::new(),
+        }
     }
 
-    /// Create a new `Server` from a `Config`, an `r2d2::Config`, and the ability to disable
-    /// database creation and setup.
-    pub fn with_options(
-        ruma_config: &Config,
+    /// Mount all APIs.
+    pub fn mount_all(self) -> Result<Self, CliError> {
+        self.mount_extra().mount_client()
+    }
+
+    /// Mount all APIs with some extra options.
+    pub fn mount_all_with_options(
+        self,
         r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
         set_up_db: bool,
-    ) -> Result<Server, CliError> {
+    ) -> Result<Self, CliError> {
+        self.mount_extra().mount_client_with_options(r2d2_config, set_up_db)
+    }
+
+    /// Mount the client APIs.
+    pub fn mount_client(self) -> Result<Self, CliError> {
+        self.mount_client_with_options(R2D2Config::default(), true)
+    }
+
+    /// Mount the client APIs with some extra options.
+    pub fn mount_client_with_options(
+        mut self,
+        r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
+        set_up_db: bool,
+    ) -> Result<Self, CliError> {
         let mut r0_router = Router::new();
 
         r0_router.post("/account/password", AccountPassword::chain(), "account_password");
@@ -145,7 +165,7 @@ impl<'a> Server<'a> {
         let mut r0 = Chain::new(r0_router);
 
         debug!("Connecting to PostgreSQL.");
-        let connection_pool = DB::create_connection_pool(r2d2_config, &ruma_config.postgres_url)?;
+        let connection_pool = DB::create_connection_pool(r2d2_config, &self.config.postgres_url)?;
         let connection = connection_pool.get()?;
 
         if set_up_db {
@@ -156,7 +176,7 @@ impl<'a> Server<'a> {
             run_pending_migrations(&*connection).map_err(CliError::from)?;
         }
 
-        r0.link_before(Read::<Config>::one(ruma_config.clone()));
+        r0.link_before(Read::<Config>::one(self.config.clone()));
         r0.link_before(Write::<DB>::one(connection_pool));
         r0.link_after(ResponseHeaders);
 
@@ -167,16 +187,17 @@ impl<'a> Server<'a> {
         let mut versions = Chain::new(versions_router);
         versions.link_after(ResponseHeaders);
 
-        let mut mount = Mount::new();
+        self.mount.mount("/_matrix/client/", versions);
+        self.mount.mount("/_matrix/client/r0/", r0);
 
-        mount.mount("/_matrix/client/", versions);
-        mount.mount("/_matrix/client/r0/", r0);
-        mount.mount("/ruma/swagger.json", Swagger::chain());
+        Ok(self)
+    }
 
-        Ok(Server {
-            config: ruma_config,
-            mount: mount,
-        })
+    /// Mount the extra APIs.
+    pub fn mount_extra(mut self) -> Self {
+        self.mount.mount("/ruma/swagger.json", Swagger::chain());
+
+        self
     }
 
     /// Run the server and block the current thread until stopped or interrupted.

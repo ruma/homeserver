@@ -13,9 +13,9 @@ fn main() {
         eprintln!("Failed to initialize logger: {}", error);
     }
 
-    let matches = App::new("ruma")
+    let matches = App::new("ruma-client-server")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("A Matrix homeserver.")
+        .about("Client-server APIs for Ruma.")
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
@@ -45,10 +45,10 @@ fn main() {
                 }
             };
 
-            match Server::new(&config).mount_all() {
+            match Server::new(&config).mount_client() {
                 Ok(server) => {
                     if let Err(error) = server.run() {
-                        eprintln!("{}", error);
+                        eprintln!("Server failed: {}", error);
                     }
                 },
                 Err(error) => {
@@ -60,8 +60,9 @@ fn main() {
         }
         ("secret", Some(_)) => match generate_macaroon_secret_key() {
             Ok(key) => println!("{}", key),
-            Err(error) => eprintln!("Failed to generate macaroon secret key: {}", error),
+            Err(error) => println!("Failed to generate macaroon secret key: {}", error),
         },
         _ => println!("{}", matches.usage()),
     };
 }
+

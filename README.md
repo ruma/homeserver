@@ -27,14 +27,14 @@ To install Docker, see the installation instructions for [OS X](https://docs.doc
 
 Cargo is the main entrypoint for development.
 Use the `script/cargo` shell script as you would normally use plain `cargo`.
-This will run the Cargo command inside a Docker container that has  Rust and other dependencies already installed.
+This will run the Cargo command inside a Docker container that has Rust and other dependencies already installed.
 It will automatically start a PostgreSQL database inside a container as well.
 The first time you run a command with `script/cargo`, it will take some time to download the Docker images.
 
-To build Ruma, run `script/cargo build`.
+To build Ruma, run `script/cargo build --bin ruma`.
 The application will be written to `target/debug/ruma`.
-You can also build and run Ruma in one step with `script/cargo run`.
-(When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `script/cargo run -- run`.)
+You can also build and run Ruma in one step with `script/cargo run --bin ruma`.
+(When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `script/cargo run --bin ruma -- run`.)
 
 ### Nightly Rust
 
