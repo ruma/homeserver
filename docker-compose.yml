@@ -1,17 +1,21 @@
 version: "2"
 services:
   rust:
-    image: "rumaio/ruma-dev@sha256:d8922e6789e75cc042a334d01f43df512a043f4f5a207448879b460904a84940"
+    build: "."
+    image: "rumaio/ruma-dev"
     links:
       - "postgres"
     volumes:
       - ".:/source"
-      - "cargo_git:/root/.cargo/git"
-      - "cargo_registry:/root/.cargo/registry"
+      - "cargo_git:/usr/local/cargo/git"
+      - "cargo_registry:/usr/local/cargo/registry"
   postgres:
     image: "postgres"
     environment:
       - "POSTGRES_PASSWORD=test"
+    volumes:
+      - "pg:/var/lib/postgresql/data"
 volumes:
   cargo_git: {}
   cargo_registry: {}
+  pg: {}
