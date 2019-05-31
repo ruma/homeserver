@@ -20,7 +20,7 @@ For a detailed view of which Matrix APIs are supported by Ruma so far, see the [
 ## Development
 
 Ruma includes a development setup using [Docker](https://www.docker.com/).
-To install Docker, see the installation instructions for [OS X](https://docs.docker.com/mac/), [Linux](https://docs.docker.com/linux/), or [Windows](https://docs.docker.com/windows/).
+To install Docker, see the installation instructions for [OS X](https://docs.docker.com/docker-for-mac/), [Linux](https://docs.docker.com/install/), or [Windows](https://docs.docker.com/docker-for-windows/).
 (Note that both Docker and Docker Compose are needed, but the standard ways of installing include both.)
 
 **Note**: `docker-compose` version 1.6 or higher and `docker-engine` version 1.10.0 or higher are required.
@@ -36,26 +36,15 @@ The application will be written to `target/debug/ruma`.
 You can also build and run Ruma in one step with `script/cargo run --bin ruma`.
 (When run via Cargo, arguments to `ruma` itself must come after two dashes, e.g. `script/cargo run --bin ruma -- run`.)
 
-### Nightly Rust
+## Minimum Rust version
 
-Ruma currently requires the nightly version of Rust because it uses the following unstable features, listed below with links to the GitHub issues tracking stabilization:
-
-* [`try_from`](https://github.com/rust-lang/rust/issues/33417)
-
-When all of these features are stabilized, Ruma will target stable Rust.
+Ruma requires Rust 1.34 or later.
 
 ### Developing without Docker
 
-Docker is used to make everyone's life easier by pinning a compatible version of nightly Rust and managing test PostgreSQL databases without assuming anything about the host system.
+Docker is used to make everyone's life easier including packaging Rust along with Ruma's other dependencies, and managing test PostgreSQL databases, all without assuming anything about the host system.
 If you really want to avoid Docker, it's up to you to configure your development environment to match the assumptions made by code in Ruma.
-In particular, this means a version of the nightly Rust compiler that can compile Ruma given the current Cargo.lock and a PostgreSQL installation with suitable permissions available at the address and port used in `src/test.rs`.
-You can find the version of nightly Rust used in the Docker setup by looking at the Dockerfile for Ruma's [development Docker image](https://github.com/ruma/docker-ruma-dev).
-Look at the line that installs rustup for the date.
-It will look something like this:
-
-``` bash
-./rustup-init -y --no-modify-path --default-toolchain nightly-YYYY-MM-DD
-```
+In particular, this means at least the minimum version of Rust, all the system-level dependencies such as libsodium, and a PostgreSQL installation with suitable permissions available at the address and port used in `src/test.rs`.
 
 ## Documentation
 
