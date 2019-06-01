@@ -7,19 +7,12 @@ mod path_params;
 mod response_headers;
 
 pub use self::authentication::{AccessTokenAuth, UIAuth};
-pub use self::response_headers::ResponseHeaders;
 pub use self::json::JsonRequest;
 pub use self::path_params::{
-    DataTypeParam,
-    EventTypeParam,
-    FilterIdParam,
-    RoomIdParam,
-    RoomAliasIdParam,
-    RoomIdOrAliasParam,
-    UserIdParam,
-    TagParam,
-    TransactionIdParam,
+    DataTypeParam, EventTypeParam, FilterIdParam, RoomAliasIdParam, RoomIdOrAliasParam,
+    RoomIdParam, TagParam, TransactionIdParam, UserIdParam,
 };
+pub use self::response_headers::ResponseHeaders;
 
 /// `middleware_chain!(JoinRoom, []);`
 #[macro_export]

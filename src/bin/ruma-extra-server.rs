@@ -18,14 +18,14 @@ fn main() {
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            SubCommand::with_name("run")
-                .about("Runs the server")
-                .arg(Arg::with_name("config")
-                     .short("c")
-                     .long("config")
-                     .value_name("PATH")
-                     .help("Path to a configuration file")
-                     .takes_value(true))
+            SubCommand::with_name("run").about("Runs the server").arg(
+                Arg::with_name("config")
+                    .short("c")
+                    .long("config")
+                    .value_name("PATH")
+                    .help("Path to a configuration file")
+                    .takes_value(true),
+            ),
         )
         .get_matches();
 

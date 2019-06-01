@@ -2,10 +2,10 @@
 
 use std::collections::HashSet;
 
-use diesel::prelude::*;
 use diesel::dsl::any;
-use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use iron::typemap::Key;
 use ruma_identifiers::UserId;
@@ -48,16 +48,18 @@ impl User {
         new_user: &NewUser,
         macaroon_secret_key: &[u8],
     ) -> Result<(User, AccessToken), ApiError> {
-        connection.transaction::<(User, AccessToken), ApiError, _>(|| {
-            let user: User = diesel::insert_into(users::table)
-                .values(new_user)
-                .get_result(connection)
-                .map_err(ApiError::from)?;
+        connection
+            .transaction::<(User, AccessToken), ApiError, _>(|| {
+                let user: User = diesel::insert_into(users::table)
+                    .values(new_user)
+                    .get_result(connection)
+                    .map_err(ApiError::from)?;
 
-            let access_token = AccessToken::create(connection, &user.id, macaroon_secret_key)?;
+                let access_token = AccessToken::create(connection, &user.id, macaroon_secret_key)?;
 
-            Ok((user, access_token))
-        }).map_err(ApiError::from)
+                Ok((user, access_token))
+            })
+            .map_err(ApiError::from)
     }
 
     /// Verify that a `User` with the given `UserId` and plaintext password exists.
@@ -69,23 +71,24 @@ impl User {
         match User::find_active_user(connection, id)? {
             Some(user) => {
                 if !verify_password(user.password_hash.as_bytes(), plaintext_password)? {
-                    return Err(ApiError::unauthorized("Invalid credentials".to_string()))
+                    return Err(ApiError::unauthorized("Invalid credentials".to_string()));
                 }
 
                 Ok(user)
-            },
-            None => {
-                Err(ApiError::not_found(format!("The user {} was not found on this server", id)))
             }
+            None => Err(ApiError::not_found(format!(
+                "The user {} was not found on this server",
+                id
+            ))),
         }
     }
 
     /// Look up a registered `User` using the given `UserId`.
-    pub fn find_registered_user(connection: &PgConnection, id: &UserId)
-    -> Result<Option<User>, ApiError> {
-        let result = users::table
-            .find(id)
-            .get_result(connection);
+    pub fn find_registered_user(
+        connection: &PgConnection,
+        id: &UserId,
+    ) -> Result<Option<User>, ApiError> {
+        let result = users::table.find(id).get_result(connection);
 
         match result {
             Ok(user) => Ok(Some(user)),
@@ -97,11 +100,13 @@ impl User {
     /// Look up an active `User` using the given `UserId`.
     ///
     /// A user stops being active when he deactivates his account.
-    pub fn find_active_user(connection: &PgConnection, id: &UserId)
-    -> Result<Option<User>, ApiError> {
+    pub fn find_active_user(
+        connection: &PgConnection,
+        id: &UserId,
+    ) -> Result<Option<User>, ApiError> {
         match User::find_registered_user(connection, id)? {
             Some(ref user) if user.active => Ok(Some(user.clone())),
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
 
@@ -120,10 +125,8 @@ impl User {
         connection: &PgConnection,
         user_ids: &[UserId],
     ) -> Result<Vec<UserId>, ApiError> {
-        let possible_missing_user_ids: HashSet<UserId> = user_ids
-            .iter()
-            .map(UserId::clone)
-            .collect();
+        let possible_missing_user_ids: HashSet<UserId> =
+            user_ids.iter().map(UserId::clone).collect();
 
         let users: Vec<UserId> = users::table
             .filter(users::id.eq(any(user_ids)))
@@ -131,10 +134,7 @@ impl User {
             .get_results(connection)
             .map_err(ApiError::from)?;
 
-        let loaded_user_ids: HashSet<UserId> = users
-            .iter()
-            .map(UserId::clone)
-            .collect();
+        let loaded_user_ids: HashSet<UserId> = users.iter().map(UserId::clone).collect();
 
         let missing_user_ids: Vec<UserId> = possible_missing_user_ids
             .difference(&loaded_user_ids)

@@ -2,10 +2,7 @@
 
 use argon2rs::verifier::Encoded;
 use base64::encode;
-use rand::{
-    RngCore,
-    rngs::OsRng,
-};
+use rand::{rngs::OsRng, RngCore};
 
 use crate::error::{ApiError, CliError};
 
@@ -28,8 +25,7 @@ pub fn hash_password(password: &str) -> Result<String, ApiError> {
 }
 
 /// Verifies a password with Argon2.
-pub fn verify_password(encoded_hash: &[u8], plaintext_password: &str)
--> Result<bool, ApiError> {
+pub fn verify_password(encoded_hash: &[u8], plaintext_password: &str) -> Result<bool, ApiError> {
     let encoded = Encoded::from_u8(encoded_hash).map_err(ApiError::from)?;
 
     Ok(encoded.verify(plaintext_password.as_bytes()))

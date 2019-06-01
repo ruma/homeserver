@@ -1,26 +1,18 @@
 //! Endpoints for accounts.
 use bodyparser;
 use diesel::prelude::*;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 
 use crate::crypto::hash_password;
 use crate::db::DB;
 use crate::error::ApiError;
 use crate::middleware::{
-    AccessTokenAuth,
-    DataTypeParam,
-    JsonRequest,
-    MiddlewareChain,
-    RoomIdParam,
-    UserIdParam,
+    AccessTokenAuth, DataTypeParam, JsonRequest, MiddlewareChain, RoomIdParam, UserIdParam,
 };
 use crate::models::access_token::AccessToken;
 use crate::models::account_data::{
-    AccountData,
-    NewAccountData,
-    RoomAccountData,
-    NewRoomAccountData,
+    AccountData, NewAccountData, NewRoomAccountData, RoomAccountData,
 };
 use crate::models::room_membership::RoomMembership;
 use crate::models::user::User;
@@ -39,14 +31,15 @@ middleware_chain!(AccountPassword, [AccessTokenAuth]);
 
 impl Handler for AccountPassword {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let account_password_request = match request
-            .get::<bodyparser::Struct<AccountPasswordRequest>>()
-            {
+        let account_password_request =
+            match request.get::<bodyparser::Struct<AccountPasswordRequest>>() {
                 Ok(Some(account_password_request)) => account_password_request,
                 Ok(None) | Err(_) => Err(ApiError::not_json(None))?,
             };
 
-        let mut user = request.extensions.get::<User>()
+        let mut user = request
+            .extensions
+            .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
             .clone();
 
@@ -72,13 +65,17 @@ impl Handler for DeactivateAccount {
         let connection = DB::from_request(request)?;
 
         {
-            let token = request.extensions.get_mut::<AccessToken>()
+            let token = request
+                .extensions
+                .get_mut::<AccessToken>()
                 .expect("AccessTokenAuth should ensure an access token");
 
             token.revoke(&connection)?;
         }
 
-        let user = request.extensions.get_mut::<User>()
+        let user = request
+            .extensions
+            .get_mut::<User>()
             .expect("AccessTokenAuth should ensure a user");
 
         user.deactivate(&connection)?;
@@ -95,26 +92,38 @@ impl Handler for DeactivateAccount {
 #[derive(Debug)]
 pub struct PutAccountData;
 
-middleware_chain!(PutAccountData, [JsonRequest, UserIdParam, DataTypeParam, AccessTokenAuth]);
+middleware_chain!(
+    PutAccountData,
+    [JsonRequest, UserIdParam, DataTypeParam, AccessTokenAuth]
+);
 
 impl Handler for PutAccountData {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                "The given user_id does not correspond to the authenticated user".to_string()
+                "The given user_id does not correspond to the authenticated user".to_string(),
             );
 
             return Err(IronError::from(error));
         }
 
-        let data_type = request.extensions.get::<DataTypeParam>()
-            .expect("DataTypeParam should ensure a data type").clone();
+        let data_type = request
+            .extensions
+            .get::<DataTypeParam>()
+            .expect("DataTypeParam should ensure a data type")
+            .clone();
 
         let content = match request.get::<bodyparser::Json>() {
             Ok(Some(content)) => content.to_string().clone(),
@@ -139,26 +148,44 @@ impl Handler for PutAccountData {
 #[derive(Debug)]
 pub struct PutRoomAccountData;
 
-middleware_chain!(PutRoomAccountData, [JsonRequest, UserIdParam, RoomIdParam, DataTypeParam, AccessTokenAuth]);
+middleware_chain!(
+    PutRoomAccountData,
+    [
+        JsonRequest,
+        UserIdParam,
+        RoomIdParam,
+        DataTypeParam,
+        AccessTokenAuth
+    ]
+);
 
 impl Handler for PutRoomAccountData {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                "The given user_id does not correspond to the authenticated user".to_string()
+                "The given user_id does not correspond to the authenticated user".to_string(),
             );
 
             return Err(IronError::from(error));
         }
 
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a RoomId").clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a RoomId")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
@@ -166,9 +193,7 @@ impl Handler for PutRoomAccountData {
         let entry = RoomMembership::find(&connection, &room_id, &user_id)?;
 
         if entry.is_none() {
-            let error = ApiError::unauthorized(
-                "No membership entry was found.".to_string()
-            );
+            let error = ApiError::unauthorized("No membership entry was found.".to_string());
 
             return Err(IronError::from(error));
         }
@@ -179,8 +204,11 @@ impl Handler for PutRoomAccountData {
             return Err(IronError::from(error));
         }
 
-        let data_type = request.extensions.get::<DataTypeParam>()
-            .expect("DataTypeParam should ensure a data type").clone();
+        let data_type = request
+            .extensions
+            .get::<DataTypeParam>()
+            .expect("DataTypeParam should ensure a data type")
+            .clone();
 
         let content = match request.get::<bodyparser::Json>() {
             Ok(Some(content)) => content.to_string().clone(),
@@ -211,14 +239,21 @@ mod tests {
         let user = test.create_user();
 
         let response = test.post(
-            &format!("/_matrix/client/r0/account/password?access_token={}", user.token),
-            r#"{"new_password": "hidden"}"#
+            &format!(
+                "/_matrix/client/r0/account/password?access_token={}",
+                user.token
+            ),
+            r#"{"new_password": "hidden"}"#,
         );
         test.check_empty_response(response);
 
         let response = test.post(
             "/_matrix/client/r0/login",
-            format!(r#"{{"type": "m.login.password", "user": "{}", "password": "hidden"}}"#, user.name).as_str(),
+            format!(
+                r#"{{"type": "m.login.password", "user": "{}", "password": "hidden"}}"#,
+                user.name
+            )
+            .as_str(),
         );
         assert_eq!(response.status, Status::Ok);
     }
@@ -228,8 +263,14 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let login = format!(r#"{{"type": "m.login.password", "user": "{}", "password": "secret"}}"#, user.name);
-        let deactivate = format!("/_matrix/client/r0/account/deactivate?access_token={}", user.token);
+        let login = format!(
+            r#"{{"type": "m.login.password", "user": "{}", "password": "secret"}}"#,
+            user.name
+        );
+        let deactivate = format!(
+            "/_matrix/client/r0/account/deactivate?access_token={}",
+            user.token
+        );
 
         let response = test.post("/_matrix/client/r0/login", &login);
         assert_eq!(response.status, Status::Ok);
@@ -241,10 +282,7 @@ mod tests {
             Status::Forbidden
         );
 
-        assert_eq!(
-            test.post(&deactivate, r#"{}"#).status,
-            Status::Forbidden
-        );
+        assert_eq!(test.post(&deactivate, r#"{}"#).status, Status::Forbidden);
     }
 
     #[test]
@@ -262,7 +300,8 @@ mod tests {
         let response = test.put(&account_data_path, &content);
         test.check_empty_response(response);
 
-        let new_content = r#"{"email": "user@email.org", "phone": "123456789", "fax": "123456991"}"#;
+        let new_content =
+            r#"{"email": "user@email.org", "phone": "123456789", "fax": "123456991"}"#;
 
         let response = test.put(&account_data_path, &new_content);
         test.check_empty_response(response);
@@ -352,7 +391,12 @@ mod tests {
         assert_eq!(test.put(&path, &content).status, Status::Forbidden);
 
         assert_eq!(
-            test.put(&path, &content).json().get("error").unwrap().as_str().unwrap(),
+            test.put(&path, &content)
+                .json()
+                .get("error")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "The given user_id does not correspond to the authenticated user"
         );
     }
@@ -402,9 +446,13 @@ mod tests {
         assert_eq!(test.put(&path, &content).status, Status::Forbidden);
 
         assert_eq!(
-            test.put(&path, &content).json().get("error").unwrap().as_str().unwrap(),
+            test.put(&path, &content)
+                .json()
+                .get("error")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "No membership entry was found."
         );
     }
 }
-

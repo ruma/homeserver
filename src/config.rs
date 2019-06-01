@@ -6,8 +6,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use base64::decode;
-use iron::{Plugin, Request};
 use iron::typemap::Key;
+use iron::{Plugin, Request};
 use persistent::Read as PersistentRead;
 use serde_json;
 use serde_yaml;
@@ -16,15 +16,16 @@ use toml;
 use crate::error::{ApiError, CliError};
 
 /// Default paths where Ruma will look for a configuration file if left unspecified.
-static DEFAULT_CONFIG_FILES: [&'static str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
+static DEFAULT_CONFIG_FILES: [&'static str; 4] =
+    ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
 
 /// The user's configuration as loaded from the configuration file.
 ///
 /// Refer to `Config` for the description of the fields.
 #[derive(Deserialize)]
-#[serde(tag="version")]
+#[serde(tag = "version")]
 enum RawConfig {
-    #[serde(rename="1")]
+    #[serde(rename = "1")]
     V1(V1Config),
 }
 
@@ -65,11 +66,15 @@ impl Config {
         let config_path = if let Some(path_str) = path {
             let path = Path::new(path_str);
             if !path.is_file() {
-                return Err(CliError::new(format!("Configuration file `{}` not found.", path_str)));
+                return Err(CliError::new(format!(
+                    "Configuration file `{}` not found.",
+                    path_str
+                )));
             }
             path
         } else {
-            DEFAULT_CONFIG_FILES.iter()
+            DEFAULT_CONFIG_FILES
+                .iter()
                 .map(Path::new)
                 .find(|path| path.is_file())
                 .ok_or_else(|| CliError::new("No configuration file was found."))?
@@ -93,7 +98,9 @@ impl Config {
         };
 
         Ok(Config {
-            bind_address: v1_config.bind_address.unwrap_or_else(|| "127.0.0.1".to_string()),
+            bind_address: v1_config
+                .bind_address
+                .unwrap_or_else(|| "127.0.0.1".to_string()),
             bind_port: v1_config.bind_port.unwrap_or_else(|| "3000".to_string()),
             domain: v1_config.domain,
             macaroon_secret_key,
@@ -138,7 +145,9 @@ impl Config {
 
     /// Extract the `Config` stored in the request.
     pub fn from_request(request: &mut Request<'_, '_>) -> Result<Arc<Config>, ApiError> {
-        request.get::<PersistentRead<Config>>().map_err(ApiError::from)
+        request
+            .get::<PersistentRead<Config>>()
+            .map_err(ApiError::from)
     }
 }
 
@@ -154,19 +163,28 @@ mod tests {
 
     #[test]
     fn deserialize_v1_config() {
-        let raw_config: RawConfig = serde_json::from_str(r#"
+        let raw_config: RawConfig = serde_json::from_str(
+            r#"
             {
                 "version": "1",
                 "domain": "example.com",
                 "macaroon_secret_key": "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8=",
                 "postgres_url": "postgres://username:password@example.com:5432/ruma"
             }
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let RawConfig::V1(v1_config) = raw_config;
 
         assert_eq!(v1_config.domain, "example.com");
-        assert_eq!(v1_config.macaroon_secret_key, "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8=");
-        assert_eq!(v1_config.postgres_url, "postgres://username:password@example.com:5432/ruma");
+        assert_eq!(
+            v1_config.macaroon_secret_key,
+            "qbnabRiFu5fWzoijGmc6Kk2tRox3qJSWvL3VRl4Vhl8="
+        );
+        assert_eq!(
+            v1_config.postgres_url,
+            "postgres://username:password@example.com:5432/ruma"
+        );
     }
 }

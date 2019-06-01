@@ -1,7 +1,7 @@
 //! Endpoints for room members.
 
-use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronResult, Request, Response};
 use ruma_events::room::member::MemberEvent;
 
 use crate::db::DB;
@@ -22,13 +22,16 @@ middleware_chain!(Members, [RoomIdParam, AccessTokenAuth]);
 
 impl Handler for Members {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        request.extensions
+        request
+            .extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user");
 
         let connection = DB::from_request(request)?;
 
-        let room_id = request.extensions.get::<RoomIdParam>()
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
             .expect("Should have been required by RoomIdParam.")
             .clone();
 
@@ -52,15 +55,13 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            carl.token
+            room_id, carl.token
         );
         test.post(&room_join_path, r"{}");
 
         let room_members_path = format!(
             "/_matrix/client/r0/rooms/{}/members?access_token={}",
-            room_id,
-            carl.token
+            room_id, carl.token
         );
 
         let response = test.get(&room_members_path);

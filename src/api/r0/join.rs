@@ -3,22 +3,23 @@
 use std::error::Error;
 
 use bodyparser;
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use iron::status::Status;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
-use ruma_identifiers::{UserId, RoomId, RoomIdOrAliasId};
+use ruma_identifiers::{RoomId, RoomIdOrAliasId, UserId};
 
 use crate::config::Config;
 use crate::db::DB;
 use crate::error::ApiError;
-use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, RoomIdOrAliasParam};
+use crate::middleware::{
+    AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdOrAliasParam, RoomIdParam,
+};
 use crate::models::room::Room;
 use crate::models::room_alias::RoomAlias;
 use crate::models::room_membership::{RoomMembership, RoomMembershipOptions};
 use crate::models::user::User;
-use crate::modifier::{SerializableResponse, EmptyResponse};
-
+use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The `/rooms/:room_id/join` endpoint.
 pub struct JoinRoom;
@@ -33,7 +34,8 @@ middleware_chain!(JoinRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for JoinRoom {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions
+        let user = request
+            .extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
             .clone();
@@ -41,7 +43,9 @@ impl Handler for JoinRoom {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let room_id = request.extensions.get::<RoomIdParam>()
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
             .expect("Should have been required by RoomIdParam.")
             .clone();
 
@@ -52,11 +56,15 @@ impl Handler for JoinRoom {
 /// The `/join/:room_id_or_alias` endpoint.
 pub struct JoinRoomWithIdOrAlias;
 
-middleware_chain!(JoinRoomWithIdOrAlias, [JsonRequest, RoomIdOrAliasParam, AccessTokenAuth]);
+middleware_chain!(
+    JoinRoomWithIdOrAlias,
+    [JsonRequest, RoomIdOrAliasParam, AccessTokenAuth]
+);
 
 impl Handler for JoinRoomWithIdOrAlias {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions
+        let user = request
+            .extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
             .clone();
@@ -64,7 +72,9 @@ impl Handler for JoinRoomWithIdOrAlias {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let room_id_or_alias = request.extensions.get::<RoomIdOrAliasParam>()
+        let room_id_or_alias = request
+            .extensions
+            .get::<RoomIdOrAliasParam>()
             .expect("Should have been required by RoomIdOrAliasParam.")
             .clone();
 
@@ -81,7 +91,12 @@ impl Handler for JoinRoomWithIdOrAlias {
 }
 
 /// Handles the work of actually saving the user to the room membership table
-fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Config) -> IronResult<Response> {
+fn join_room(
+    room_id: RoomId,
+    user: User,
+    connection: &PgConnection,
+    config: &Config,
+) -> IronResult<Response> {
     let room_membership_options = RoomMembershipOptions {
         room_id: room_id.clone(),
         user_id: user.id.clone(),
@@ -89,13 +104,12 @@ fn join_room(room_id: RoomId, user: User, connection: &PgConnection, config: &Co
         membership: "join".to_string(),
     };
 
-    let room_membership = RoomMembership::upsert(
-        connection,
-        &config.domain,
-        room_membership_options
-    )?;
+    let room_membership =
+        RoomMembership::upsert(connection, &config.domain, room_membership_options)?;
 
-    let response = JoinRoomResponse { room_id: room_membership.room_id };
+    let response = JoinRoomResponse {
+        room_id: room_membership.room_id,
+    };
 
     Ok(Response::with((Status::Ok, SerializableResponse(response))))
 }
@@ -107,7 +121,8 @@ middleware_chain!(LeaveRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for LeaveRoom {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions
+        let user = request
+            .extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
             .clone();
@@ -115,7 +130,9 @@ impl Handler for LeaveRoom {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let room_id = request.extensions.get::<RoomIdParam>()
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
             .expect("Should have been required by RoomIdParam.")
             .clone();
 
@@ -127,27 +144,28 @@ impl Handler for LeaveRoom {
         };
 
         if Room::find(&connection, &room_id)?.is_none() {
-            Err(ApiError::unauthorized("The room was not found on this server".to_string()))?;
+            Err(ApiError::unauthorized(
+                "The room was not found on this server".to_string(),
+            ))?;
         }
 
         match RoomMembership::find(&connection, &room_id, &user.id)? {
-            Some(mut room_membership) => {
-                match room_membership.membership.as_str() {
-                    "leave" => Ok(Response::with(Status::Ok)),
-                    "join" | "invite" => {
-                        room_membership.update(
-                            &connection,
-                            &config.domain,
-                            room_membership_options)?;
-                        Ok(Response::with(EmptyResponse(Status::Ok)))
-                    },
-                    "ban" => {
-                        Err(ApiError::unauthorized("User is banned from the room".to_string()))?
-                    },
-                    _ => Err(ApiError::unauthorized("Invalid membership state".to_string()))?,
+            Some(mut room_membership) => match room_membership.membership.as_str() {
+                "leave" => Ok(Response::with(Status::Ok)),
+                "join" | "invite" => {
+                    room_membership.update(&connection, &config.domain, room_membership_options)?;
+                    Ok(Response::with(EmptyResponse(Status::Ok)))
                 }
+                "ban" => Err(ApiError::unauthorized(
+                    "User is banned from the room".to_string(),
+                ))?,
+                _ => Err(ApiError::unauthorized(
+                    "Invalid membership state".to_string(),
+                ))?,
             },
-            None => Err(ApiError::unauthorized("User not in room or uninvited".to_string()))?,
+            None => Err(ApiError::unauthorized(
+                "User not in room or uninvited".to_string(),
+            ))?,
         }
     }
 }
@@ -167,11 +185,17 @@ middleware_chain!(KickFromRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for KickFromRoom {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a room_id").clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a room_id")
+            .clone();
 
-        let kicker = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let kicker = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let kickee_id = match request.get::<bodyparser::Struct<KickFromRoomRequest>>() {
             Ok(Some(req)) => req.user_id,
@@ -184,17 +208,23 @@ impl Handler for KickFromRoom {
 
         let room = match Room::find(&connection, &room_id)? {
             Some(room) => room,
-            None => Err(ApiError::unauthorized("The room was not found on this server".to_string()))?,
+            None => Err(ApiError::unauthorized(
+                "The room was not found on this server".to_string(),
+            ))?,
         };
 
         match RoomMembership::find(&connection, &room_id, &kicker.id)? {
-            Some(ref membership) if membership.membership == "join" => { },
-            _ => Err(ApiError::unauthorized("The kicker is not currently in the room".to_string()))?,
+            Some(ref membership) if membership.membership == "join" => {}
+            _ => Err(ApiError::unauthorized(
+                "The kicker is not currently in the room".to_string(),
+            ))?,
         };
 
         let mut kickee_membership = match RoomMembership::find(&connection, &room_id, &kickee_id)? {
             Some(ref membership) if membership.membership == "join" => membership.clone(),
-            _ => Err(ApiError::unauthorized("The kickee is not currently in the room".to_string()))?,
+            _ => Err(ApiError::unauthorized(
+                "The kickee is not currently in the room".to_string(),
+            ))?,
         };
 
         let power_levels = room.current_power_levels(&connection)?;
@@ -204,7 +234,9 @@ impl Handler for KickFromRoom {
             .unwrap_or(&power_levels.users_default);
 
         if power_levels.kick > *user_power_level {
-            Err(ApiError::unauthorized("Insufficient power level to kick a user".to_string()))?;
+            Err(ApiError::unauthorized(
+                "Insufficient power level to kick a user".to_string(),
+            ))?;
         }
 
         let room_membership_options = RoomMembershipOptions {
@@ -234,11 +266,17 @@ middleware_chain!(InviteToRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for InviteToRoom {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a room_id").clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a room_id")
+            .clone();
 
-        let inviter = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let inviter = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let invitee_id = match request.get::<bodyparser::Struct<InviteToRoomRequest>>() {
             Ok(Some(req)) => req.user_id,
@@ -249,37 +287,40 @@ impl Handler for InviteToRoom {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let invitee_membership = connection.transaction::<Option<RoomMembership>, ApiError, _>(|| {
-            if User::find_active_user(&connection, &invitee_id)?.is_none() {
-                return Err(
-                    ApiError::not_found(format!("The invited user {} was not found on this server", invitee_id))
-                );
-            }
+        let invitee_membership = connection
+            .transaction::<Option<RoomMembership>, ApiError, _>(|| {
+                if User::find_active_user(&connection, &invitee_id)?.is_none() {
+                    return Err(ApiError::not_found(format!(
+                        "The invited user {} was not found on this server",
+                        invitee_id
+                    )));
+                }
 
-            if Room::find(&connection, &room_id)?.is_none() {
-                return Err(
-                    ApiError::unauthorized("The room was not found on this server".to_string())
-                );
-            }
+                if Room::find(&connection, &room_id)?.is_none() {
+                    return Err(ApiError::unauthorized(
+                        "The room was not found on this server".to_string(),
+                    ));
+                }
 
-            let unauthorized_err = ApiError::unauthorized(
-                "The inviter hasn't joined the room yet".to_string()
-            );
+                let unauthorized_err =
+                    ApiError::unauthorized("The inviter hasn't joined the room yet".to_string());
 
-            // Check if the inviter has joined the room.
-            RoomMembership::find(&connection, &room_id, &inviter.id)
-                .and_then(|membership| match membership {
-                    Some(entry) => match entry.membership.as_ref() {
-                        "join" => Ok(()),
-                        _ => Err(unauthorized_err)
+                // Check if the inviter has joined the room.
+                RoomMembership::find(&connection, &room_id, &inviter.id).and_then(
+                    |membership| match membership {
+                        Some(entry) => match entry.membership.as_ref() {
+                            "join" => Ok(()),
+                            _ => Err(unauthorized_err),
+                        },
+                        None => Err(unauthorized_err),
                     },
-                    None => Err(unauthorized_err)
-                })?;
+                )?;
 
-            let membership = RoomMembership::find(&connection, &room_id, &invitee_id)?;
+                let membership = RoomMembership::find(&connection, &room_id, &invitee_id)?;
 
-            Ok(membership)
-        }).map_err(ApiError::from)?;
+                Ok(membership)
+            })
+            .map_err(ApiError::from)?;
 
         let new_membership_options = RoomMembershipOptions {
             room_id,
@@ -292,27 +333,19 @@ impl Handler for InviteToRoom {
             Some(mut entry) => match entry.membership.as_ref() {
                 "invite" => Ok(()),
                 "ban" => Err(ApiError::unauthorized(
-                    "The invited user is banned from the room".to_string()
+                    "The invited user is banned from the room".to_string(),
                 )),
                 "join" => Err(ApiError::unauthorized(
-                    "The invited user has already joined".to_string()
+                    "The invited user has already joined".to_string(),
                 )),
                 _ => {
-                    entry.update(
-                        &connection,
-                        &config.domain,
-                        new_membership_options
-                    )?;
+                    entry.update(&connection, &config.domain, new_membership_options)?;
 
                     Ok(())
                 }
             },
             None => {
-                RoomMembership::create(
-                    &connection,
-                    &config.domain,
-                    new_membership_options
-                )?;
+                RoomMembership::create(&connection, &config.domain, new_membership_options)?;
 
                 Ok(())
             }
@@ -321,7 +354,6 @@ impl Handler for InviteToRoom {
         Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -336,13 +368,21 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/join/{}?access_token={}",
-            room_id,
-            user.token
+            room_id, user.token
         );
 
         let response = test.post(&room_join_path, r"{}");
         assert_eq!(response.status, Status::Ok);
-        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap().to_string(), room_id);
+        assert_eq!(
+            response
+                .json()
+                .get("room_id")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string(),
+            room_id
+        );
     }
 
     #[test]
@@ -351,7 +391,7 @@ mod tests {
         let user = test.create_user();
         let room_id = test.create_room_with_params(
             &user.token,
-            r#"{"room_alias_name":"thepub", "visibility": "public"}"#
+            r#"{"room_alias_name":"thepub", "visibility": "public"}"#,
         );
 
         let room_join_path = format!(
@@ -362,7 +402,16 @@ mod tests {
 
         let response = test.post(&room_join_path, r"{}");
         assert_eq!(response.status, Status::Ok);
-        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap().to_string(), room_id);
+        assert_eq!(
+            response
+                .json()
+                .get("room_id")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string(),
+            room_id
+        );
     }
 
     #[test]
@@ -372,8 +421,7 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            carl.token
+            room_id, carl.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -390,8 +438,7 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            mark.token
+            room_id, mark.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -407,8 +454,7 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            carl.token
+            room_id, carl.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -428,8 +474,7 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            mark.token
+            room_id, mark.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -446,8 +491,7 @@ mod tests {
 
         let room_join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            alice.token
+            room_id, alice.token
         );
 
         let response = test.post(&room_join_path, r"{}");
@@ -497,8 +541,7 @@ mod tests {
 
         let invite_path = format!(
             "/_matrix/client/r0/rooms/{}/invite?access_token={}",
-            room_id,
-            carl.token
+            room_id, carl.token
         );
 
         // Empty body.
@@ -540,7 +583,8 @@ mod tests {
 
         let room_id = test.create_room_with_params(
             &bob.token,
-            format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str());
+            format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str(),
+        );
 
         let response = test.invite(&bob.token, &room_id, &alice.id);
 
@@ -555,7 +599,8 @@ mod tests {
 
         let room_id = test.create_room_with_params(
             &bob.token,
-            format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str());
+            format!(r#"{{"visibility": "private", "invite": ["{}"]}}"#, alice.id).as_str(),
+        );
 
         assert!(test.join_room(&alice.token, &room_id).status.is_success());
 
@@ -590,8 +635,7 @@ mod tests {
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
-            room_id,
-            alice.token
+            room_id, alice.token
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -601,7 +645,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", alice.id));
+            format!("The user {} has not joined the room", alice.id)
+        );
     }
 
     #[test]
@@ -611,8 +656,7 @@ mod tests {
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
-            "!random_room_id:ruma.test",
-            alice.token,
+            "!random_room_id:ruma.test", alice.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -631,8 +675,7 @@ mod tests {
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
-            room_id,
-            bob.token,
+            room_id, bob.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -654,8 +697,7 @@ mod tests {
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
-            room_id,
-            bob.token,
+            room_id, bob.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -665,7 +707,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", bob.id));
+            format!("The user {} has not joined the room", bob.id)
+        );
     }
 
     #[test]
@@ -682,8 +725,7 @@ mod tests {
 
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
-            room_id,
-            bob.token,
+            room_id, bob.token,
         );
 
         let response = test.post(&leave_room_path, r#"{}"#);
@@ -693,7 +735,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", bob.id));
+            format!("The user {} has not joined the room", bob.id)
+        );
     }
 
     #[test]
@@ -713,7 +756,8 @@ mod tests {
         );
 
         assert_eq!(
-            test.kick_from_room(&alice.token, &room_id, &bob.id, None).status,
+            test.kick_from_room(&alice.token, &room_id, &bob.id, None)
+                .status,
             Status::Ok
         );
 

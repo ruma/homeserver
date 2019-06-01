@@ -19,18 +19,18 @@ fn main() {
         .setting(AppSettings::GlobalVersion)
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
-            SubCommand::with_name("run")
-                .about("Runs the server")
-                .arg(Arg::with_name("config")
-                     .short("c")
-                     .long("config")
-                     .value_name("PATH")
-                     .help("Path to a configuration file")
-                     .takes_value(true))
+            SubCommand::with_name("run").about("Runs the server").arg(
+                Arg::with_name("config")
+                    .short("c")
+                    .long("config")
+                    .value_name("PATH")
+                    .help("Path to a configuration file")
+                    .takes_value(true),
+            ),
         )
         .subcommand(
             SubCommand::with_name("secret")
-                .about("Generates a random value to be used as a macaroon secret key")
+                .about("Generates a random value to be used as a macaroon secret key"),
         )
         .get_matches();
 
@@ -50,7 +50,7 @@ fn main() {
                     if let Err(error) = server.run() {
                         eprintln!("Server failed: {}", error);
                     }
-                },
+                }
                 Err(error) => {
                     eprintln!("Failed to create server: {}", error);
 
@@ -65,4 +65,3 @@ fn main() {
         _ => println!("{}", matches.usage()),
     };
 }
-

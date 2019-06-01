@@ -1,20 +1,12 @@
 //! Matrix events.
 
-use std::convert::{TryInto, TryFrom};
+use std::convert::{TryFrom, TryInto};
 
-use diesel::prelude::*;
 use diesel::dsl::{any, max};
-use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::PgConnection;
-use ruma_events::{
-    CustomRoomEvent,
-    CustomStateEvent,
-    Event as RumaEventsEvent,
-    EventType,
-    RoomEvent,
-    StateEvent as RumaStateEventTrait,
-};
+use diesel::prelude::*;
+use diesel::result::Error as DieselError;
 use ruma_events::call::answer::AnswerEvent;
 use ruma_events::call::candidates::CandidatesEvent;
 use ruma_events::call::hangup::HangupEvent;
@@ -34,19 +26,14 @@ use ruma_events::room::power_levels::PowerLevelsEvent;
 use ruma_events::room::third_party_invite::ThirdPartyInviteEvent;
 use ruma_events::room::topic::TopicEvent;
 use ruma_events::stripped::{
-    StrippedRoomAliases,
-    StrippedRoomAvatar,
-    StrippedRoomCanonicalAlias,
-    StrippedRoomCreate,
-    StrippedRoomGuestAccess,
-    StrippedRoomHistoryVisibility,
-    StrippedRoomJoinRules,
-    StrippedRoomMember,
-    StrippedRoomName,
-    StrippedRoomPowerLevels,
-    StrippedRoomThirdPartyInvite,
-    StrippedRoomTopic,
-    StrippedState,
+    StrippedRoomAliases, StrippedRoomAvatar, StrippedRoomCanonicalAlias, StrippedRoomCreate,
+    StrippedRoomGuestAccess, StrippedRoomHistoryVisibility, StrippedRoomJoinRules,
+    StrippedRoomMember, StrippedRoomName, StrippedRoomPowerLevels, StrippedRoomThirdPartyInvite,
+    StrippedRoomTopic, StrippedState,
+};
+use ruma_events::{
+    CustomRoomEvent, CustomStateEvent, Event as RumaEventsEvent, EventType, RoomEvent,
+    StateEvent as RumaStateEventTrait,
 };
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde_json::{from_str, to_string};
@@ -110,9 +97,10 @@ pub struct Event {
 
 impl Event {
     /// Return room join rules for given `room_id`.
-    pub fn find_room_join_rules_by_room_id(connection: &PgConnection, room_id: RoomId)
-        -> Result<JoinRulesEvent, ApiError>
-    {
+    pub fn find_room_join_rules_by_room_id(
+        connection: &PgConnection,
+        room_id: RoomId,
+    ) -> Result<JoinRulesEvent, ApiError> {
         let event: Event = events::table
             .filter(events::event_type.eq(EventType::RoomJoinRules.to_string()))
             .filter(events::room_id.eq(room_id))
@@ -126,7 +114,11 @@ impl Event {
     }
 
     /// Return all `RoomEvent`'s for a `RoomId` after a specific point in time.
-    pub fn find_room_events(connection: &PgConnection, room_id: &RoomId, since: i64) -> Result<Vec<Event>, ApiError> {
+    pub fn find_room_events(
+        connection: &PgConnection,
+        room_id: &RoomId,
+        since: i64,
+    ) -> Result<Vec<Event>, ApiError> {
         events::table
             .filter(events::event_type.like("m.room.%"))
             .filter(events::ordering.gt(since))
@@ -143,7 +135,7 @@ impl Event {
     pub fn find_room_events_until(
         connection: &PgConnection,
         room_id: &RoomId,
-        until: &i64
+        until: &i64,
     ) -> Result<Vec<Event>, ApiError> {
         events::table
             .filter(events::event_type.like("m.room.%"))
@@ -172,9 +164,7 @@ impl Event {
         room_id: &RoomId,
         until: &Event,
     ) -> Result<Vec<Event>, ApiError> {
-        let state_events: Vec<String> = STATE_EVENTS.iter()
-            .map(EventType::to_string)
-            .collect();
+        let state_events: Vec<String> = STATE_EVENTS.iter().map(EventType::to_string).collect();
 
         let ordering = events::table
             .select(max(events::ordering))
@@ -190,7 +180,10 @@ impl Event {
     }
 
     /// Returns the room's current state.
-    pub fn get_room_full_state(connection: &PgConnection, room_id: &RoomId) -> Result<Vec<Event>, ApiError> {
+    pub fn get_room_full_state(
+        connection: &PgConnection,
+        room_id: &RoomId,
+    ) -> Result<Vec<Event>, ApiError> {
         Event::get_room_state_events_since(connection, room_id, -1)
     }
 
@@ -198,11 +191,9 @@ impl Event {
     pub fn get_room_state_events_since(
         connection: &PgConnection,
         room_id: &RoomId,
-        since: i64
+        since: i64,
     ) -> Result<Vec<Event>, ApiError> {
-        let state_events: Vec<String> = STATE_EVENTS.iter()
-            .map(EventType::to_string)
-            .collect();
+        let state_events: Vec<String> = STATE_EVENTS.iter().map(EventType::to_string).collect();
 
         let ordering = events::table
             .select(max(events::ordering))
@@ -217,7 +208,6 @@ impl Event {
             .map_err(ApiError::from)
     }
 }
-
 
 macro_rules! impl_try_from_room_event_for_new_event {
     ($ty:ty) => {
@@ -235,7 +225,7 @@ macro_rules! impl_try_from_room_event_for_new_event {
                 })
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_try_from_state_event_for_new_event {
@@ -254,7 +244,7 @@ macro_rules! impl_try_from_state_event_for_new_event {
                 })
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_try_into_room_event_for_event {
@@ -424,7 +414,10 @@ impl TryInto<StateEvent> for Event {
             EventType::RoomPowerLevels => StateEvent::RoomPowerLevels(self.try_into()?),
             EventType::RoomThirdPartyInvite => StateEvent::RoomThirdPartyInvite(self.try_into()?),
             EventType::RoomTopic => StateEvent::RoomTopic(self.try_into()?),
-            _ => Err(ApiError::bad_event(format!("Unknown state event type {}", self.event_type)))?,
+            _ => Err(ApiError::bad_event(format!(
+                "Unknown state event type {}",
+                self.event_type
+            )))?,
         };
 
         Ok(state_event)
@@ -441,14 +434,21 @@ impl TryInto<StrippedState> for Event {
             EventType::RoomCanonicalAlias => StrippedState::RoomCanonicalAlias(self.try_into()?),
             EventType::RoomCreate => StrippedState::RoomCreate(self.try_into()?),
             EventType::RoomGuestAccess => StrippedState::RoomGuestAccess(self.try_into()?),
-            EventType::RoomHistoryVisibility => StrippedState::RoomHistoryVisibility(self.try_into()?),
+            EventType::RoomHistoryVisibility => {
+                StrippedState::RoomHistoryVisibility(self.try_into()?)
+            }
             EventType::RoomJoinRules => StrippedState::RoomJoinRules(self.try_into()?),
             EventType::RoomMember => StrippedState::RoomMember(self.try_into()?),
             EventType::RoomName => StrippedState::RoomName(self.try_into()?),
             EventType::RoomPowerLevels => StrippedState::RoomPowerLevels(self.try_into()?),
-            EventType::RoomThirdPartyInvite => StrippedState::RoomThirdPartyInvite(self.try_into()?),
+            EventType::RoomThirdPartyInvite => {
+                StrippedState::RoomThirdPartyInvite(self.try_into()?)
+            }
             EventType::RoomTopic => StrippedState::RoomTopic(self.try_into()?),
-            _ => Err(ApiError::bad_event(format!("Unknown state event type {}", self.event_type)))?,
+            _ => Err(ApiError::bad_event(format!(
+                "Unknown state event type {}",
+                self.event_type
+            )))?,
         };
 
         Ok(stripped_state_event)

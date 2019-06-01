@@ -3,28 +3,22 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use diesel::prelude::*;
-use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use ruma_events::EventType;
-use ruma_events::stripped::StrippedState;
 use ruma_events::room::avatar::AvatarEvent;
 use ruma_events::room::canonical_alias::{CanonicalAliasEvent, CanonicalAliasEventContent};
 use ruma_events::room::create::{CreateEvent, CreateEventContent};
 use ruma_events::room::history_visibility::{
-    HistoryVisibility,
-    HistoryVisibilityEvent,
-    HistoryVisibilityEventContent,
+    HistoryVisibility, HistoryVisibilityEvent, HistoryVisibilityEventContent,
 };
-use ruma_events::room::join_rules::{
-    JoinRule,
-    JoinRulesEvent,
-    JoinRulesEventContent,
-};
+use ruma_events::room::join_rules::{JoinRule, JoinRulesEvent, JoinRulesEventContent};
 use ruma_events::room::name::{NameEvent, NameEventContent};
 use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent};
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
+use ruma_events::stripped::StrippedState;
+use ruma_events::EventType;
 use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 
 use crate::error::ApiError;
@@ -80,13 +74,13 @@ pub struct Room {
 #[derive(Clone, Copy, Debug, Deserialize)]
 pub enum RoomPreset {
     /// `join_rules` is set to `invite` and `history_visibility` is set to `shared`.
-    #[serde(rename="private_chat")]
+    #[serde(rename = "private_chat")]
     PrivateChat,
     /// `join_rules` is set to `public` and `history_visibility` is set to `shared`.
-    #[serde(rename="public_chat")]
+    #[serde(rename = "public_chat")]
     PublicChat,
     /// Same as `PrivateChat`, but all initial invitees get the same power level as the creator.
-    #[serde(rename="trusted_private_chat")]
+    #[serde(rename = "trusted_private_chat")]
     TrustedPrivateChat,
 }
 
@@ -94,10 +88,10 @@ pub enum RoomPreset {
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 pub enum RoomVisibility {
     /// The room will be private.
-    #[serde(rename="private")]
+    #[serde(rename = "private")]
     Private,
     /// The room will be public.
-    #[serde(rename="public")]
+    #[serde(rename = "public")]
     Public,
 }
 
@@ -509,8 +503,10 @@ impl Room {
     ///
     /// If the room does not have a power levels event, a default one is created according to the
     /// specification.
-    pub fn current_power_levels(&self, connection: &PgConnection)
-    -> Result<PowerLevelsEventContent, ApiError> {
+    pub fn current_power_levels(
+        &self,
+        connection: &PgConnection,
+    ) -> Result<PowerLevelsEventContent, ApiError> {
         match events::table
             .filter(events::room_id.eq(self.id.clone()))
             .filter(events::event_type.eq(EventType::RoomPowerLevels.to_string()))
@@ -540,11 +536,8 @@ impl Room {
     }
 
     /// Look up a `Room` given the `RoomId`.
-    pub fn find(connection: &PgConnection, room_id: &RoomId)
-    -> Result<Option<Room>, ApiError> {
-        let result = rooms::table
-            .find(room_id)
-            .get_result(connection);
+    pub fn find(connection: &PgConnection, room_id: &RoomId) -> Result<Option<Room>, ApiError> {
+        let result = rooms::table.find(room_id).get_result(connection);
 
         match result {
             Ok(room) => Ok(Some(room)),

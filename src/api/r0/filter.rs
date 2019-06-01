@@ -1,13 +1,15 @@
 //! Endpoints for filter rooms.
 use bodyparser;
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use serde_json::{from_str, to_value};
 
 use crate::db::DB;
 use crate::error::ApiError;
-use crate::middleware::{AccessTokenAuth, FilterIdParam, JsonRequest, MiddlewareChain, UserIdParam};
-use crate::models::filter::{Filter, ContentFilter};
+use crate::middleware::{
+    AccessTokenAuth, FilterIdParam, JsonRequest, MiddlewareChain, UserIdParam,
+};
+use crate::models::filter::{ContentFilter, Filter};
 use crate::models::user::User;
 use crate::modifier::SerializableResponse;
 
@@ -18,10 +20,15 @@ middleware_chain!(GetFilter, [AccessTokenAuth, FilterIdParam, UserIdParam]);
 
 impl Handler for GetFilter {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
-        let filter_id = *request.extensions.get::<FilterIdParam>()
+        let filter_id = *request
+            .extensions
+            .get::<FilterIdParam>()
             .expect("FilterIdParam should ensure a FilterIdParam");
 
         let connection = DB::from_request(request)?;
@@ -44,14 +51,22 @@ middleware_chain!(PostFilter, [JsonRequest, AccessTokenAuth, UserIdParam]);
 
 impl Handler for PostFilter {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         if user_id != user.id {
-            Err(ApiError::unauthorized("The given user_id does not correspond to the authenticated user".to_string()))?;
+            Err(ApiError::unauthorized(
+                "The given user_id does not correspond to the authenticated user".to_string(),
+            ))?;
         }
 
         let filter = match request.get::<bodyparser::Struct<ContentFilter>>() {
@@ -61,7 +76,11 @@ impl Handler for PostFilter {
 
         let connection = DB::from_request(request)?;
 
-        let id = Filter::create(&connection, user_id, to_value(&filter).map_err(ApiError::from)?.to_string())?;
+        let id = Filter::create(
+            &connection,
+            user_id,
+            to_value(&filter).map_err(ApiError::from)?.to_string(),
+        )?;
 
         let response = PostFilterResponse {
             filter_id: id.to_string(),
@@ -81,13 +100,15 @@ mod tests {
         let test = Test::new();
         let carl = test.create_user();
 
-        let filter_id = test.create_filter(&carl.token, carl.id.as_str(), r#"{"room":{"timeline":{"limit":10}}}"#);
+        let filter_id = test.create_filter(
+            &carl.token,
+            carl.id.as_str(),
+            r#"{"room":{"timeline":{"limit":10}}}"#,
+        );
 
         let get_filter_path = format!(
             "/_matrix/client/r0/user/{}/filter/{}?access_token={}",
-            carl.id,
-            filter_id,
-            carl.token
+            carl.id, filter_id, carl.token
         );
 
         let response = test.get(&get_filter_path);
@@ -102,8 +123,7 @@ mod tests {
         let alice = test.create_user();
         let filter_path = format!(
             "/_matrix/client/r0/user/{}/filter?access_token={}",
-            carl.id,
-            alice.token
+            carl.id, alice.token
         );
 
         let response = test.post(&filter_path, r#"{"room":{"timeline":{"limit":10}}}"#);
@@ -117,9 +137,7 @@ mod tests {
 
         let get_filter_path = format!(
             "/_matrix/client/r0/user/{}/filter/{}?access_token={}",
-            carl.id,
-            1,
-            carl.token
+            carl.id, 1, carl.token
         );
 
         let response = test.get(&get_filter_path);

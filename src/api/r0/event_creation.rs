@@ -3,9 +3,9 @@
 use std::convert::TryInto;
 
 use bodyparser;
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
+use diesel::prelude::*;
+use iron::{status, Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use router::Router;
 use ruma_events::call::answer::AnswerEvent;
 use ruma_events::call::candidates::CandidatesEvent;
@@ -22,20 +22,15 @@ use ruma_events::room::power_levels::PowerLevelsEvent;
 use ruma_events::room::third_party_invite::ThirdPartyInviteEvent;
 use ruma_events::room::topic::TopicEvent;
 use ruma_events::{CustomRoomEvent, CustomStateEvent, EventType};
-use ruma_identifiers::{RoomId, EventId};
+use ruma_identifiers::{EventId, RoomId};
 use serde::Deserialize;
-use serde_json::{Value, from_str, from_value, to_string};
+use serde_json::{from_str, from_value, to_string, Value};
 
-use crate::db::DB;
 use crate::config::Config;
+use crate::db::DB;
 use crate::error::{ApiError, MapApiError};
 use crate::middleware::{
-    AccessTokenAuth,
-    EventTypeParam,
-    JsonRequest,
-    MiddlewareChain,
-    RoomIdParam,
-    TransactionIdParam,
+    AccessTokenAuth, EventTypeParam, JsonRequest, MiddlewareChain, RoomIdParam, TransactionIdParam,
 };
 use crate::models::access_token::AccessToken;
 use crate::models::event::NewEvent;
@@ -63,7 +58,9 @@ macro_rules! room_event {
             room_id: Some($room_id.clone()),
             sender: $user.id.clone(),
             unsigned: None,
-        }.try_into().map_err(ApiError::from)?
+        }
+        .try_into()
+        .map_err(ApiError::from)?
     };
 }
 
@@ -87,7 +84,9 @@ macro_rules! state_event {
             sender: $user.id.clone(),
             state_key: $state_key.to_string(),
             unsigned: None,
-        }.try_into().map_err(ApiError::from)?
+        }
+        .try_into()
+        .map_err(ApiError::from)?
     };
 }
 
@@ -100,21 +99,42 @@ struct EventResponse {
 /// The `/rooms/:room_id/send/:event_type/:transaction_id` endpoint.
 pub struct SendMessageEvent;
 
-middleware_chain!(SendMessageEvent, [JsonRequest, RoomIdParam, EventTypeParam, TransactionIdParam, AccessTokenAuth]);
+middleware_chain!(
+    SendMessageEvent,
+    [
+        JsonRequest,
+        RoomIdParam,
+        EventTypeParam,
+        TransactionIdParam,
+        AccessTokenAuth
+    ]
+);
 
 impl Handler for SendMessageEvent {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("Should have been required by RoomIdParam.").clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("Should have been required by RoomIdParam.")
+            .clone();
 
-        let event_type = request.extensions.get::<EventTypeParam>()
-            .expect("EventTypeParam should ensure an EventType").clone();
+        let event_type = request
+            .extensions
+            .get::<EventTypeParam>()
+            .expect("EventTypeParam should ensure an EventType")
+            .clone();
 
-        request.extensions.get::<TransactionIdParam>()
-            .expect("TransactionIdParam should ensure a TransactionId").clone();
+        request
+            .extensions
+            .get::<TransactionIdParam>()
+            .expect("TransactionIdParam should ensure a TransactionId")
+            .clone();
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let event_content = request
             .get::<bodyparser::Json>()
@@ -126,36 +146,62 @@ impl Handler for SendMessageEvent {
         })?;
 
         let room_event: NewEvent = match event_type {
-            EventType::CallAnswer => {
-                room_event!(AnswerEvent, event_content, event_type, event_id, room_id, user)
+            EventType::CallAnswer => room_event!(
+                AnswerEvent,
+                event_content,
+                event_type,
+                event_id,
+                room_id,
+                user
+            ),
+            EventType::CallCandidates => room_event!(
+                CandidatesEvent,
+                event_content,
+                event_type,
+                event_id,
+                room_id,
+                user
+            ),
+            EventType::CallHangup => room_event!(
+                HangupEvent,
+                event_content,
+                event_type,
+                event_id,
+                room_id,
+                user
+            ),
+            EventType::CallInvite => room_event!(
+                InviteEvent,
+                event_content,
+                event_type,
+                event_id,
+                room_id,
+                user
+            ),
+            EventType::RoomMessage => room_event!(
+                MessageEvent,
+                event_content,
+                event_type,
+                event_id,
+                room_id,
+                user
+            ),
+            EventType::Custom(ref custom_event_type) => CustomRoomEvent {
+                content: event_content,
+                event_id: event_id.clone(),
+                event_type: EventType::Custom(custom_event_type.clone()),
+                origin_server_ts: 0,
+                room_id: Some(room_id.clone()),
+                sender: user.id.clone(),
+                unsigned: None,
             }
-            EventType::CallCandidates => {
-                room_event!(CandidatesEvent, event_content, event_type, event_id, room_id, user)
-            }
-            EventType::CallHangup => {
-                room_event!(HangupEvent, event_content, event_type, event_id, room_id, user)
-            }
-            EventType::CallInvite => {
-                room_event!(InviteEvent, event_content, event_type, event_id, room_id, user)
-            }
-            EventType::RoomMessage => {
-                room_event!(MessageEvent, event_content, event_type, event_id, room_id, user)
-            }
-            EventType::Custom(ref custom_event_type) => {
-                CustomRoomEvent {
-                    content: event_content,
-                    event_id: event_id.clone(),
-                    event_type: EventType::Custom(custom_event_type.clone()),
-                    origin_server_ts: 0,
-                    room_id: Some(room_id.clone()),
-                    sender: user.id.clone(),
-                    unsigned: None,
-                }.try_into().map_err(ApiError::from)?
-            }
+            .try_into()
+            .map_err(ApiError::from)?,
             _ => {
-                let error = ApiError::bad_event(
-                    format!("Events of type {} cannot be created with this API.", event_type)
-                );
+                let error = ApiError::bad_event(format!(
+                    "Events of type {} cannot be created with this API.",
+                    event_type
+                ));
 
                 return Err(IronError::from(error));
             }
@@ -164,11 +210,15 @@ impl Handler for SendMessageEvent {
         let connection = DB::from_request(request)?;
 
         let path = request.url.path().join("/").to_string();
-        let token = (*request.extensions.get::<AccessToken>()
-            .expect("AccessTokenAuth should ensure an access token")).clone();
+        let token = (*request
+            .extensions
+            .get::<AccessToken>()
+            .expect("AccessTokenAuth should ensure an access token"))
+        .clone();
 
         if let Some(transaction) = Transaction::find(&connection, &path, &token.value)? {
-            let response: EventResponse = from_str(&transaction.response).map_err(ApiError::from)?;
+            let response: EventResponse =
+                from_str(&transaction.response).map_err(ApiError::from)?;
             return Ok(Response::with((status::Ok, SerializableResponse(response))));
         }
 
@@ -176,23 +226,25 @@ impl Handler for SendMessageEvent {
             event_id: event_id.opaque_id().to_string(),
         };
 
-        connection.transaction(|| {
-            verify_permissions(&connection, &room_id, &user, &event_type)?;
+        connection
+            .transaction(|| {
+                verify_permissions(&connection, &room_id, &user, &event_type)?;
 
-            diesel::insert_into(events::table)
-                .values(&room_event)
-                .execute(&*connection)
-                .map_err(ApiError::from)?;
+                diesel::insert_into(events::table)
+                    .values(&room_event)
+                    .execute(&*connection)
+                    .map_err(ApiError::from)?;
 
-            let serialized_response = to_string(&response).map_err(ApiError::from)?;
+                let serialized_response = to_string(&response).map_err(ApiError::from)?;
 
-            Transaction::create(
-                &connection,
-                path.clone(),
-                token.value.clone(),
-                serialized_response,
-            )
-        }).map_err(ApiError::from)?;
+                Transaction::create(
+                    &connection,
+                    path.clone(),
+                    token.value.clone(),
+                    serialized_response,
+                )
+            })
+            .map_err(ApiError::from)?;
 
         Ok(Response::with((status::Ok, SerializableResponse(response))))
     }
@@ -202,25 +254,38 @@ impl Handler for SendMessageEvent {
 /// endpoints.
 pub struct StateMessageEvent;
 
-middleware_chain!(StateMessageEvent, [JsonRequest, RoomIdParam, EventTypeParam, AccessTokenAuth]);
+middleware_chain!(
+    StateMessageEvent,
+    [JsonRequest, RoomIdParam, EventTypeParam, AccessTokenAuth]
+);
 
 impl Handler for StateMessageEvent {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
+        let params = request
+            .extensions
+            .get::<Router>()
+            .expect("Params object is missing")
+            .clone();
 
-        let room_id = request.extensions.get::<RoomIdParam>()
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
             .expect("Should have been required by RoomIdParam.")
             .clone();
 
-        let event_type = request.extensions.get::<EventTypeParam>()
-            .expect("EventTypeParam should ensure an EventType").clone();
+        let event_type = request
+            .extensions
+            .get::<EventTypeParam>()
+            .expect("EventTypeParam should ensure an EventType")
+            .clone();
 
-        let state_key = params
-            .find("state_key")
-            .unwrap_or("");
+        let state_key = params.find("state_key").unwrap_or("");
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let event_content = request
             .get::<bodyparser::Json>()
@@ -323,17 +388,15 @@ impl Handler for StateMessageEvent {
                     user
                 )
             }
-            EventType::RoomThirdPartyInvite => {
-                state_event!(
-                    ThirdPartyInviteEvent,
-                    event_content,
-                    event_type,
-                    event_id,
-                    room_id,
-                    state_key,
-                    user
-                )
-            }
+            EventType::RoomThirdPartyInvite => state_event!(
+                ThirdPartyInviteEvent,
+                event_content,
+                event_type,
+                event_id,
+                room_id,
+                state_key,
+                user
+            ),
             EventType::RoomTopic => {
                 ensure_empty_state_key(state_key, &event_type)?;
 
@@ -347,23 +410,24 @@ impl Handler for StateMessageEvent {
                     user
                 )
             }
-            EventType::Custom(ref custom_event_type) => {
-                CustomStateEvent {
-                    content: event_content,
-                    event_id: event_id.clone(),
-                    event_type: EventType::Custom(custom_event_type.clone()),
-                    origin_server_ts: 0,
-                    prev_content: None,
-                    room_id: Some(room_id.clone()),
-                    sender: user.id.clone(),
-                    state_key: state_key.to_string(),
-                    unsigned: None,
-                }.try_into().map_err(ApiError::from)?
+            EventType::Custom(ref custom_event_type) => CustomStateEvent {
+                content: event_content,
+                event_id: event_id.clone(),
+                event_type: EventType::Custom(custom_event_type.clone()),
+                origin_server_ts: 0,
+                prev_content: None,
+                room_id: Some(room_id.clone()),
+                sender: user.id.clone(),
+                state_key: state_key.to_string(),
+                unsigned: None,
             }
+            .try_into()
+            .map_err(ApiError::from)?,
             _ => {
-                let error = ApiError::bad_event(
-                    format!("Events of type {} cannot be created with this API.", event_type)
-                );
+                let error = ApiError::bad_event(format!(
+                    "Events of type {} cannot be created with this API.",
+                    event_type
+                ));
 
                 return Err(IronError::from(error));
             }
@@ -371,14 +435,16 @@ impl Handler for StateMessageEvent {
 
         let connection = DB::from_request(request)?;
 
-        connection.transaction(|| {
-            verify_permissions(&connection, &room_id, &user, &event_type)?;
+        connection
+            .transaction(|| {
+                verify_permissions(&connection, &room_id, &user, &event_type)?;
 
-            diesel::insert_into(events::table)
-                .values(&state_event)
-                .execute(&*connection)
-                .map_err(ApiError::from)
-        }).map_err(ApiError::from)?;
+                diesel::insert_into(events::table)
+                    .values(&state_event)
+                    .execute(&*connection)
+                    .map_err(ApiError::from)
+            })
+            .map_err(ApiError::from)?;
 
         let response = EventResponse {
             event_id: event_id.opaque_id().to_string(),
@@ -389,26 +455,32 @@ impl Handler for StateMessageEvent {
 }
 
 /// Check if a `User` has permission to create an event in a given `Room`.
-fn verify_permissions(connection: &PgConnection, room_id: &RoomId, user: &User, event_type: &EventType)
--> Result<(), ApiError> {
+fn verify_permissions(
+    connection: &PgConnection,
+    room_id: &RoomId,
+    user: &User,
+    event_type: &EventType,
+) -> Result<(), ApiError> {
     let room = match Room::find(connection, room_id)? {
         Some(room) => room,
-        None => Err(ApiError::unauthorized("The room was not found on this server".to_string()))?,
+        None => Err(ApiError::unauthorized(
+            "The room was not found on this server".to_string(),
+        ))?,
     };
 
     match RoomMembership::find(connection, room_id, &user.id)? {
         Some(membership) => {
             if membership.membership != "join" {
-                Err(ApiError::unauthorized(
-                    format!("The user {} has not joined the room", user.id)
-                ))?
+                Err(ApiError::unauthorized(format!(
+                    "The user {} has not joined the room",
+                    user.id
+                )))?
             }
-        },
-        None => {
-            Err(ApiError::unauthorized(
-                format!("The user {} is not a member of the room", user.id)
-            ))?
         }
+        None => Err(ApiError::unauthorized(format!(
+            "The user {} is not a member of the room",
+            user.id
+        )))?,
     }
 
     let power_levels = room.current_power_levels(&*connection)?;
@@ -422,9 +494,9 @@ fn verify_permissions(connection: &PgConnection, room_id: &RoomId, user: &User, 
         .unwrap_or(&power_levels.events_default);
 
     if required_power_level > user_power_level {
-        return Err(
-            ApiError::unauthorized("Insufficient power level to create this event.".to_string())
-        );
+        return Err(ApiError::unauthorized(
+            "Insufficient power level to create this event.".to_string(),
+        ));
     }
 
     Ok(())
@@ -435,20 +507,23 @@ fn ensure_empty_state_key(state_key: &str, event_type: &EventType) -> Result<(),
     if state_key == "" {
         Ok(())
     } else {
-        Err(ApiError::bad_event(format!("Events of type {} must have an empty state key.", event_type)))?
+        Err(ApiError::bad_event(format!(
+            "Events of type {} must have an empty state key.",
+            event_type
+        )))?
     }
 }
 
 /// Convert the JSON from the request into the correct type for the event's `content` field.
 fn extract_event_content<T>(event_content: Value, event_type: &EventType) -> Result<T, ApiError>
-where T: for<'de> Deserialize<'de> {
+where
+    T: for<'de> Deserialize<'de>,
+{
     from_value(event_content).map_api_err(|_| {
-        ApiError::bad_event(
-            format!(
-                "Event content did not match expected structure for event of type {}.",
-                event_type
-            )
-        )
+        ApiError::bad_event(format!(
+            "Event content did not match expected structure for event of type {}.",
+            event_type
+        ))
     })
 }
 
@@ -465,8 +540,7 @@ mod tests {
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
-            room_id,
-            user.token
+            room_id, user.token
         );
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
@@ -482,15 +556,17 @@ mod tests {
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.call.answer/1?access_token={}",
-            room_id,
-            user.token
+            room_id, user.token
         );
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
 
         let json = response.json();
 
-        assert_eq!(json.get("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
+        assert_eq!(
+            json.get("errcode").unwrap().as_str().unwrap(),
+            "IO_RUMA_BAD_EVENT"
+        );
         assert_eq!(
             json.get("error").unwrap().as_str().unwrap(),
             "Event content did not match expected structure for event of type m.call.answer."
@@ -505,15 +581,17 @@ mod tests {
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.topic/1?access_token={}",
-            room_id,
-            user.token
+            room_id, user.token
         );
 
         let response = test.put(&create_event_path, r#"{"topic":"fail"}"#);
 
         let json = response.json();
 
-        assert_eq!(json.get("errcode").unwrap().as_str().unwrap(), "IO_RUMA_BAD_EVENT");
+        assert_eq!(
+            json.get("errcode").unwrap().as_str().unwrap(),
+            "IO_RUMA_BAD_EVENT"
+        );
         assert_eq!(
             json.get("error").unwrap().as_str().unwrap(),
             "Events of type m.room.topic cannot be created with this API."
@@ -528,8 +606,7 @@ mod tests {
 
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/io.ruma.test/1?access_token={}",
-            room_id,
-            user.token
+            room_id, user.token
         );
 
         let response = test.put(&create_event_path, r#"{"foo":"bar"}"#);
@@ -545,8 +622,7 @@ mod tests {
         let room_id = "!random:ruma.test";
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.message/1?access_token={}",
-            room_id,
-            user.token
+            room_id, user.token
         );
 
         let response = test.put(&create_event_path, r#"{"body":"Hi","msgtype":"m.text"}"#);
@@ -566,7 +642,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} is not a member of the room", bob.id));
+            format!("The user {} is not a member of the room", bob.id)
+        );
     }
 
     #[test]
@@ -582,7 +659,8 @@ mod tests {
         assert_eq!(response.status, Status::Forbidden);
         assert_eq!(
             response.json().get("error").unwrap().as_str().unwrap(),
-            format!("The user {} has not joined the room", bob.id));
+            format!("The user {} has not joined the room", bob.id)
+        );
     }
 
     #[test]
@@ -597,11 +675,11 @@ mod tests {
 
         let state_event_path = format!(
             "/_matrix/client/r0/rooms/{}/state/m.room.power_levels?access_token={}",
-            room_id,
-            alice.token
+            room_id, alice.token
         );
 
-        let event_content = format!(r#"{{
+        let event_content = format!(
+            r#"{{
             "ban": 100,
             "events": {{ "m.room.message": 100 }},
             "events_default": 0,
@@ -611,7 +689,9 @@ mod tests {
             "state_default": 0,
             "users": {{ "{}": 50 }},
             "users_default": 0
-        }}"#, bob.id);
+        }}"#,
+            bob.id
+        );
 
         let response = test.put(&state_event_path, &event_content);
         assert_eq!(response.status, Status::Ok);
@@ -623,7 +703,8 @@ mod tests {
             "Insufficient power level to create this event."
         );
 
-        let event_content = format!(r#"{{
+        let event_content = format!(
+            r#"{{
             "ban": 100,
             "events": {{ "m.room.message": 0 }},
             "events_default": 0,
@@ -633,7 +714,9 @@ mod tests {
             "state_default": 0,
             "users": {{ "{}": 50 }},
             "users_default": 0
-        }}"#, bob.id);
+        }}"#,
+            bob.id
+        );
 
         // Now everyone can send messages
         let response = test.put(&state_event_path, &event_content);

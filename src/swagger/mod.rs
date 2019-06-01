@@ -1,8 +1,8 @@
 //! Data for [Swagger UI](https://github.com/swagger-api/swagger-ui).
 
-use iron::{Chain, Handler, IronResult, Request, Response, status};
 use iron::headers::ContentType;
 use iron::modifiers::Header;
+use iron::{status, Chain, Handler, IronResult, Request, Response};
 
 use crate::middleware::{MiddlewareChain, ResponseHeaders};
 

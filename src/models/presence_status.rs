@@ -1,13 +1,13 @@
 //! Storage and querying of presence status.
 
-use chrono::{Duration, NaiveDateTime, NaiveDate, Utc};
-use diesel::prelude::*;
+use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
 use diesel::dsl::any;
-use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use ruma_events::presence::PresenceState;
-use ruma_identifiers::{UserId, EventId};
+use ruma_identifiers::{EventId, UserId};
 
 use crate::error::ApiError;
 use crate::schema::presence_status;
@@ -65,25 +65,29 @@ impl PresenceStatus {
         homeserver_domain: &str,
         user_id: &UserId,
         presence: Option<PresenceState>,
-        status_msg: Option<String>
+        status_msg: Option<String>,
     ) -> Result<(), ApiError> {
         let event_id = &EventId::new(homeserver_domain).map_err(ApiError::from)?;
 
-        connection.transaction::<(), ApiError, _>(|| {
-            let status = PresenceStatus::find_by_uid(connection, user_id)?;
-            let presence = match presence {
-                Some(presence) => presence.to_string(),
-                None => match status {
-                    Some(ref status) => status.presence.clone(),
-                    None => "offline".to_string(),
-                }
-            };
+        connection
+            .transaction::<(), ApiError, _>(|| {
+                let status = PresenceStatus::find_by_uid(connection, user_id)?;
+                let presence = match presence {
+                    Some(presence) => presence.to_string(),
+                    None => match status {
+                        Some(ref status) => status.presence.clone(),
+                        None => "offline".to_string(),
+                    },
+                };
 
-            match status {
-                Some(mut status) => status.update(connection, presence, status_msg, event_id),
-                None => PresenceStatus::create(connection, user_id, presence, status_msg, event_id),
-            }
-        }).map_err(ApiError::from)
+                match status {
+                    Some(mut status) => status.update(connection, presence, status_msg, event_id),
+                    None => {
+                        PresenceStatus::create(connection, user_id, presence, status_msg, event_id)
+                    }
+                }
+            })
+            .map_err(ApiError::from)
     }
 
     /// Update a presence status entry.
@@ -92,7 +96,7 @@ impl PresenceStatus {
         connection: &PgConnection,
         presence: String,
         status_msg: Option<String>,
-        event_id: &EventId
+        event_id: &EventId,
     ) -> Result<(), ApiError> {
         self.presence = presence;
         self.status_msg = status_msg;
@@ -111,7 +115,7 @@ impl PresenceStatus {
         user_id: &UserId,
         presence: String,
         status_msg: Option<String>,
-        event_id: &EventId
+        event_id: &EventId,
     ) -> Result<(), ApiError> {
         let new_status = NewPresenceStatus {
             user_id: user_id.clone(),
@@ -130,11 +134,11 @@ impl PresenceStatus {
     /// Return `PresenceStatus` for given `UserId`.
     pub fn find_by_uid(
         connection: &PgConnection,
-        user_id: &UserId
+        user_id: &UserId,
     ) -> Result<Option<PresenceStatus>, ApiError> {
         let status = presence_status::table.find(user_id).first(connection);
 
-        match status{
+        match status {
             Ok(status) => Ok(Some(status)),
             Err(DieselError::NotFound) => Ok(None),
             Err(err) => Err(ApiError::from(err)),
@@ -157,13 +161,11 @@ impl PresenceStatus {
                     .filter(presence_status::updated_at.gt(time))
                     .get_results(connection)
                     .map_err(ApiError::from)
-            },
-            None => {
-                presence_status::table
-                    .filter(presence_status::user_id.eq(any(users)))
-                    .get_results(connection)
-                    .map_err(ApiError::from)
             }
+            None => presence_status::table
+                .filter(presence_status::user_id.eq(any(users)))
+                .get_results(connection)
+                .map_err(ApiError::from),
         }
     }
 }

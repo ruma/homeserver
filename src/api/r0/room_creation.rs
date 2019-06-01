@@ -4,8 +4,8 @@ use std::convert::From;
 
 use bodyparser;
 use diesel::prelude::*;
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_events::stripped::StrippedState;
 use ruma_identifiers::{RoomId, UserId};
 
@@ -44,7 +44,7 @@ struct CreateRoomRequest {
 
 #[derive(Clone, Debug, Deserialize)]
 struct CreationContent {
-    #[serde(rename="m.federate")]
+    #[serde(rename = "m.federate")]
     pub federate: Option<bool>,
 }
 
@@ -58,8 +58,11 @@ middleware_chain!(CreateRoom, [JsonRequest, AccessTokenAuth]);
 
 impl Handler for CreateRoom {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
             Ok(Some(create_room_request)) => create_room_request,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
@@ -71,7 +74,9 @@ impl Handler for CreateRoom {
         let new_room = NewRoom {
             id: RoomId::new(&config.domain).map_err(ApiError::from)?,
             user_id: user.id,
-            public: create_room_request.visibility.map_or(false, |v| v == RoomVisibility::Public),
+            public: create_room_request
+                .visibility
+                .map_or(false, |v| v == RoomVisibility::Public),
         };
 
         let federate = match create_room_request.creation_content {
@@ -81,10 +86,12 @@ impl Handler for CreateRoom {
 
         let preset = match create_room_request.preset {
             Some(preset) => preset,
-            None => if new_room.public {
-                RoomPreset::PublicChat
-            } else {
-                RoomPreset::PrivateChat
+            None => {
+                if new_room.public {
+                    RoomPreset::PublicChat
+                } else {
+                    RoomPreset::PrivateChat
+                }
             }
         };
 
@@ -98,25 +105,24 @@ impl Handler for CreateRoom {
             topic: create_room_request.topic,
         };
 
-        let room: Room = connection.transaction::<Room, ApiError, _>(|| {
-            let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
+        let room: Room = connection
+            .transaction::<Room, ApiError, _>(|| {
+                let room = Room::create(&connection, &new_room, &config.domain, &creation_options)?;
 
-            let options = RoomMembershipOptions {
-                room_id: room.id.clone(),
-                user_id: room.user_id.clone(),
-                sender: room.user_id.clone(),
-                membership: "join".to_string(),
-            };
+                let options = RoomMembershipOptions {
+                    room_id: room.id.clone(),
+                    user_id: room.user_id.clone(),
+                    sender: room.user_id.clone(),
+                    membership: "join".to_string(),
+                };
 
-            RoomMembership::create(&connection, &config.domain, options)?;
+                RoomMembership::create(&connection, &config.domain, options)?;
 
-            Ok(room)
-        })
-        .map_err(ApiError::from)?;
+                Ok(room)
+            })
+            .map_err(ApiError::from)?;
 
-        let response = CreateRoomResponse {
-            room_id: room.id,
-        };
+        let response = CreateRoomResponse { room_id: room.id };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
     }
@@ -132,8 +138,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         let response = test.post(&create_room_path, "{}");
 
@@ -145,8 +150,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().get("room_id").unwrap().as_str();
@@ -156,7 +160,12 @@ mod tests {
         let alias_response = test.get("/_matrix/client/r0/directory/room/my_room");
 
         assert_eq!(
-            alias_response.json().get("room_id").unwrap().as_str().unwrap(),
+            alias_response
+                .json()
+                .get("room_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             room_id.unwrap()
         );
     }
@@ -166,8 +175,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "public"}"#);
 
@@ -179,8 +187,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "private"}"#);
 
@@ -192,8 +199,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         let response = test.post(&create_room_path, r#"{"visibility": "bogus"}"#);
 
@@ -210,11 +216,14 @@ mod tests {
         let bob = test.create_user();
         let carl = test.create_user();
 
-        let room_options = format!(r#"{{"visibility": "private",
+        let room_options = format!(
+            r#"{{"visibility": "private",
                                         "invite": [
                                            "{}",
                                            "{}"
-                                        ]}}"#, bob.id, carl.id);
+                                        ]}}"#,
+            bob.id, carl.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
@@ -237,8 +246,8 @@ mod tests {
                                ]}"#;
 
         let response = test.post(
-            &format!( "/_matrix/client/r0/createRoom?access_token={}", alice.token),
-            room_options
+            &format!("/_matrix/client/r0/createRoom?access_token={}", alice.token),
+            room_options,
         );
 
         assert_eq!(
@@ -246,7 +255,13 @@ mod tests {
             "M_BAD_JSON"
         );
 
-        let error = response.json().get("error").unwrap().as_str().unwrap().to_string();
+        let error = response
+            .json()
+            .get("error")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
 
         assert!(error.starts_with("Unknown users in invite list:"));
         assert!(error.contains("@carl:ruma.test"));
@@ -260,7 +275,8 @@ mod tests {
         let alice = test.create_user();
         let bob = test.create_user();
 
-        let room_options = format!(r#"{{
+        let room_options = format!(
+            r#"{{
             "invite": [ "{}" ],
             "initial_state": [{{
                 "state_key": "",
@@ -277,7 +293,9 @@ mod tests {
                     "users_default": 0
                 }}
             }}]
-        }}"#, bob.id);
+        }}"#,
+            bob.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
@@ -325,7 +343,8 @@ mod tests {
         let dan = test.create_user();
         let eve = test.create_user();
 
-        let room_options = format!(r#"{{
+        let room_options = format!(
+            r#"{{
             "invite": [
                 "{0}",
                 "{1}"
@@ -348,7 +367,9 @@ mod tests {
                     "users_default": 0
                 }}
             }}]
-        }}"#, bob.id, carl.id);
+        }}"#,
+            bob.id, carl.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
@@ -389,12 +410,22 @@ mod tests {
         let second_alias_response = test.get_room_by_alias("alias_2");
 
         assert_eq!(
-            first_alias_response.json().get("room_id").unwrap().as_str().unwrap(),
+            first_alias_response
+                .json()
+                .get("room_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             room_id
         );
 
         assert_eq!(
-            second_alias_response.json().get("room_id").unwrap().as_str().unwrap(),
+            second_alias_response
+                .json()
+                .get("room_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             room_id
         );
     }
@@ -427,15 +458,21 @@ mod tests {
         let bob = test.create_user();
         let alice = test.create_user();
 
-        let room_options = format!(r#"{{
+        let room_options = format!(
+            r#"{{
             "invite": ["{}", "{}"],
             "preset": "trusted_private_chat"
-        }}"#, bob.id, carl.id);
+        }}"#,
+            bob.id, carl.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
         assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
-        assert_eq!(test.invite(&bob.token, &room_id, &carl.id).status, Status::Ok);
+        assert_eq!(
+            test.invite(&bob.token, &room_id, &carl.id).status,
+            Status::Ok
+        );
     }
 
     #[test]
@@ -446,7 +483,8 @@ mod tests {
         let bob = test.create_user();
         let alice = test.create_user();
 
-        let room_options = format!(r#"{{
+        let room_options = format!(
+            r#"{{
             "invite": ["{}"],
             "preset": "trusted_private_chat",
             "initial_state": [{{
@@ -464,13 +502,24 @@ mod tests {
                     "users_default": 0
                 }}
             }}]
-        }}"#, bob.id);
+        }}"#,
+            bob.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
         assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
-        assert_eq!(test.invite(&bob.token, &room_id, &carl.id).status, Status::Ok);
-        assert_eq!(test.send_message(&bob.token, &room_id, "Hi", 1).status, Status::Ok);
-        assert_eq!(test.send_message(&alice.token, &room_id, "Hi", 1).status, Status::Ok);
+        assert_eq!(
+            test.invite(&bob.token, &room_id, &carl.id).status,
+            Status::Ok
+        );
+        assert_eq!(
+            test.send_message(&bob.token, &room_id, "Hi", 1).status,
+            Status::Ok
+        );
+        assert_eq!(
+            test.send_message(&alice.token, &room_id, "Hi", 1).status,
+            Status::Ok
+        );
     }
 }

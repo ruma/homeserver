@@ -1,26 +1,26 @@
 //! Error types and conversions.
 
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
 use std::fmt::Error as FmtError;
+use std::fmt::{Debug, Display, Formatter};
 use std::io::Error as IoError;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 use std::time::SystemTimeError;
 
 use argon2rs::verifier::DecodeError;
-use diesel::result::Error as DieselError;
 use diesel::r2d2::PoolError as R2d2Error;
-use iron::{IronError, Response};
+use diesel::result::Error as DieselError;
 use iron::headers::ContentType;
 use iron::modifier::Modifier;
 use iron::status::Status;
+use iron::{IronError, Response};
 use macaroons::error::Error as MacaroonsError;
 use persistent::PersistentError;
 use rand::Error as RandError;
 use ruma_identifiers::Error as RumaIdentifiersError;
 use serde::ser::{Serialize, Serializer};
-use serde_json::{Error as SerdeJsonError, to_string};
+use serde_json::{to_string, Error as SerdeJsonError};
 
 /// A client-facing error.
 #[derive(Clone, Debug, Serialize)]
@@ -78,7 +78,8 @@ pub trait MapApiError {
     /// Similar to `map_err`, but prints the original error to the debug log and must always
     /// return an `ApiError`.
     fn map_api_err<O>(self, op: O) -> Result<Self::Output, ApiError>
-    where O: FnOnce(Self::Error) -> ApiError;
+    where
+        O: FnOnce(Self::Error) -> ApiError;
 }
 
 impl ApiError {
@@ -105,9 +106,8 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::BadJson,
-            error: message.unwrap_or_else(|| {
-                "Invalid or missing key-value pairs in JSON.".to_string()
-            }),
+            error: message
+                .unwrap_or_else(|| "Invalid or missing key-value pairs in JSON.".to_string()),
         }
     }
 
@@ -179,9 +179,8 @@ impl ApiError {
         let message = message.into();
         ApiError {
             errcode: ApiErrorCode::Unimplemented,
-            error: message.unwrap_or_else(|| {
-                "The homeserver does not implement this API.".to_string()
-            }),
+            error: message
+                .unwrap_or_else(|| "The homeserver does not implement this API.".to_string()),
         }
     }
 
@@ -322,7 +321,9 @@ impl Modifier<Response> for ApiError {
     fn modify(self, response: &mut Response) {
         response.headers.set(ContentType::json());
         response.status = Some(self.errcode.status_code());
-        response.body = Some(Box::new(to_string(&self).expect("ApiError should always serialize")));
+        response.body = Some(Box::new(
+            to_string(&self).expect("ApiError should always serialize"),
+        ));
     }
 }
 
@@ -331,16 +332,13 @@ impl ApiErrorCode {
     pub fn status_code(&self) -> Status {
         match *self {
             ApiErrorCode::AliasTaken => Status::Conflict,
-            ApiErrorCode::BadEvent |
-            ApiErrorCode::BadJson => Status::UnprocessableEntity,
-            ApiErrorCode::Forbidden |
-            ApiErrorCode::GuestAccessForbidden => Status::Forbidden,
-            ApiErrorCode::InvalidParam |
-            ApiErrorCode::MissingParam |
-            ApiErrorCode::NotJson => Status::BadRequest,
+            ApiErrorCode::BadEvent | ApiErrorCode::BadJson => Status::UnprocessableEntity,
+            ApiErrorCode::Forbidden | ApiErrorCode::GuestAccessForbidden => Status::Forbidden,
+            ApiErrorCode::InvalidParam | ApiErrorCode::MissingParam | ApiErrorCode::NotJson => {
+                Status::BadRequest
+            }
             ApiErrorCode::LimitExceeded => Status::TooManyRequests,
-            ApiErrorCode::NotFound |
-            ApiErrorCode::Unimplemented => Status::NotFound,
+            ApiErrorCode::NotFound | ApiErrorCode::Unimplemented => Status::NotFound,
             ApiErrorCode::Unknown => Status::InternalServerError,
             ApiErrorCode::UnknownToken => Status::Unauthorized,
         }
@@ -348,7 +346,10 @@ impl ApiErrorCode {
 }
 
 impl Serialize for ApiErrorCode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let value = match *self {
             ApiErrorCode::AliasTaken => "IO_RUMA_ALIAS_TAKEN",
             ApiErrorCode::BadEvent => "IO_RUMA_BAD_EVENT",
@@ -371,14 +372,20 @@ impl Serialize for ApiErrorCode {
 
 impl CliError {
     /// Create a new `CliError` from any `Error` type.
-    pub fn new<E>(error: E) -> CliError where E: Into<String> {
+    pub fn new<E>(error: E) -> CliError
+    where
+        E: Into<String>,
+    {
         CliError {
             error: error.into(),
         }
     }
 }
 
-impl<E> From<E> for CliError where E: Error {
+impl<E> From<E> for CliError
+where
+    E: Error,
+{
     fn from(error: E) -> CliError {
         CliError::new(error.description())
     }
@@ -390,12 +397,18 @@ impl Display for CliError {
     }
 }
 
-impl<T, E> MapApiError for Result<T, E> where E: Debug {
+impl<T, E> MapApiError for Result<T, E>
+where
+    E: Debug,
+{
     type Output = T;
     type Error = E;
 
     #[inline]
-    fn map_api_err<O>(self, op: O) -> Result<T, ApiError> where O: FnOnce(E) -> ApiError {
+    fn map_api_err<O>(self, op: O) -> Result<T, ApiError>
+    where
+        O: FnOnce(E) -> ApiError,
+    {
         match self {
             Ok(t) => Ok(t),
             Err(e) => {
@@ -407,14 +420,13 @@ impl<T, E> MapApiError for Result<T, E> where E: Debug {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use iron::Response;
+    use crate::error::ApiError;
     use iron::headers::ContentType;
     use iron::modifier::Modifier;
     use iron::status::Status;
-    use crate::error::ApiError;
+    use iron::Response;
 
     #[test]
     fn api_error_status_and_headers_modified() {
@@ -422,7 +434,10 @@ mod tests {
         let error = ApiError::unauthorized(None);
         error.modify(&mut response);
 
-        assert_eq!(response.headers.get::<ContentType>().unwrap(), &ContentType::json());
+        assert_eq!(
+            response.headers.get::<ContentType>().unwrap(),
+            &ContentType::json()
+        );
         assert_eq!(response.status.unwrap(), Status::Forbidden);
     }
 }

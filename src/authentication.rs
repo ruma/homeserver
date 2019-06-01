@@ -1,8 +1,8 @@
 //! User-interactive authentication.
 
 use diesel::pg::PgConnection;
-use iron::Response;
 use iron::modifier::Modifier;
+use iron::Response;
 use ruma_identifiers::UserId;
 use serde::{Serialize, Serializer};
 
@@ -18,9 +18,7 @@ pub struct InteractiveAuth {
 impl InteractiveAuth {
     /// Creates a new `InteractiveAuth` from the given flows.
     pub fn new(flows: Vec<Flow>) -> Self {
-        InteractiveAuth {
-            flows,
-        }
+        InteractiveAuth { flows }
     }
 }
 
@@ -34,16 +32,14 @@ impl<'a> Modifier<Response> for &'a InteractiveAuth {
 /// A list of `AuthType`s that satisfy authentication requirements.
 #[derive(Debug, Serialize)]
 pub struct Flow {
-    #[serde(rename="stages")]
+    #[serde(rename = "stages")]
     auth_types: Vec<AuthType>,
 }
 
 impl Flow {
     /// Creates a new `Flow` from the given auth types.
     pub fn new(auth_types: Vec<AuthType>) -> Self {
-        Flow {
-            auth_types,
-        }
+        Flow { auth_types }
     }
 }
 
@@ -55,7 +51,10 @@ pub enum AuthType {
 }
 
 impl Serialize for AuthType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let value = match *self {
             AuthType::Password => "m.login.password",
         };
@@ -68,7 +67,7 @@ impl Serialize for AuthType {
 #[derive(Clone, Debug)]
 pub enum AuthParams {
     /// m.login.password
-    Password(PasswordAuthParams)
+    Password(PasswordAuthParams),
 }
 
 /// m.login.password request parameters.

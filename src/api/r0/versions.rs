@@ -1,6 +1,6 @@
 //! Endpoints for information about supported versions of the Matrix spec.
 
-use iron::{Handler, IronResult, Request, Response, status};
+use iron::{status, Handler, IronResult, Request, Response};
 
 use crate::modifier::SerializableResponse;
 
@@ -14,9 +14,7 @@ impl Versions {
     /// Returns the list of supported `Versions` of the Matrix spec.
     pub fn supported() -> Self {
         Versions {
-            versions: vec![
-                "r0.2.0"
-            ]
+            versions: vec!["r0.2.0"],
         }
     }
 }

@@ -1,8 +1,8 @@
 //! Matrix room tags.
 use std::collections::HashMap;
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use ruma_events::tag::TagInfo;
 use ruma_identifiers::{RoomId, UserId};
@@ -10,7 +10,7 @@ use serde_json::de::from_str;
 
 use crate::error::ApiError;
 use crate::models::room::Room;
-use crate::schema::{rooms, room_tags};
+use crate::schema::{room_tags, rooms};
 
 /// A new Matrix room tag, not yet saved.
 #[derive(Debug, Clone, Insertable)]
@@ -42,7 +42,6 @@ pub struct RoomTag {
     pub content: String,
 }
 
-
 impl RoomTag {
     /// Return `RoomTag`'s for given `UserId` and `RoomId`.
     pub fn find(
@@ -50,9 +49,13 @@ impl RoomTag {
         user_id: UserId,
         room_id: RoomId,
     ) -> Result<HashMap<String, TagInfo>, ApiError> {
-        rooms::table.find(room_id.to_string()).first::<Room>(&*connection)
+        rooms::table
+            .find(room_id.to_string())
+            .first::<Room>(&*connection)
             .map_err(|err| match err {
-                DieselError::NotFound => ApiError::not_found("The given room_id does not correspond to tags".to_string()),
+                DieselError::NotFound => {
+                    ApiError::not_found("The given room_id does not correspond to tags".to_string())
+                }
                 _ => ApiError::from(err),
             })?;
         let tags: Vec<RoomTag> = room_tags::table
@@ -60,7 +63,9 @@ impl RoomTag {
             .filter(room_tags::user_id.eq(user_id))
             .get_results(connection)
             .map_err(|err| match err {
-                DieselError::NotFound => ApiError::not_found("The given user_id and room_id does not correspond to tags".to_string()),
+                DieselError::NotFound => ApiError::not_found(
+                    "The given user_id and room_id does not correspond to tags".to_string(),
+                ),
                 _ => ApiError::from(err),
             })?;
 
@@ -105,7 +110,7 @@ impl RoomTag {
 
         match entry {
             Some(mut entry) => entry.update(connection, content),
-            None => RoomTag::create(connection, user_id, room_id, tag, content)
+            None => RoomTag::create(connection, user_id, room_id, tag, content),
         }
     }
 
@@ -118,9 +123,13 @@ impl RoomTag {
         content: String,
     ) -> Result<(), ApiError> {
         connection.transaction(|| {
-            rooms::table.find(room_id.to_string()).first::<Room>(&*connection)
+            rooms::table
+                .find(room_id.to_string())
+                .first::<Room>(&*connection)
                 .map_err(|err| match err {
-                    DieselError::NotFound => ApiError::not_found("The given room_id does not correspond to a room".to_string()),
+                    DieselError::NotFound => ApiError::not_found(
+                        "The given room_id does not correspond to a room".to_string(),
+                    ),
                     _ => ApiError::from(err),
                 })?;
             let new_room_tag = NewRoomTag {
@@ -156,15 +165,20 @@ impl RoomTag {
             .filter(room_tags::room_id.eq(room_id))
             .filter(room_tags::user_id.eq(user_id))
             .filter(room_tags::tag.eq(tag));
-        tag.clone().first::<RoomTag>(connection)
+        tag.clone()
+            .first::<RoomTag>(connection)
             .map_err(|err| match err {
-                DieselError::NotFound => ApiError::not_found("The given room_id does not correspond to a tag".to_string()),
+                DieselError::NotFound => ApiError::not_found(
+                    "The given room_id does not correspond to a tag".to_string(),
+                ),
                 _ => ApiError::from(err),
             })?;
         diesel::delete(tag)
             .execute(connection)
             .map_err(|err| match err {
-                DieselError::NotFound => ApiError::not_found("The given user_id and room_id does not correspond to a tag".to_string()),
+                DieselError::NotFound => ApiError::not_found(
+                    "The given user_id and room_id does not correspond to a tag".to_string(),
+                ),
                 _ => ApiError::from(err),
             })?;
         Ok(())

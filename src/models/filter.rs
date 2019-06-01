@@ -2,12 +2,12 @@
 
 use std::fmt::{Formatter, Result as FmtResult};
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::{RoomId, UserId};
-use serde::{Deserializer, Serializer};
 use serde::de::{Error as SerdeError, Unexpected, Visitor};
+use serde::{Deserializer, Serializer};
 
 use crate::error::ApiError;
 use crate::schema::filters;
@@ -121,7 +121,10 @@ pub enum EventFormat {
 }
 
 impl ::serde::Serialize for EventFormat {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         serializer.serialize_str(match *self {
             EventFormat::Client => "client",
             EventFormat::Federation => "federation",
@@ -130,7 +133,10 @@ impl ::serde::Serialize for EventFormat {
 }
 
 impl<'de> ::serde::Deserialize<'de> for EventFormat {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         struct EventFormatVisitor;
 
         impl<'de> Visitor<'de> for EventFormatVisitor {
@@ -140,7 +146,10 @@ impl<'de> ::serde::Deserialize<'de> for EventFormat {
                 write!(formatter, "an event format")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<EventFormat, E> where E: SerdeError {
+            fn visit_str<E>(self, value: &str) -> Result<EventFormat, E>
+            where
+                E: SerdeError,
+            {
                 match value {
                     "client" => Ok(EventFormat::Client),
                     "federation" => Ok(EventFormat::Federation),
@@ -196,14 +205,14 @@ pub struct Filter {
     pub content: String,
 }
 
-
 impl Filter {
     /// Creates a new `Filter`
-    pub fn create(connection: &PgConnection, user_id: UserId, content: String)-> Result<i64, ApiError> {
-        let new_filter = NewFilter {
-            user_id,
-            content,
-        };
+    pub fn create(
+        connection: &PgConnection,
+        user_id: UserId,
+        content: String,
+    ) -> Result<i64, ApiError> {
+        let new_filter = NewFilter { user_id, content };
 
         let filter: Filter = diesel::insert_into(filters::table)
             .values(&new_filter)

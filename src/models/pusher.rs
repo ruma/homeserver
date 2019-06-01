@@ -1,7 +1,7 @@
 //! Matrix pusher.
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::UserId;
 
@@ -12,7 +12,7 @@ use crate::schema::pushers;
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct PusherData {
     /// Required if kind is http. The URL to use to send notifications to.
-    pub url: Option<String>
+    pub url: Option<String>,
 }
 
 /// Options for updating pusher
@@ -49,7 +49,7 @@ impl PusherOptions {
     /// Check for url when kind is http.
     pub fn is_valid(&self) -> bool {
         if self.kind == "http" {
-            return self.data.url.is_some()
+            return self.data.url.is_some();
         }
         true
     }
@@ -60,9 +60,7 @@ impl From<Pusher> for PusherOptions {
         PusherOptions {
             lang: pusher.lang,
             kind: pusher.kind,
-            data: PusherData {
-                url: pusher.url,
-            },
+            data: PusherData { url: pusher.url },
             device_display_name: pusher.device_display_name,
             app_id: pusher.app_id,
             profile_tag: pusher.profile_tag,
@@ -111,44 +109,48 @@ impl Pusher {
     pub fn upsert(
         connection: &PgConnection,
         user_id: &UserId,
-        options: &PusherOptions
+        options: &PusherOptions,
     ) -> Result<Pusher, ApiError> {
-        connection.transaction::<Pusher, ApiError, _>(|| {
-            if !options.is_valid() {
-                return Err(ApiError::bad_json("If kind is http, data.url shouldn't be null.".to_string()))
-            }
-            match options.append {
-                true => {
-                    let pusher = Pusher::find(
-                        connection,
-                        &user_id,
-                        &options.app_id
-                    )?;
-                    match pusher {
-                        Some(mut pusher) => {
-                            pusher.update(connection, options.clone())?;
-                            return Ok(pusher)
-                        },
-                        None => (),
+        connection
+            .transaction::<Pusher, ApiError, _>(|| {
+                if !options.is_valid() {
+                    return Err(ApiError::bad_json(
+                        "If kind is http, data.url shouldn't be null.".to_string(),
+                    ));
+                }
+                match options.append {
+                    true => {
+                        let pusher = Pusher::find(connection, &user_id, &options.app_id)?;
+                        match pusher {
+                            Some(mut pusher) => {
+                                pusher.update(connection, options.clone())?;
+                                return Ok(pusher);
+                            }
+                            None => (),
+                        }
                     }
-                },
-                false => {
-                    Pusher::delete_by_app_id_and_pushkey(
-                        connection,
-                        &options.app_id,
-                        &options.pushkey
-                    )?;
-                },
-            }
-            Ok(Pusher::create(connection, user_id.clone(), options.clone())?)
-        }).map_err(ApiError::from)
+                    false => {
+                        Pusher::delete_by_app_id_and_pushkey(
+                            connection,
+                            &options.app_id,
+                            &options.pushkey,
+                        )?;
+                    }
+                }
+                Ok(Pusher::create(
+                    connection,
+                    user_id.clone(),
+                    options.clone(),
+                )?)
+            })
+            .map_err(ApiError::from)
     }
 
     /// Delete a `Pusher`
     pub fn delete(
         connection: &PgConnection,
         user_id: &UserId,
-        app_id: &str
+        app_id: &str,
     ) -> Result<(), ApiError> {
         let pusher = pushers::table.find((user_id, &app_id));
         diesel::delete(pusher).execute(connection)?;
@@ -159,7 +161,7 @@ impl Pusher {
     fn update(
         &mut self,
         connection: &PgConnection,
-        options: PusherOptions
+        options: PusherOptions,
     ) -> Result<(), ApiError> {
         self.kind = options.kind;
         self.app_display_name = options.app_display_name;
@@ -178,7 +180,7 @@ impl Pusher {
     fn create(
         connection: &PgConnection,
         user_id: UserId,
-        options: PusherOptions
+        options: PusherOptions,
     ) -> Result<Pusher, ApiError> {
         let new_pusher = Pusher {
             user_id,
@@ -202,9 +204,11 @@ impl Pusher {
     pub fn find(
         connection: &PgConnection,
         user_id: &UserId,
-        app_id: &str
+        app_id: &str,
     ) -> Result<Option<Pusher>, ApiError> {
-        let pusher = pushers::table.find((user_id, app_id)).get_result(connection);
+        let pusher = pushers::table
+            .find((user_id, app_id))
+            .get_result(connection);
 
         match pusher {
             Ok(pusher) => Ok(Some(pusher)),
@@ -217,7 +221,7 @@ impl Pusher {
     pub fn delete_by_app_id_and_pushkey(
         connection: &PgConnection,
         app_id: &str,
-        pushkey: &str
+        pushkey: &str,
     ) -> Result<(), ApiError> {
         let pushers = pushers::table
             .filter(pushers::app_id.eq(app_id))
@@ -229,10 +233,11 @@ impl Pusher {
     /// Return all `Pusher`'s for given `UserId`.
     pub fn find_by_uid(
         connection: &PgConnection,
-        user_id: &UserId
+        user_id: &UserId,
     ) -> Result<Vec<Pusher>, ApiError> {
         pushers::table
             .filter(pushers::user_id.eq(user_id))
-            .get_results(connection).map_err(ApiError::from)
+            .get_results(connection)
+            .map_err(ApiError::from)
     }
 }

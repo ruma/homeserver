@@ -1,11 +1,8 @@
-use iron::{AfterMiddleware, IronError, IronResult, Request, Response, status};
 use iron::headers::{
-    AccessControlAllowHeaders,
-    AccessControlAllowMethods,
-    AccessControlAllowOrigin,
-    Server
+    AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin, Server,
 };
 use iron::method::Method;
+use iron::{status, AfterMiddleware, IronError, IronResult, Request, Response};
 use unicase::UniCase;
 
 /// Adds a number of response headers to Ruma HTTP responses.
@@ -13,19 +10,25 @@ pub struct ResponseHeaders;
 
 /// Adds a Server header to HTTP responses
 fn add_server_header(response: &mut Response) {
-    response.headers.set(
-        Server(format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")))
-    );
+    response.headers.set(Server(format!(
+        "{}/{}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    )));
 }
 
 /// Adds Cross-Origin Resource Sharing headers to HTTP responses.
 fn add_cors_headers(response: &mut Response) {
-    response.headers.set(AccessControlAllowHeaders(
-        vec![UniCase("accept".to_string()), UniCase("content-type".to_string())]
-    ));
-    response.headers.set(AccessControlAllowMethods(
-        vec![Method::Get, Method::Post, Method::Put, Method::Delete]
-    ));
+    response.headers.set(AccessControlAllowHeaders(vec![
+        UniCase("accept".to_string()),
+        UniCase("content-type".to_string()),
+    ]));
+    response.headers.set(AccessControlAllowMethods(vec![
+        Method::Get,
+        Method::Post,
+        Method::Put,
+        Method::Delete,
+    ]));
     response.headers.set(AccessControlAllowOrigin::Any);
 }
 
@@ -50,32 +53,37 @@ impl AfterMiddleware for ResponseHeaders {
 
 #[cfg(test)]
 mod tests {
-    use iron::method::Method;
-    use iron::headers::{
-        AccessControlAllowHeaders,
-        AccessControlAllowMethods,
-        AccessControlAllowOrigin,
-        Server
-    };
     use crate::test::{Response, Test};
+    use iron::headers::{
+        AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin, Server,
+    };
+    use iron::method::Method;
     use unicase::UniCase;
 
     fn check_for_modified_headers(response: &Response) {
         assert_eq!(
             response.headers.get::<Server>().unwrap(),
-            &Server(format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")))
+            &Server(format!(
+                "{}/{}",
+                env!("CARGO_PKG_NAME"),
+                env!("CARGO_PKG_VERSION")
+            ))
         );
         assert_eq!(
             response.headers.get::<AccessControlAllowHeaders>().unwrap(),
-            &AccessControlAllowHeaders(
-                vec![UniCase("accept".to_string()), UniCase("content-type".to_string())]
-            )
+            &AccessControlAllowHeaders(vec![
+                UniCase("accept".to_string()),
+                UniCase("content-type".to_string())
+            ])
         );
         assert_eq!(
             response.headers.get::<AccessControlAllowMethods>().unwrap(),
-            &AccessControlAllowMethods(
-                vec![Method::Get, Method::Post, Method::Put, Method::Delete]
-            )
+            &AccessControlAllowMethods(vec![
+                Method::Get,
+                Method::Post,
+                Method::Put,
+                Method::Delete
+            ])
         );
         assert_eq!(
             response.headers.get::<AccessControlAllowOrigin>().unwrap(),

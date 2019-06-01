@@ -2,17 +2,19 @@
 use std::collections::HashMap;
 
 use bodyparser;
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_events::tag::TagInfo;
 use serde_json::Value;
 
 use crate::db::DB;
 use crate::error::ApiError;
-use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, UserIdParam, TagParam};
+use crate::middleware::{
+    AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, TagParam, UserIdParam,
+};
 use crate::models::tags::RoomTag;
 use crate::models::user::User;
-use crate::modifier::{SerializableResponse, EmptyResponse};
+use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The GET `/user/:user_id/rooms/:room_id/tags` endpoint.
 pub struct GetTags;
@@ -26,25 +28,34 @@ pub struct TagsResponse {
 
 impl Handler for GetTags {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a RoomId").clone();
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a RoomId")
+            .clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         // Check if the given user_id corresponds to the authenticated user.
         if user_id != user.id {
-            Err(ApiError::unauthorized("The given user_id does not correspond to the authenticated user".to_string()))?;
+            Err(ApiError::unauthorized(
+                "The given user_id does not correspond to the authenticated user".to_string(),
+            ))?;
         }
 
         let connection = DB::from_request(request)?;
 
         let tags = RoomTag::find(&connection, user_id, room_id)?;
 
-        let response = TagsResponse {
-            tags,
-        };
+        let response = TagsResponse { tags };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
     }
@@ -53,22 +64,45 @@ impl Handler for GetTags {
 /// The PUT `/user/:user_id/rooms/:room_id/tags/:tag` endpoint.
 pub struct PutTag;
 
-middleware_chain!(PutTag, [UserIdParam, RoomIdParam, TagParam, JsonRequest, AccessTokenAuth]);
+middleware_chain!(
+    PutTag,
+    [
+        UserIdParam,
+        RoomIdParam,
+        TagParam,
+        JsonRequest,
+        AccessTokenAuth
+    ]
+);
 
 impl Handler for PutTag {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a RoomId").clone();
-        let tag = request.extensions.get::<TagParam>()
-            .expect("TagParam should ensure a tag").clone();
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a RoomId")
+            .clone();
+        let tag = request
+            .extensions
+            .get::<TagParam>()
+            .expect("TagParam should ensure a tag")
+            .clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         // Check if the given user_id corresponds to the authenticated user.
         if user_id != user.id {
-            Err(ApiError::unauthorized("The given user_id does not correspond to the authenticated user".to_string()))?;
+            Err(ApiError::unauthorized(
+                "The given user_id does not correspond to the authenticated user".to_string(),
+            ))?;
         }
 
         let content = match request.get::<bodyparser::Struct<Value>>() {
@@ -88,22 +122,39 @@ impl Handler for PutTag {
 /// The DELETE `/user/:user_id/rooms/:room_id/tags/:tag` endpoint.
 pub struct DeleteTag;
 
-middleware_chain!(DeleteTag, [UserIdParam, RoomIdParam, TagParam, AccessTokenAuth]);
+middleware_chain!(
+    DeleteTag,
+    [UserIdParam, RoomIdParam, TagParam, AccessTokenAuth]
+);
 
 impl Handler for DeleteTag {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
-        let room_id = request.extensions.get::<RoomIdParam>()
-            .expect("RoomIdParam should ensure a RoomId").clone();
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
-        let tag = request.extensions.get::<TagParam>()
-            .expect("TagParam should ensure a tag").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
+        let room_id = request
+            .extensions
+            .get::<RoomIdParam>()
+            .expect("RoomIdParam should ensure a RoomId")
+            .clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
+        let tag = request
+            .extensions
+            .get::<TagParam>()
+            .expect("TagParam should ensure a tag")
+            .clone();
 
         // Check if the given user_id corresponds to the authenticated user.
         if user_id != user.id {
-            Err(ApiError::unauthorized("The given user_id does not correspond to the authenticated user".to_string()))?;
+            Err(ApiError::unauthorized(
+                "The given user_id does not correspond to the authenticated user".to_string(),
+            ))?;
         }
 
         let connection = DB::from_request(request)?;
@@ -113,7 +164,6 @@ impl Handler for DeleteTag {
         Ok(Response::with(EmptyResponse(Status::Ok)))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -127,13 +177,17 @@ mod tests {
 
         let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&carl.token, &room_id, &carl.id, "work", r#"{"order":"test"}"#);
+        test.create_tag(
+            &carl.token,
+            &room_id,
+            &carl.id,
+            "work",
+            r#"{"order":"test"}"#,
+        );
 
         let get_tags_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -155,9 +209,7 @@ mod tests {
 
         let get_tags_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
-            carl.id,
-            room_id,
-            alice.token
+            carl.id, room_id, alice.token
         );
 
         let response = test.get(&get_tags_path);
@@ -173,10 +225,7 @@ mod tests {
         let room_id = test.create_public_room(&carl.token);
         let put_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/{}?access_token={}",
-            carl.id,
-            room_id,
-            "work",
-            alice.token
+            carl.id, room_id, "work", alice.token
         );
 
         let response = test.put(&put_tag_path, r#"{}"#);
@@ -191,13 +240,17 @@ mod tests {
 
         let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&carl.token, &room_id, carl.id.as_str(), "delete", r#"{"order":"test"}"#);
+        test.create_tag(
+            &carl.token,
+            &room_id,
+            carl.id.as_str(),
+            "delete",
+            r#"{"order":"test"}"#,
+        );
 
         let delete_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/delete?access_token={}",
-            carl.id,
-            room_id,
-            alice.token
+            carl.id, room_id, alice.token
         );
 
         let response = test.delete(&delete_tag_path);
@@ -211,15 +264,25 @@ mod tests {
 
         let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&carl.token, &room_id, &carl.id, "test", r#"{"order":"test"}"#);
+        test.create_tag(
+            &carl.token,
+            &room_id,
+            &carl.id,
+            "test",
+            r#"{"order":"test"}"#,
+        );
 
-        test.create_tag(&carl.token, &room_id, &carl.id, "test", r#"{"order":"test2"}"#);
+        test.create_tag(
+            &carl.token,
+            &room_id,
+            &carl.id,
+            "test",
+            r#"{"order":"test2"}"#,
+        );
 
         let get_tags_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -236,13 +299,17 @@ mod tests {
 
         let room_id = test.create_public_room(&carl.token);
 
-        test.create_tag(&carl.token, &room_id, &carl.id, "delete", r#"{"order":"test"}"#);
+        test.create_tag(
+            &carl.token,
+            &room_id,
+            &carl.id,
+            "delete",
+            r#"{"order":"test"}"#,
+        );
 
         let delete_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/delete?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.delete(&delete_tag_path);
@@ -250,9 +317,7 @@ mod tests {
 
         let get_tags_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -271,10 +336,7 @@ mod tests {
 
         let put_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/{}?access_token={}",
-            carl.id,
-            room_id,
-            "work",
-            carl.token
+            carl.id, room_id, "work", carl.token
         );
 
         let response = test.get(&put_tag_path);
@@ -290,9 +352,7 @@ mod tests {
 
         let get_tags_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.get(&get_tags_path);
@@ -307,9 +367,7 @@ mod tests {
 
         let delete_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/test?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.delete(&delete_tag_path);
@@ -319,9 +377,7 @@ mod tests {
 
         let delete_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/test?access_token={}",
-            carl.id,
-            room_id,
-            carl.token
+            carl.id, room_id, carl.token
         );
 
         let response = test.delete(&delete_tag_path);

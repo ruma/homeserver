@@ -1,10 +1,10 @@
 //! Endpoints for syncing.
-use std::u64;
 use std::error::Error;
 use std::str::FromStr;
+use std::u64;
 
-use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronResult, Request, Response};
 use ruma_events::presence::PresenceState;
 use serde_json::from_str;
 use url::Url;
@@ -24,8 +24,11 @@ middleware_chain!(Sync, [AccessTokenAuth]);
 
 impl Handler for Sync {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
@@ -44,7 +47,7 @@ impl Handler for Sync {
                     let content = from_str(value)
                         .map_err(|err| ApiError::invalid_param("filter", err.description()))?;
                     filter = Some(content);
-                },
+                }
                 ("since", value) => {
                     let batch = Batch::from_str(value)
                         .map_err(|err| ApiError::invalid_param("since", &err))?;
@@ -72,7 +75,8 @@ impl Handler for Sync {
                     Err(ApiError::invalid_param("set_presence", "Invalid enum!"))?;
                 }
                 ("timeout", value) => {
-                    timeout = u64::from_str_radix(value, 10).map_err(|err| ApiError::invalid_param("timeout", err.description()))?;
+                    timeout = u64::from_str_radix(value, 10)
+                        .map_err(|err| ApiError::invalid_param("timeout", err.description()))?;
                 }
                 _ => (),
             }
@@ -103,7 +107,7 @@ mod tests {
     use serde_json::from_str;
 
     use crate::models::filter::ContentFilter;
-    use crate::query::{SyncOptions};
+    use crate::query::SyncOptions;
 
     #[test]
     fn sync_without_new_events() {
@@ -115,7 +119,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: Some(PresenceState::Online),
-            timeout: 0
+            timeout: 0,
         };
 
         let response = test.sync(&alice.token, options);
@@ -130,7 +134,7 @@ mod tests {
             since: Some(first_batch.clone()),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
 
         let response = test.sync(&alice.token, options);
@@ -152,11 +156,14 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let next_batch = Test::get_next_batch(&response);
-        let room = response.json().pointer(&format!("/rooms/join/{}", room_id)).unwrap();
+        let room = response
+            .json()
+            .pointer(&format!("/rooms/join/{}", room_id))
+            .unwrap();
         assert!(room.is_object());
 
         let options = SyncOptions {
@@ -164,7 +171,7 @@ mod tests {
             since: Some(next_batch),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let room = response.json().pointer(&format!("/rooms/join/{}", room_id));
@@ -182,7 +189,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
@@ -192,12 +199,18 @@ mod tests {
             since: Some(since),
             full_state: true,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
-        let room = response.json().pointer(&format!("/rooms/join/{}", room_id)).unwrap();
+        let room = response
+            .json()
+            .pointer(&format!("/rooms/join/{}", room_id))
+            .unwrap();
         Test::assert_json_keys(room, vec!["timeline", "state", "ephemeral"]);
-        Test::assert_json_keys(room.get("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
+        Test::assert_json_keys(
+            room.get("timeline").unwrap(),
+            vec!["events", "limited", "prev_batch"],
+        );
         Test::assert_json_keys(room.get("state").unwrap(), vec!["events"]);
         Test::assert_json_keys(room.get("ephemeral").unwrap(), vec!["events"]);
     }
@@ -213,7 +226,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
@@ -224,13 +237,19 @@ mod tests {
             since: Some(since),
             full_state: true,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let since = Test::get_next_batch(&response);
-        let room = response.json().pointer(&format!("/rooms/join/{}", room_id)).unwrap();
+        let room = response
+            .json()
+            .pointer(&format!("/rooms/join/{}", room_id))
+            .unwrap();
         Test::assert_json_keys(room, vec!["timeline", "state", "ephemeral"]);
-        Test::assert_json_keys(room.get("timeline").unwrap(), vec!["events", "limited", "prev_batch"]);
+        Test::assert_json_keys(
+            room.get("timeline").unwrap(),
+            vec!["events", "limited", "prev_batch"],
+        );
         Test::assert_json_keys(room.get("state").unwrap(), vec!["events"]);
         Test::assert_json_keys(room.get("ephemeral").unwrap(), vec!["events"]);
 
@@ -239,7 +258,7 @@ mod tests {
             since: Some(since),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let room = response.json().pointer(&format!("/rooms/join/{}", room_id));
@@ -265,7 +284,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let timeline = response
@@ -279,9 +298,19 @@ mod tests {
         assert_eq!(events.len(), 2);
         let mut events = events.into_iter();
         let event = events.next().unwrap();
-        assert_eq!(EventId::try_from(event.get("event_id").unwrap().as_str().unwrap()).unwrap().opaque_id(), event_id_1);
+        assert_eq!(
+            EventId::try_from(event.get("event_id").unwrap().as_str().unwrap())
+                .unwrap()
+                .opaque_id(),
+            event_id_1
+        );
         let event = events.next().unwrap();
-        assert_eq!(EventId::try_from(event.get("event_id").unwrap().as_str().unwrap()).unwrap().opaque_id(), event_id_2);
+        assert_eq!(
+            EventId::try_from(event.get("event_id").unwrap().as_str().unwrap())
+                .unwrap()
+                .opaque_id(),
+            event_id_2
+        );
     }
 
     /// [https://github.com/matrix-org/sytest/blob/0eba37fc567d65f0a005090548c8df4d0e43775f/tests/31sync/04timeline.pl#L223]
@@ -295,7 +324,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let timeline = response
@@ -311,14 +340,17 @@ mod tests {
         let alice = test.create_user();
         let bob = test.create_user();
 
-        let room_options = format!(r#"{{
+        let room_options = format!(
+            r#"{{
             "invite": ["{}"],
             "initial_state": [{{
                 "state_key": "",
                 "type": "m.room.topic",
                 "content": {{ "topic": "Initial Topic" }}
             }}]
-        }}"#, bob.id);
+        }}"#,
+            bob.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
         assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
@@ -337,8 +369,10 @@ mod tests {
 
         let state_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         for e in state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
@@ -349,36 +383,33 @@ mod tests {
                         e.pointer("/content/creator").unwrap().as_str().unwrap(),
                         alice.id
                     );
-                },
+                }
                 "m.room.history_visibility" => {
                     assert_eq!(
-                        e.pointer("/content/history_visibility").unwrap().as_str().unwrap(),
+                        e.pointer("/content/history_visibility")
+                            .unwrap()
+                            .as_str()
+                            .unwrap(),
                         "shared"
                     );
-                },
+                }
                 "m.room.member" => {
-                    assert_eq!(
-                        e.get("sender").unwrap().as_str().unwrap(),
-                        bob.id
-                    );
+                    assert_eq!(e.get("sender").unwrap().as_str().unwrap(), bob.id);
 
                     assert_eq!(
                         e.pointer("/content/membership").unwrap().as_str().unwrap(),
                         "join"
                     );
-                },
+                }
                 "m.room.power_levels" => {
-                    assert_eq!(
-                        e.pointer("/content/kick").unwrap().as_u64().unwrap(),
-                        50
-                    );
-                },
+                    assert_eq!(e.pointer("/content/kick").unwrap().as_u64().unwrap(), 50);
+                }
                 "m.room.topic" => {
                     assert_eq!(
                         e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Initial Topic"
                     );
-                },
+                }
                 _ => {}
             }
         }
@@ -387,7 +418,7 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.topic",
-            r#"{ "topic": "Updated Topic" }"#
+            r#"{ "topic": "Updated Topic" }"#,
         );
         assert_eq!(response.status, Status::Ok);
 
@@ -396,8 +427,10 @@ mod tests {
 
         let state_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert_eq!(state_events.len(), 6);
 
@@ -410,7 +443,7 @@ mod tests {
                         e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Updated Topic"
                     );
-                },
+                }
                 _ => {}
             }
         }
@@ -428,8 +461,10 @@ mod tests {
 
         let state_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert_eq!(state_events.len(), 1);
         assert_eq!(
@@ -437,7 +472,11 @@ mod tests {
             "m.room.topic"
         );
         assert_eq!(
-            state_events[0].pointer("/content/topic").unwrap().as_str().unwrap(),
+            state_events[0]
+                .pointer("/content/topic")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "Updated Topic"
         );
     }
@@ -448,14 +487,17 @@ mod tests {
         let alice = test.create_user();
         let bob = test.create_user();
 
-        let room_options = format!(r#"{{
+        let room_options = format!(
+            r#"{{
             "invite": ["{}"],
             "initial_state": [{{
                 "state_key": "",
                 "type": "m.room.name",
                 "content": {{ "name": "Initial Name" }}
             }}]
-        }}"#, bob.id);
+        }}"#,
+            bob.id
+        );
 
         let room_id = test.create_room_with_params(&alice.token, &room_options);
 
@@ -472,8 +514,10 @@ mod tests {
 
         let joined_state_events = alice_sync_response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(joined_state_events.len() > 0);
 
@@ -486,7 +530,7 @@ mod tests {
                         e.pointer("/content/name").unwrap().as_str().unwrap(),
                         "Initial Name"
                     );
-                },
+                }
                 _ => {}
             }
         }
@@ -497,8 +541,10 @@ mod tests {
 
         let invited_state_events = bob_sync_response
             .json()
-            .pointer(&format!("/rooms/invite/{}/invite_state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/invite/{}/invite_state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(invited_state_events.len() > 0);
 
@@ -511,7 +557,7 @@ mod tests {
                         e.pointer("/content/name").unwrap().as_str().unwrap(),
                         "Initial Name"
                     );
-                },
+                }
                 "m.room.create" => {
                     assert_eq!(
                         e.pointer("/content/creator").unwrap().as_str().unwrap(),
@@ -526,7 +572,7 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.name",
-            r#"{ "name": "Updated Name" }"#
+            r#"{ "name": "Updated Name" }"#,
         );
         assert_eq!(room_name_event_response.status, Status::Ok);
 
@@ -543,8 +589,10 @@ mod tests {
 
         let invited_state_events = bob_sync_response
             .json()
-            .pointer(&format!("/rooms/invite/{}/invite_state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/invite/{}/invite_state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(invited_state_events.len() > 1);
 
@@ -557,8 +605,8 @@ mod tests {
                         e.pointer("/content/name").unwrap().as_str().unwrap(),
                         "Updated Name"
                     );
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
     }
@@ -588,8 +636,10 @@ mod tests {
 
         let state_events = bob_sync_response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(state_events.len() > 0);
 
@@ -599,12 +649,13 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.topic",
-            r#"{ "topic": "New Topic" }"#
+            r#"{ "topic": "New Topic" }"#,
         );
         assert_eq!(response.status, Status::Ok);
 
         // Bob syncs and uses a custom filter to include the left rooms in the response.
-        let include_leave_filter: ContentFilter = from_str(r#"{"room":{"include_leave":true}}"#).unwrap();
+        let include_leave_filter: ContentFilter =
+            from_str(r#"{"room":{"include_leave":true}}"#).unwrap();
 
         let options = SyncOptions {
             filter: Some(include_leave_filter.clone()),
@@ -634,8 +685,8 @@ mod tests {
                         e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "New Topic"
                     );
-                },
-                _ => { },
+                }
+                _ => {}
             }
         }
 
@@ -643,7 +694,7 @@ mod tests {
             &alice.token,
             &room_id,
             "m.room.topic",
-            r#"{ "topic": "Another Topic" }"#
+            r#"{ "topic": "Another Topic" }"#,
         );
         assert_eq!(response.status, Status::Ok);
 
@@ -661,8 +712,10 @@ mod tests {
 
         let leave_rooms = bob_sync_response
             .json()
-            .pointer("/rooms/leave").unwrap()
-            .as_object().unwrap();
+            .pointer("/rooms/leave")
+            .unwrap()
+            .as_object()
+            .unwrap();
         assert_eq!(leave_rooms.len(), 0);
 
         // Sync with the custom filter to include the left rooms.
@@ -680,8 +733,10 @@ mod tests {
 
         let left_state_events = bob_sync_response
             .json()
-            .pointer(&format!("/rooms/leave/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/leave/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         for e in left_state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
@@ -692,8 +747,8 @@ mod tests {
                         e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "New Topic"
                     );
-                },
-                _ => { },
+                }
+                _ => {}
             }
         }
     }
@@ -709,13 +764,21 @@ mod tests {
         assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);
 
         // Alice sends a message visible by Bob.
-        assert_eq!(test.send_message(&alice.token, &room_id, "Hi Bob", 1).status, Status::Ok);
+        assert_eq!(
+            test.send_message(&alice.token, &room_id, "Hi Bob", 1)
+                .status,
+            Status::Ok
+        );
 
         // Bob leaves the room and can no longer receive new messages in his timeline.
         assert_eq!(test.leave_room(&bob.token, &room_id).status, Status::Ok);
 
         // Alice sends a message not visible to Bob.
-        assert_eq!(test.send_message(&alice.token, &room_id, "Goodbye Bob", 2).status, Status::Ok);
+        assert_eq!(
+            test.send_message(&alice.token, &room_id, "Goodbye Bob", 2)
+                .status,
+            Status::Ok
+        );
 
         // Full timeline sync up to the point that Bob left the room.
         let include_leave_filter = from_str(r#"{"room":{"include_leave":true}}"#).unwrap();
@@ -732,15 +795,30 @@ mod tests {
 
         let left_room_timeline_events = response
             .json()
-            .pointer(&format!("/rooms/leave/{}/timeline/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/leave/{}/timeline/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(left_room_timeline_events.len() > 1);
 
         let last_room_event = left_room_timeline_events.last().unwrap();
-        assert_eq!(last_room_event.get("type").unwrap().as_str().unwrap(), "m.room.message");
-        assert_eq!(last_room_event.get("sender").unwrap().as_str().unwrap(), alice.id);
-        assert_eq!(last_room_event.pointer("/content/body").unwrap().as_str().unwrap(), "Hi Bob");
+        assert_eq!(
+            last_room_event.get("type").unwrap().as_str().unwrap(),
+            "m.room.message"
+        );
+        assert_eq!(
+            last_room_event.get("sender").unwrap().as_str().unwrap(),
+            alice.id
+        );
+        assert_eq!(
+            last_room_event
+                .pointer("/content/body")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "Hi Bob"
+        );
     }
 
     #[test]
@@ -776,15 +854,19 @@ mod tests {
 
         let state_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(state_events.len() > 0);
 
         let timeline_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/timeline/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/timeline/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert!(timeline_events.len() > 0);
 
@@ -805,8 +887,10 @@ mod tests {
 
         let state_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/state/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/state/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert_eq!(state_events.len(), initial_state_events_len);
 
@@ -819,21 +903,23 @@ mod tests {
                         e.pointer("/content/topic").unwrap().as_str().unwrap(),
                         "Initial Topic"
                     );
-                },
+                }
                 "m.room.name" => {
                     assert_eq!(
                         e.pointer("/content/name").unwrap().as_str().unwrap(),
                         "Initial Name"
                     );
-                },
-                _ => { }
+                }
+                _ => {}
             }
         }
 
         let timeline_events = response
             .json()
-            .pointer(&format!("/rooms/join/{}/timeline/events", room_id)).unwrap()
-            .as_array().unwrap();
+            .pointer(&format!("/rooms/join/{}/timeline/events", room_id))
+            .unwrap()
+            .as_array()
+            .unwrap();
 
         assert_eq!(timeline_events.len(), 0);
     }
@@ -843,10 +929,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let sync_path = format!(
-            "/_matrix/client/r0/sync?access_token={}",
-            user.token,
-        );
+        let sync_path = format!("/_matrix/client/r0/sync?access_token={}", user.token,);
 
         let response = test.get(&sync_path);
         assert_eq!(response.status, Status::Ok);
@@ -869,7 +952,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         assert_eq!(response.status, Status::Ok);
@@ -891,7 +974,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let next_batch = Test::get_next_batch(&response);
@@ -904,7 +987,7 @@ mod tests {
             since: Some(next_batch),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let events = response
@@ -924,13 +1007,15 @@ mod tests {
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_status_path);
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
-        Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence"]);
+        Test::assert_json_keys(
+            json,
+            vec!["currently_active", "last_active_ago", "presence"],
+        );
         assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "offline");
 
         let options = SyncOptions {
@@ -938,19 +1023,21 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: Some(PresenceState::Online),
-            timeout: 0
+            timeout: 0,
         };
         test.sync(&alice.token, options);
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_status_path);
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
-        Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence"]);
+        Test::assert_json_keys(
+            json,
+            vec!["currently_active", "last_active_ago", "presence"],
+        );
         assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "online");
     }
 
@@ -967,10 +1054,12 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":["{}", "{}"], "drop": []}}"#, bob.id, carl.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":["{}", "{}"], "drop": []}}"#, bob.id, carl.id),
+        );
         assert_eq!(response.status, Status::Ok);
 
         test.update_presence(&bob.token, &bob.id, r#"{"presence":"online"}"#);
@@ -981,20 +1070,37 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&alice.token, options);
-        let array = response.json().pointer("/presence/events").unwrap().as_array().unwrap();
+        let array = response
+            .json()
+            .pointer("/presence/events")
+            .unwrap()
+            .as_array()
+            .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 2);
 
         assert_eq!(
-            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
+            events
+                .next()
+                .unwrap()
+                .pointer("/content/user_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             bob.id
         );
 
         assert_eq!(
-            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
+            events
+                .next()
+                .unwrap()
+                .pointer("/content/user_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             carl.id
         );
 
@@ -1004,10 +1110,15 @@ mod tests {
             since: Some(next_batch),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&alice.token, options);
-        let array = response.json().pointer("/presence/events").unwrap().as_array().unwrap();
+        let array = response
+            .json()
+            .pointer("/presence/events")
+            .unwrap()
+            .as_array()
+            .unwrap();
         assert_eq!(array.len(), 0);
     }
 
@@ -1016,7 +1127,10 @@ mod tests {
         let test = Test::new();
         let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?since={}&access_token={}", "10s_234", carl.token));
+        let response = test.get(&format!(
+            "/_matrix/client/r0/sync?since={}&access_token={}",
+            "10s_234", carl.token
+        ));
         assert_eq!(response.status, Status::BadRequest);
     }
 
@@ -1025,7 +1139,10 @@ mod tests {
         let test = Test::new();
         let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?timeout={}&access_token={}", "10s_234", carl.token));
+        let response = test.get(&format!(
+            "/_matrix/client/r0/sync?timeout={}&access_token={}",
+            "10s_234", carl.token
+        ));
         assert_eq!(response.status, Status::BadRequest);
     }
 
@@ -1034,7 +1151,10 @@ mod tests {
         let test = Test::new();
         let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?set_presence={}&access_token={}", "10s_234", carl.token));
+        let response = test.get(&format!(
+            "/_matrix/client/r0/sync?set_presence={}&access_token={}",
+            "10s_234", carl.token
+        ));
         assert_eq!(response.status, Status::BadRequest);
     }
 
@@ -1043,7 +1163,10 @@ mod tests {
         let test = Test::new();
         let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?filter={}&access_token={}", "{10s_234", carl.token));
+        let response = test.get(&format!(
+            "/_matrix/client/r0/sync?filter={}&access_token={}",
+            "{10s_234", carl.token
+        ));
         assert_eq!(response.status, Status::BadRequest);
     }
 
@@ -1052,7 +1175,10 @@ mod tests {
         let test = Test::new();
         let (carl, _) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
-        let response = test.get(&format!("/_matrix/client/r0/sync?full_state={}&access_token={}", "{10s_234", carl.token));
+        let response = test.get(&format!(
+            "/_matrix/client/r0/sync?full_state={}&access_token={}",
+            "{10s_234", carl.token
+        ));
         assert_eq!(response.status, Status::BadRequest);
     }
 }

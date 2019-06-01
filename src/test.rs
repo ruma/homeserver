@@ -1,25 +1,25 @@
-use std::sync::{ONCE_INIT, Once};
 use std::convert::TryFrom;
+use std::sync::{Once, ONCE_INIT};
 
-use env_logger;
-use diesel::prelude::*;
 use diesel::migrations::setup_database;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::r2d2::{CustomizeConnection, Error as R2d2DieselError, Pool};
+use env_logger;
 use iron;
 use iron::headers::{ContentType, Headers};
 use iron::method::Method;
 use iron::status::Status;
 use iron_test::{request, response};
 use mount::Mount;
-use serde_json::{Value, from_str, to_string};
 use ruma_events::presence::PresenceState;
 use ruma_identifiers::UserId;
+use serde_json::{from_str, to_string, Value};
 
 use crate::config::Config;
 use crate::embedded_migrations::run as run_pending_migrations;
 use crate::models::pusher::PusherOptions;
-use crate::query::{SyncOptions, Batch};
+use crate::query::{Batch, SyncOptions};
 use crate::server::Server;
 
 static START: Once = ONCE_INIT;
@@ -37,7 +37,11 @@ pub struct TestUser {
 
 impl TestUser {
     pub fn new(user: UserId, token: String) -> Self {
-        TestUser { id: user.to_string(), token: token, name: user.localpart().to_string() }
+        TestUser {
+            id: user.to_string(),
+            token: token,
+            name: user.localpart().to_string(),
+        }
     }
 }
 
@@ -63,7 +67,8 @@ pub struct TestTransactionConnectionCustomizer;
 
 impl CustomizeConnection<PgConnection, R2d2DieselError> for TestTransactionConnectionCustomizer {
     fn on_acquire(&self, conn: &mut PgConnection) -> Result<(), R2d2DieselError> {
-        conn.begin_test_transaction().map_err(|error| R2d2DieselError::QueryError(error))
+        conn.begin_test_transaction()
+            .map_err(|error| R2d2DieselError::QueryError(error))
     }
 }
 
@@ -79,28 +84,25 @@ impl Test {
 
         START.call_once(|| {
             if PgConnection::establish(DATABASE_URL).is_ok() {
-                let connection = PgConnection::establish(POSTGRES_URL).expect(
-                    "Failed to connect to Postgres to drop the existing ruma_test table."
-                );
+                let connection = PgConnection::establish(POSTGRES_URL)
+                    .expect("Failed to connect to Postgres to drop the existing ruma_test table.");
 
                 connection.silence_notices(|| {
-                    connection.execute("DROP DATABASE IF EXISTS ruma_test").expect(
-                        "Failed to drop the existing ruma_test table."
-                    );
+                    connection
+                        .execute("DROP DATABASE IF EXISTS ruma_test")
+                        .expect("Failed to drop the existing ruma_test table.");
                 });
             }
 
-            let pg_connection = PgConnection::establish(POSTGRES_URL).expect(
-                "Failed to connect to Postgres."
-            );
+            let pg_connection =
+                PgConnection::establish(POSTGRES_URL).expect("Failed to connect to Postgres.");
 
-            pg_connection.execute("CREATE DATABASE ruma_test").expect(
-                "Failed to create the ruma_test table."
-            );
+            pg_connection
+                .execute("CREATE DATABASE ruma_test")
+                .expect("Failed to create the ruma_test table.");
 
-            let db_connection = PgConnection::establish(DATABASE_URL).expect(
-                "Failed to connect to Postgres database."
-            );
+            let db_connection = PgConnection::establish(DATABASE_URL)
+                .expect("Failed to connect to Postgres database.");
 
             setup_database(&db_connection).expect("Failed to create migrations table.");
             run_pending_migrations(&db_connection).expect("Failed to run migrations.");
@@ -184,13 +186,17 @@ impl Test {
     pub fn create_user(&self) -> TestUser {
         let response = self.register_user(&format!(r#"{{"password": "secret"}}"#));
 
-        let access_token = response.json().get("access_token")
+        let access_token = response
+            .json()
+            .get("access_token")
             .unwrap()
             .as_str()
             .unwrap()
             .to_string();
 
-        let user_id = response.json().get("user_id")
+        let user_id = response
+            .json()
+            .get("user_id")
             .unwrap()
             .as_str()
             .unwrap()
@@ -201,13 +207,19 @@ impl Test {
 
     /// Creates a room given the body parameters and returns the room ID as a string.
     pub fn create_room_with_params(&self, access_token: &str, body: &str) -> String {
-        self.post(&format!("/_matrix/client/r0/createRoom?access_token={}", access_token), body)
-            .json()
-            .get("room_id")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string()
+        self.post(
+            &format!(
+                "/_matrix/client/r0/createRoom?access_token={}",
+                access_token
+            ),
+            body,
+        )
+        .json()
+        .get("room_id")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .to_string()
     }
 
     /// Creates a room and returns the room ID as a string.
@@ -230,8 +242,7 @@ impl Test {
         let body = format!(r#"{{"user_id": "{}"}}"#, invitee_id);
         let path = format!(
             "/_matrix/client/r0/rooms/{}/invite?access_token={}",
-            room_id,
-            access_token
+            room_id, access_token
         );
 
         self.post(&path, &body)
@@ -243,7 +254,7 @@ impl Test {
         access_token: &str,
         room_id: &str,
         user_id: &str,
-        reason: Option<&str>
+        reason: Option<&str>,
     ) -> Response {
         let body = format!(
             r#"{{"user_id": "{}", "reason": "{}"}}"#,
@@ -252,8 +263,7 @@ impl Test {
         );
         let path = format!(
             "/_matrix/client/r0/rooms/{}/kick?access_token={}",
-            room_id,
-            access_token
+            room_id, access_token
         );
 
         self.post(&path, &body)
@@ -268,8 +278,7 @@ impl Test {
     pub fn join_room(&self, access_token: &str, room_id: &str) -> Response {
         let join_path = format!(
             "/_matrix/client/r0/rooms/{}/join?access_token={}",
-            room_id,
-            access_token
+            room_id, access_token
         );
 
         self.post(&join_path, r"{}")
@@ -279,21 +288,24 @@ impl Test {
     pub fn leave_room(&self, access_token: &str, room_id: &str) -> Response {
         let leave_room_path = format!(
             "/_matrix/client/r0/rooms/{}/leave?access_token={}",
-            room_id,
-            access_token
+            room_id, access_token
         );
 
         self.post(&leave_room_path, "{}")
     }
 
     /// Create tag
-    pub fn create_tag(&self, access_token: &str, room_id: &str, user_id: &str, tag: &str, content: &str) {
+    pub fn create_tag(
+        &self,
+        access_token: &str,
+        room_id: &str,
+        user_id: &str,
+        tag: &str,
+        content: &str,
+    ) {
         let put_tag_path = format!(
             "/_matrix/client/r0/user/{}/rooms/{}/tags/{}?access_token={}",
-            user_id,
-            room_id,
-            tag,
-            access_token
+            user_id, room_id, tag, access_token
         );
 
         let response = self.put(&put_tag_path, content);
@@ -304,8 +316,7 @@ impl Test {
     pub fn create_filter(&self, access_token: &str, user_id: &str, content: &str) -> String {
         let filter_path = format!(
             "/_matrix/client/r0/user/{}/filter?access_token={}",
-            user_id,
-            access_token
+            user_id, access_token
         );
 
         let response = self.post(&filter_path, content);
@@ -320,12 +331,16 @@ impl Test {
     }
 
     /// Send a message to room.
-    pub fn send_message(&self, access_token: &str, room_id: &str, message: &str, txn_id: u64) -> Response {
+    pub fn send_message(
+        &self,
+        access_token: &str,
+        room_id: &str,
+        message: &str,
+        txn_id: u64,
+    ) -> Response {
         let create_event_path = format!(
             "/_matrix/client/r0/rooms/{}/send/m.room.message/{}?access_token={}",
-            room_id,
-            txn_id,
-            access_token
+            room_id, txn_id, access_token
         );
         let body = format!(r#"{{"body":"{}","msgtype":"m.text"}}"#, message);
         self.put(&create_event_path, &body)
@@ -341,9 +356,7 @@ impl Test {
     ) -> Response {
         let state_event_path = format!(
             "/_matrix/client/r0/rooms/{}/state/{}?access_token={}",
-            room_id,
-            event_type,
-            access_token
+            room_id, event_type, access_token
         );
 
         self.put(&state_event_path, &event_content)
@@ -371,10 +384,18 @@ impl Test {
     /// Query sync with query parameter.
     pub fn sync(&self, access_token: &str, options: SyncOptions) -> Response {
         let mut path = match options.filter {
-            Some(ref filter) => format!("/_matrix/client/r0/sync?filter={}&access_token={}", to_string(filter).unwrap(), access_token),
+            Some(ref filter) => format!(
+                "/_matrix/client/r0/sync?filter={}&access_token={}",
+                to_string(filter).unwrap(),
+                access_token
+            ),
             None => format!("/_matrix/client/r0/sync?&access_token={}", access_token),
         };
-        path = if options.full_state { format!("{}&full_state=true", path) } else { path };
+        path = if options.full_state {
+            format!("{}&full_state=true", path)
+        } else {
+            path
+        };
         path = match options.set_presence {
             Some(PresenceState::Offline) => format!("{}&set_presence=offline", path),
             Some(PresenceState::Online) => format!("{}&set_presence=online", path),
@@ -403,10 +424,9 @@ impl Test {
     pub fn update_presence(&self, access_token: &str, user_id: &str, body: &str) -> Response {
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            user_id,
-            access_token
+            user_id, access_token
         );
-        let response = self.put(&presence_status_path , body);
+        let response = self.put(&presence_status_path, body);
         assert_eq!(response.status, Status::Ok);
         response
     }

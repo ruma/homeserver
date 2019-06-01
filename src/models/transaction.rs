@@ -1,7 +1,7 @@
 //! Matrix transaction.
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 
 use crate::error::ApiError;
@@ -27,7 +27,7 @@ impl Transaction {
         connection: &PgConnection,
         path: String,
         access_token: String,
-        response: String
+        response: String,
     ) -> Result<Transaction, ApiError> {
         let new_transaction = Transaction {
             path,
@@ -45,7 +45,7 @@ impl Transaction {
     pub fn find(
         connection: &PgConnection,
         path: &str,
-        access_token: &str
+        access_token: &str,
     ) -> Result<Option<Transaction>, ApiError> {
         let transaction = transactions::table
             .find((path, access_token))

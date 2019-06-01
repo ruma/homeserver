@@ -3,9 +3,9 @@ use std::error::Error;
 use std::fmt::{Formatter, Result as FmtResult};
 
 use bodyparser;
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
+use iron::{status, Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_identifiers::UserId;
-use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
+use serde::de::{Deserialize, Deserializer, Error as SerdeError, Visitor};
 
 use crate::authentication::{AuthParams, PasswordAuthParams};
 use crate::config::Config;
@@ -25,7 +25,10 @@ enum LoginType {
 }
 
 impl<'de> Deserialize<'de> for LoginType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         struct LoginTypeVisitor;
 
         impl<'de> Visitor<'de> for LoginTypeVisitor {
@@ -35,10 +38,15 @@ impl<'de> Deserialize<'de> for LoginType {
                 write!(formatter, "a login type")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<LoginType, E> where E: SerdeError {
+            fn visit_str<E>(self, value: &str) -> Result<LoginType, E>
+            where
+                E: SerdeError,
+            {
                 match value {
                     "m.login.password" => Ok(LoginType::Password),
-                    _ => Err(SerdeError::custom("Currenlty only m.login.password is supported")),
+                    _ => Err(SerdeError::custom(
+                        "Currenlty only m.login.password is supported",
+                    )),
                 }
             }
         }
@@ -50,7 +58,7 @@ impl<'de> Deserialize<'de> for LoginType {
 #[derive(Clone, Debug, Deserialize)]
 struct LoginRequest {
     /// The login type being used. Currently only "m.login.password" is supported.
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub login_type: LoginType,
     /// The fully qualified user ID or just local part of the user ID, to log in.
     pub user: String,
@@ -83,13 +91,17 @@ impl Handler for Login {
         let user_id = match UserId::try_from(login_request.user.as_ref()) {
             Ok(user_id) => {
                 if user_id.hostname().to_string() != config.domain {
-                    Err(ApiError::unauthorized("User cannot be identified by this homeserver".to_string()))?;
+                    Err(ApiError::unauthorized(
+                        "User cannot be identified by this homeserver".to_string(),
+                    ))?;
                 }
 
                 user_id
-            },
-            Err(_) => UserId::try_from(format!("@{}:{}", login_request.user, &config.domain).as_ref())
-                        .map_err(ApiError::from)?,
+            }
+            Err(_) => {
+                UserId::try_from(format!("@{}:{}", login_request.user, &config.domain).as_ref())
+                    .map_err(ApiError::from)?
+            }
         };
 
         let auth_params = AuthParams::Password(PasswordAuthParams {
@@ -98,10 +110,15 @@ impl Handler for Login {
         });
 
         let connection = DB::from_request(request)?;
-        let registered_user = auth_params.authenticate(&connection)
+        let registered_user = auth_params
+            .authenticate(&connection)
             .map_err(|_| ApiError::unauthorized("Invalid credentials".to_string()))?;
 
-        let access_token = AccessToken::create(&connection, &registered_user.id, &config.macaroon_secret_key)?;
+        let access_token = AccessToken::create(
+            &connection,
+            &registered_user.id,
+            &config.macaroon_secret_key,
+        )?;
 
         let response = LoginResponse {
             access_token: access_token.value,
@@ -122,9 +139,10 @@ mod tests {
     fn valid_credentials() {
         let test = Test::new();
 
-        assert!(test.register_user(
-            r#"{"username": "carl", "password": "secret"}"#
-        ).status.is_success());
+        assert!(test
+            .register_user(r#"{"username": "carl", "password": "secret"}"#)
+            .status
+            .is_success());
 
         let response = test.post(
             "/_matrix/client/r0/login",
@@ -132,8 +150,19 @@ mod tests {
         );
 
         assert!(response.json().get("access_token").is_some());
-        assert_eq!(response.json().get("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert_eq!(response.json().get("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
+        assert_eq!(
+            response
+                .json()
+                .get("home_server")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "ruma.test"
+        );
+        assert_eq!(
+            response.json().get("user_id").unwrap().as_str().unwrap(),
+            "@carl:ruma.test"
+        );
     }
 
     #[test]

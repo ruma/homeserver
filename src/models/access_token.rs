@@ -2,9 +2,9 @@
 
 use base64::encode;
 use chrono::{Duration, Utc};
-use diesel::prelude::*;
-use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
+use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use iron::typemap::Key;
 use macaroons::caveat::Caveat;
@@ -64,8 +64,10 @@ impl AccessToken {
     /// Creates an `AccessToken` from an access token string value.
     ///
     /// The access token cannot be revoked.
-    pub fn find_valid_by_token(connection: &PgConnection, token: &str)
-    -> Result<Option<AccessToken>, ApiError> {
+    pub fn find_valid_by_token(
+        connection: &PgConnection,
+        token: &str,
+    ) -> Result<Option<AccessToken>, ApiError> {
         let token = access_tokens::table
             .filter(access_tokens::value.eq(token))
             .filter(access_tokens::revoked.eq(false))
@@ -97,18 +99,22 @@ impl Key for AccessToken {
 fn create_macaroon(macaroon_secret_key: &[u8], user_id: &UserId) -> Result<String, ApiError> {
     let expiration = match Utc::now().checked_add_signed(Duration::hours(1)) {
         Some(datetime) => datetime,
-        None => return Err(
-            ApiError::unknown("Failed to generate access token expiration datetime.".to_string())
-        ),
+        None => {
+            return Err(ApiError::unknown(
+                "Failed to generate access token expiration datetime.".to_string(),
+            ))
+        }
     };
 
     let token = V1Token::new(macaroon_secret_key, b"key".to_vec(), None)
         .add_caveat(&Caveat::first_party(
-            format!("user_id = {}", user_id.to_string()).as_bytes().to_owned()
+            format!("user_id = {}", user_id.to_string())
+                .as_bytes()
+                .to_owned(),
         ))
         .add_caveat(&Caveat::first_party(b"type = access".to_vec()))
         .add_caveat(&Caveat::first_party(
-            format!("time < {}", expiration).as_bytes().to_owned()
+            format!("time < {}", expiration).as_bytes().to_owned(),
         ));
 
     let serialized = token.serialize()?;

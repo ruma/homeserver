@@ -4,9 +4,9 @@ use std::convert::TryFrom;
 use std::fmt::{Formatter, Result as FmtResult};
 
 use bodyparser;
-use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
+use iron::{status, Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use ruma_identifiers::UserId;
-use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
+use serde::de::{Deserialize, Deserializer, Error as SerdeError, Visitor};
 
 use crate::config::Config;
 use crate::crypto::hash_password;
@@ -52,7 +52,10 @@ struct RegistrationResponse {
 middleware_chain!(Register, [JsonRequest]);
 
 impl<'de> Deserialize<'de> for RegistrationKind {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         struct RegistrationKindVisitor;
 
         impl<'de> Visitor<'de> for RegistrationKindVisitor {
@@ -62,12 +65,15 @@ impl<'de> Deserialize<'de> for RegistrationKind {
                 write!(formatter, "a registration kind")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<RegistrationKind, E> where E: SerdeError {
+            fn visit_str<E>(self, value: &str) -> Result<RegistrationKind, E>
+            where
+                E: SerdeError,
+            {
                 match value {
                     "guest" => Ok(RegistrationKind::Guest),
                     "user" => Ok(RegistrationKind::User),
                     _ => Err(SerdeError::custom(
-                        r#"Parameter "kind" must be "guest" or "user""#
+                        r#"Parameter "kind" must be "guest" or "user""#,
                     )),
                 }
             }
@@ -111,11 +117,8 @@ impl Handler for Register {
             return Err(IronError::from(error));
         }
 
-        let (user, access_token) = User::create(
-            &connection,
-            &new_user,
-            &config.macaroon_secret_key,
-        )?;
+        let (user, access_token) =
+            User::create(&connection, &new_user, &config.macaroon_secret_key)?;
 
         let new_profile = Profile {
             id: user.id.clone(),
@@ -144,12 +147,18 @@ mod tests {
     fn minimum_input_parameters() {
         let test = Test::new();
 
-        let response = test.register_user(
-            r#"{"password": "secret"}"#,
-        );
+        let response = test.register_user(r#"{"password": "secret"}"#);
 
         assert!(response.json().get("access_token").is_some());
-        assert_eq!(response.json().get("home_server").unwrap().as_str().unwrap(), "ruma.test");
+        assert_eq!(
+            response
+                .json()
+                .get("home_server")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "ruma.test"
+        );
         assert!(response.json().get("user_id").is_some());
     }
 
@@ -158,12 +167,23 @@ mod tests {
         let test = Test::new();
 
         let response = test.register_user(
-            r#"{"bind_email": true, "kind": "user", "username":"carl", "password": "secret"}"#
+            r#"{"bind_email": true, "kind": "user", "username":"carl", "password": "secret"}"#,
         );
 
         assert!(response.json().get("access_token").is_some());
-        assert_eq!(response.json().get("home_server").unwrap().as_str().unwrap(), "ruma.test");
-        assert_eq!(response.json().get("user_id").unwrap().as_str().unwrap(), "@carl:ruma.test");
+        assert_eq!(
+            response
+                .json()
+                .get("home_server")
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            "ruma.test"
+        );
+        assert_eq!(
+            response.json().get("user_id").unwrap().as_str().unwrap(),
+            "@carl:ruma.test"
+        );
     }
 
     #[test]
@@ -171,7 +191,7 @@ mod tests {
         let test = Test::new();
 
         let response = test.register_user(
-            r#"{"bind_email": true, "kind": "guest", "username":"carl", "password": "secret"}"#
+            r#"{"bind_email": true, "kind": "guest", "username":"carl", "password": "secret"}"#,
         );
 
         assert_eq!(
@@ -185,13 +205,13 @@ mod tests {
         let test = Test::new();
 
         let response = test.register_user(
-            r#"{"bind_email": true, "kind": "user", "username": "alice", "password": "secret"}"#
+            r#"{"bind_email": true, "kind": "user", "username": "alice", "password": "secret"}"#,
         );
 
         assert_eq!(response.status, Status::Ok);
 
         let response = test.register_user(
-            r#"{"bind_email": true, "kind": "user", "username": "alice", "password": "secret"}"#
+            r#"{"bind_email": true, "kind": "user", "username": "alice", "password": "secret"}"#,
         );
 
         assert_eq!(response.status, Status::Forbidden);

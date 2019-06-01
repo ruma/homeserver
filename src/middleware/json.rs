@@ -1,8 +1,8 @@
 use bodyparser;
-use iron::{BeforeMiddleware, IronResult, Plugin, Request};
 use iron::headers::ContentType;
 use iron::mime::{Mime, SubLevel, TopLevel};
 use iron::typemap::Key;
+use iron::{BeforeMiddleware, IronResult, Plugin, Request};
 use serde_json::Value;
 
 use crate::error::ApiError;
@@ -16,10 +16,15 @@ impl Key for JsonRequest {
 
 impl BeforeMiddleware for JsonRequest {
     fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
-        if request.headers.get::<ContentType>().and_then(|content_type| match **content_type {
-            Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
-            _ => None,
-        }).is_none() {
+        if request
+            .headers
+            .get::<ContentType>()
+            .and_then(|content_type| match **content_type {
+                Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
+                _ => None,
+            })
+            .is_none()
+        {
             Err(ApiError::wrong_content_type(None))?
         }
 

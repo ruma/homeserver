@@ -1,17 +1,17 @@
 //! Endpoints for managing room aliases.
 
 use bodyparser;
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_identifiers::RoomId;
 
 use crate::config::Config;
 use crate::db::DB;
 use crate::error::ApiError;
 use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomAliasIdParam};
-use crate::models::room_alias::{RoomAlias, NewRoomAlias};
+use crate::models::room_alias::{NewRoomAlias, RoomAlias};
 use crate::models::user::User;
-use crate::modifier::{SerializableResponse, EmptyResponse};
+use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The GET `/directory/room/:room_alias` endpoint.
 pub struct GetRoomAlias;
@@ -28,8 +28,11 @@ middleware_chain!(GetRoomAlias, [RoomAliasIdParam]);
 
 impl Handler for GetRoomAlias {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
-            .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
+        let room_alias_id = request
+            .extensions
+            .get::<RoomAliasIdParam>()
+            .expect("RoomAliasIdParam should ensure a RoomAliasId")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
@@ -51,11 +54,17 @@ middleware_chain!(DeleteRoomAlias, [RoomAliasIdParam, AccessTokenAuth]);
 
 impl Handler for DeleteRoomAlias {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
-            .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
+        let room_alias_id = request
+            .extensions
+            .get::<RoomAliasIdParam>()
+            .expect("RoomAliasIdParam should ensure a RoomAliasId")
+            .clone();
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
@@ -65,7 +74,8 @@ impl Handler for DeleteRoomAlias {
             Ok(Response::with(EmptyResponse(Status::Ok)))
         } else {
             Err(ApiError::not_found(
-                "Provided room alias did not exist or you do not have access to delete it.".to_string()
+                "Provided room alias did not exist or you do not have access to delete it."
+                    .to_string(),
             ))?
         }
     }
@@ -80,22 +90,31 @@ struct PutRoomAliasRequest {
     pub room_id: RoomId,
 }
 
-middleware_chain!(PutRoomAlias, [JsonRequest, RoomAliasIdParam, AccessTokenAuth]);
+middleware_chain!(
+    PutRoomAlias,
+    [JsonRequest, RoomAliasIdParam, AccessTokenAuth]
+);
 
 impl Handler for PutRoomAlias {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let config = Config::from_request(request)?;
 
-        let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
-            .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
+        let room_alias_id = request
+            .extensions
+            .get::<RoomAliasIdParam>()
+            .expect("RoomAliasIdParam should ensure a RoomAliasId")
+            .clone();
 
         let room_id = match request.get::<bodyparser::Struct<PutRoomAliasRequest>>() {
             Ok(Some(req)) => req.room_id,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
@@ -122,14 +141,16 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().get("room_id").unwrap().as_str().unwrap();
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap(), room_id);
+        assert_eq!(
+            response.json().get("room_id").unwrap().as_str().unwrap(),
+            room_id
+        );
         assert!(response.json().get("servers").unwrap().is_array());
     }
 
@@ -138,8 +159,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
         let _ = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
         let response = test.get("/_matrix/client/r0/directory/room/no_room");
@@ -156,10 +176,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!(
-            "/_matrix/client/r0/createRoom?access_token={}",
-            user.token
-        );
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
@@ -182,10 +199,7 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!(
-            "/_matrix/client/r0/createRoom?access_token={}",
-            user.token
-        );
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
 
         test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
 
@@ -207,7 +221,8 @@ mod tests {
         let (carl, room_id) = test.initial_fixtures(r#"{"visibility": "public"}"#);
 
         let put_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", carl.token
+            "/_matrix/client/r0/directory/room/my_room?access_token={}",
+            carl.token
         );
         let put_room_alias_body = format!(r#"{{"room_id": "{}"}}"#, room_id);
         let response = test.put(&put_room_alias_path, &put_room_alias_body);
@@ -216,7 +231,10 @@ mod tests {
 
         let response = test.get("/_matrix/client/r0/directory/room/my_room");
 
-        assert_eq!(response.json().get("room_id").unwrap().as_str().unwrap(), room_id);
+        assert_eq!(
+            response.json().get("room_id").unwrap().as_str().unwrap(),
+            room_id
+        );
         assert!(response.json().get("servers").unwrap().is_array());
     }
 
@@ -226,7 +244,8 @@ mod tests {
         let user = test.create_user();
 
         let put_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", user.token
+            "/_matrix/client/r0/directory/room/my_room?access_token={}",
+            user.token
         );
         let put_room_alias_body = r#"{"room_id": "!nonexistent:ruma.test"}"#;
         let response = test.put(&put_room_alias_path, &put_room_alias_body);
@@ -239,13 +258,13 @@ mod tests {
         let test = Test::new();
         let user = test.create_user();
 
-        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}",
-                                       user.token);
+        let create_room_path = format!("/_matrix/client/r0/createRoom?access_token={}", user.token);
         let response = test.post(&create_room_path, r#"{"room_alias_name": "my_room"}"#);
         let room_id = response.json().get("room_id").unwrap().as_str().unwrap();
 
         let put_room_alias_path = format!(
-            "/_matrix/client/r0/directory/room/my_room?access_token={}", user.token
+            "/_matrix/client/r0/directory/room/my_room?access_token={}",
+            user.token
         );
         let put_room_alias_body = format!(r#"{{"room_id": "{}"}}"#, room_id);
         let response = test.put(&put_room_alias_path, &put_room_alias_body);

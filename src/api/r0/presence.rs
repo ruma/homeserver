@@ -2,19 +2,19 @@
 
 use bodyparser;
 use iron::status::Status;
-use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
-use ruma_identifiers::UserId;
+use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use ruma_events::presence::PresenceState;
+use ruma_identifiers::UserId;
 
 use crate::config::Config;
 use crate::db::DB;
 use crate::error::ApiError;
 use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
-use crate::models::room_membership::RoomMembership;
 use crate::models::presence_list::PresenceList;
-use crate::models::presence_status::{PresenceStatus, get_now};
+use crate::models::presence_status::{get_now, PresenceStatus};
+use crate::models::room_membership::RoomMembership;
 use crate::models::user::User;
-use crate::modifier::{SerializableResponse, EmptyResponse};
+use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The PUT `/presence/:user_id/status` endpoint.
 pub struct PutPresenceStatus;
@@ -27,27 +27,37 @@ struct PutPresenceStatusRequest {
     presence: PresenceState,
 }
 
-middleware_chain!(PutPresenceStatus, [UserIdParam, JsonRequest, AccessTokenAuth]);
+middleware_chain!(
+    PutPresenceStatus,
+    [UserIdParam, JsonRequest, AccessTokenAuth]
+);
 
 impl Handler for PutPresenceStatus {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let put_presence_status_request = match request.get::<bodyparser::Struct<PutPresenceStatusRequest>>() {
-            Ok(Some(request)) => request,
-            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
-        };
+        let put_presence_status_request =
+            match request.get::<bodyparser::Struct<PutPresenceStatusRequest>>() {
+                Ok(Some(request)) => request,
+                Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
+            };
 
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                "The given user_id does not correspond to the authenticated user".to_string()
+                "The given user_id does not correspond to the authenticated user".to_string(),
             );
             return Err(IronError::from(error));
         }
@@ -57,7 +67,7 @@ impl Handler for PutPresenceStatus {
             &config.domain,
             &user_id,
             Some(put_presence_status_request.presence),
-            put_presence_status_request.status_msg
+            put_presence_status_request.status_msg,
         )?;
 
         Ok(Response::with(EmptyResponse(Status::Ok)))
@@ -84,36 +94,40 @@ struct GetPresenceStatusResponse {
 
 impl Handler for GetPresenceStatus {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
         if user.id != user_id {
-            let rooms = RoomMembership::find_common_rooms(
-                &connection,
-                &user.id,
-                &user_id,
-                "join"
-            )?;
+            let rooms = RoomMembership::find_common_rooms(&connection, &user.id, &user_id, "join")?;
             if rooms.is_empty() {
-                Err(ApiError::unauthorized(
-                    format!("You are not authorized to get the presence status for the given user_id: {}.", user_id)
-                ))?;
+                Err(ApiError::unauthorized(format!(
+                    "You are not authorized to get the presence status for the given user_id: {}.",
+                    user_id
+                )))?;
             }
         }
 
         let status = match PresenceStatus::find_by_uid(&connection, &user_id)? {
             Some(status) => status,
-            None => Err(
-                ApiError::not_found("The given user_id does not correspond to an presence status".to_string())
-            )?,
+            None => Err(ApiError::not_found(
+                "The given user_id does not correspond to an presence status".to_string(),
+            ))?,
         };
 
-        let presence_state: PresenceState = status.presence.parse()
+        let presence_state: PresenceState = status
+            .presence
+            .parse()
             .expect("Database insert should ensure a PresenceState");
 
         let now = get_now();
@@ -141,25 +155,35 @@ struct PostPresenceListRequest {
     drop: Vec<UserId>,
 }
 
-middleware_chain!(PostPresenceList, [JsonRequest, UserIdParam, AccessTokenAuth]);
+middleware_chain!(
+    PostPresenceList,
+    [JsonRequest, UserIdParam, AccessTokenAuth]
+);
 
 impl Handler for PostPresenceList {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let put_presence_list_request = match request.get::<bodyparser::Struct<PostPresenceListRequest>>() {
-            Ok(Some(request)) => request,
-            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
-        };
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let put_presence_list_request =
+            match request.get::<bodyparser::Struct<PostPresenceListRequest>>() {
+                Ok(Some(request)) => request,
+                Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
+            };
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                "The given user_id does not correspond to the authenticated user".to_string()
+                "The given user_id does not correspond to the authenticated user".to_string(),
             );
 
             return Err(IronError::from(error));
@@ -169,7 +193,7 @@ impl Handler for PostPresenceList {
             &connection,
             &user_id,
             &put_presence_list_request.invite,
-            put_presence_list_request.drop
+            put_presence_list_request.drop,
         )?;
 
         Ok(Response::with(EmptyResponse(Status::Ok)))
@@ -183,16 +207,15 @@ middleware_chain!(GetPresenceList, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetPresenceList {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
-        let (_, events) = PresenceList::find_events_by_uid(
-            &connection,
-            &user_id,
-            None
-        )?;
+        let (_, events) = PresenceList::find_events_by_uid(&connection, &user_id, None)?;
 
         Ok(Response::with((Status::Ok, SerializableResponse(events))))
     }
@@ -216,13 +239,15 @@ mod tests {
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_status_path);
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
-        Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence"]);
+        Test::assert_json_keys(
+            json,
+            vec!["currently_active", "last_active_ago", "presence"],
+        );
         assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "online");
     }
 
@@ -231,17 +256,28 @@ mod tests {
         let test = Test::new();
         let alice = test.create_user();
 
-        test.update_presence(&alice.token, &alice.id, r#"{"presence":"online", "status_msg": "Oscar!"}"#);
+        test.update_presence(
+            &alice.token,
+            &alice.id,
+            r#"{"presence":"online", "status_msg": "Oscar!"}"#,
+        );
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_status_path);
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
-        Test::assert_json_keys(json, vec!["currently_active", "last_active_ago", "presence", "status_msg"]);
+        Test::assert_json_keys(
+            json,
+            vec![
+                "currently_active",
+                "last_active_ago",
+                "presence",
+                "status_msg",
+            ],
+        );
         assert_eq!(json.get("presence").unwrap().as_str().unwrap(), "online");
         assert_eq!(json.get("status_msg").unwrap().as_str().unwrap(), "Oscar!");
     }
@@ -256,8 +292,7 @@ mod tests {
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            carl.token
+            alice.id, carl.token
         );
         let response = test.get(&presence_status_path);
         assert_eq!(response.status, Status::Forbidden);
@@ -270,8 +305,7 @@ mod tests {
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_status_path);
         assert_eq!(response.status, Status::NotFound);
@@ -285,8 +319,7 @@ mod tests {
 
         let presence_status_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            oscar.token
+            alice.id, oscar.token
         );
         let response = test.put(&presence_status_path, r#"{"presence":"online"}"#);
         assert_eq!(response.status, Status::Forbidden);
@@ -305,19 +338,23 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":["{}", "{}"], "drop": []}}"#, carl.id, bob.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":["{}", "{}"], "drop": []}}"#, carl.id, bob.id),
+        );
         assert_eq!(response.status, Status::Ok);
 
         let avatar_url_body = r#"{"avatar_url": "mxc://matrix.org/some/url"}"#;
         let avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            bob.id,
-            bob.token
+            bob.id, bob.token
         );
-        assert!(test.put(&avatar_url_path, avatar_url_body).status.is_success());
+        assert!(test
+            .put(&avatar_url_path, avatar_url_body)
+            .status
+            .is_success());
 
         test.update_presence(&bob.token, &bob.id, r#"{"presence":"online"}"#);
         test.update_presence(&bob.token, &bob.id, r#"{"presence":"online"}"#);
@@ -325,8 +362,7 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_list_path);
         assert_eq!(response.status, Status::Ok);
@@ -336,12 +372,24 @@ mod tests {
         assert_eq!(events.len(), 2);
 
         assert_eq!(
-            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
+            events
+                .next()
+                .unwrap()
+                .pointer("/content/user_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             bob.id
         );
 
         assert_eq!(
-            events.next().unwrap().pointer("/content/user_id").unwrap().as_str().unwrap(),
+            events
+                .next()
+                .unwrap()
+                .pointer("/content/user_id")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             carl.id
         );
     }
@@ -355,10 +403,12 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":["{}", "{}"], "drop": []}}"#, carl.id, bob.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":["{}", "{}"], "drop": []}}"#, carl.id, bob.id),
+        );
         assert_eq!(response.status, Status::Forbidden);
     }
 
@@ -369,10 +419,12 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, r#"{"invite":["@carl:ruma.test"], "drop": []}"#);
+        let response = test.post(
+            &presence_list_path,
+            r#"{"invite":["@carl:ruma.test"], "drop": []}"#,
+        );
         assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
@@ -383,10 +435,12 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, r#"{"invite":[], "drop": ["@carl:ruma.test"]}"#);
+        let response = test.post(
+            &presence_list_path,
+            r#"{"invite":[], "drop": ["@carl:ruma.test"]}"#,
+        );
         assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
@@ -401,18 +455,19 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":["{}"], "drop": []}}"#, bob.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":["{}"], "drop": []}}"#, bob.id),
+        );
         assert_eq!(response.status, Status::Ok);
 
         test.update_presence(&bob.token, &bob.id, r#"{"presence":"online"}"#);
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_list_path);
         assert_eq!(response.status, Status::Ok);
@@ -421,16 +476,17 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":[], "drop": ["{}"]}}"#, bob.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":[], "drop": ["{}"]}}"#, bob.id),
+        );
         assert_eq!(response.status, Status::Ok);
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
         let response = test.get(&presence_list_path);
         assert_eq!(response.status, Status::Ok);
@@ -459,25 +515,33 @@ mod tests {
 
         let alice_presence_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            alice.id,
-            carl.token
+            alice.id, carl.token
         );
 
         let bob_presence_path = format!(
             "/_matrix/client/r0/presence/{}/status?access_token={}",
-            bob.id,
-            carl.token
+            bob.id, carl.token
         );
 
         let bob_response = test.get(&bob_presence_path);
         assert_eq!(bob_response.status, Status::Ok);
-        let last_active_ago = bob_response.json().get("last_active_ago").unwrap().as_u64().unwrap();
+        let last_active_ago = bob_response
+            .json()
+            .get("last_active_ago")
+            .unwrap()
+            .as_u64()
+            .unwrap();
         assert!(last_active_ago > 2_000);
         assert!(last_active_ago < 2_500);
 
         let alice_response = test.get(&alice_presence_path);
         assert_eq!(alice_response.status, Status::Ok);
-        let last_active_ago = alice_response.json().get("last_active_ago").unwrap().as_u64().unwrap();
+        let last_active_ago = alice_response
+            .json()
+            .get("last_active_ago")
+            .unwrap()
+            .as_u64()
+            .unwrap();
         assert!(last_active_ago > 4_000);
         assert!(last_active_ago < 4_500);
     }

@@ -1,10 +1,10 @@
 //! Account information stored for a user.
 
+use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use diesel::pg::PgConnection;
 use iron::typemap::Key;
-use ruma_identifiers::{UserId, RoomId};
+use ruma_identifiers::{RoomId, UserId};
 
 use crate::error::ApiError;
 use crate::schema::{account_data, room_account_data};
@@ -37,8 +37,10 @@ pub struct NewAccountData {
 
 impl AccountData {
     /// Create new `AccountData` for a user.
-    pub fn create(connection: &PgConnection, new_account_data: &NewAccountData)
-    -> Result<AccountData, ApiError> {
+    pub fn create(
+        connection: &PgConnection,
+        new_account_data: &NewAccountData,
+    ) -> Result<AccountData, ApiError> {
         diesel::insert_into(account_data::table)
             .values(new_account_data)
             .get_result(connection)
@@ -46,8 +48,11 @@ impl AccountData {
     }
 
     /// Look up an `AccountData` entry using the `UserId` and the data type of the data.
-    pub fn find_by_uid_and_type(connection: &PgConnection, user_id: &UserId, data_type: &str)
-    -> Result<AccountData, DieselError> {
+    pub fn find_by_uid_and_type(
+        connection: &PgConnection,
+        user_id: &UserId,
+        data_type: &str,
+    ) -> Result<AccountData, DieselError> {
         account_data::table
             .filter(account_data::user_id.eq(user_id))
             .filter(account_data::data_type.eq(data_type))
@@ -56,8 +61,11 @@ impl AccountData {
     }
 
     /// Update an `AccountData` entry with new content.
-    pub fn update(&mut self, connection: &PgConnection, content: String)
-    -> Result<AccountData, ApiError> {
+    pub fn update(
+        &mut self,
+        connection: &PgConnection,
+        content: String,
+    ) -> Result<AccountData, ApiError> {
         self.content = content;
 
         self.save_changes::<AccountData>(connection)
@@ -65,10 +73,8 @@ impl AccountData {
     }
 
     /// Delete all account data of a user given a `UserId`.
-    pub fn delete_by_uid(connection: &PgConnection, uid: &UserId)
-    -> Result<usize, ApiError> {
-        let rows = account_data::table
-            .filter(account_data::user_id.eq(uid));
+    pub fn delete_by_uid(connection: &PgConnection, uid: &UserId) -> Result<usize, ApiError> {
+        let rows = account_data::table.filter(account_data::user_id.eq(uid));
 
         diesel::delete(rows)
             .execute(connection)
@@ -76,8 +82,10 @@ impl AccountData {
     }
 
     /// Get all account data given a `UserId`.
-    pub fn get_by_uid(connection: &PgConnection, uid: &UserId)
-    -> Result<Vec<AccountData>, ApiError> {
+    pub fn get_by_uid(
+        connection: &PgConnection,
+        uid: &UserId,
+    ) -> Result<Vec<AccountData>, ApiError> {
         account_data::table
             .filter(account_data::user_id.eq(uid))
             .load::<AccountData>(connection)
@@ -85,20 +93,17 @@ impl AccountData {
     }
 
     /// Update an existing entry or create a new one.
-    pub fn upsert(connection: &PgConnection, new_data: &NewAccountData)
-    -> Result<AccountData, ApiError> {
-        match AccountData::find_by_uid_and_type(
-            connection,
-            &new_data.user_id,
-            &new_data.data_type
-        ) {
+    pub fn upsert(
+        connection: &PgConnection,
+        new_data: &NewAccountData,
+    ) -> Result<AccountData, ApiError> {
+        match AccountData::find_by_uid_and_type(connection, &new_data.user_id, &new_data.data_type)
+        {
             Ok(mut saved) => saved.update(connection, new_data.content.clone()),
-            Err(err) => {
-                match err {
-                    DieselError::NotFound => AccountData::create(connection, new_data),
-                    _ => Err(ApiError::from(err))
-                }
-            }
+            Err(err) => match err {
+                DieselError::NotFound => AccountData::create(connection, new_data),
+                _ => Err(ApiError::from(err)),
+            },
         }
     }
 }
@@ -139,8 +144,10 @@ pub struct NewRoomAccountData {
 
 impl RoomAccountData {
     /// Create new `RoomAccountData` for a user.
-    pub fn create(connection: &PgConnection, new_account_data: &NewRoomAccountData)
-    -> Result<RoomAccountData, ApiError> {
+    pub fn create(
+        connection: &PgConnection,
+        new_account_data: &NewRoomAccountData,
+    ) -> Result<RoomAccountData, ApiError> {
         diesel::insert_into(room_account_data::table)
             .values(new_account_data)
             .get_result(connection)
@@ -148,8 +155,12 @@ impl RoomAccountData {
     }
 
     /// Look up a `RoomAccountData` entry.
-    pub fn find(connection: &PgConnection, uid: &UserId, rid: &RoomId, data_type: &str)
-    -> Result<RoomAccountData, DieselError> {
+    pub fn find(
+        connection: &PgConnection,
+        uid: &UserId,
+        rid: &RoomId,
+        data_type: &str,
+    ) -> Result<RoomAccountData, DieselError> {
         room_account_data::table
             .filter(room_account_data::user_id.eq(uid))
             .filter(room_account_data::room_id.eq(rid))
@@ -159,8 +170,11 @@ impl RoomAccountData {
     }
 
     /// Update an `RoomAccountData` entry with new content.
-    pub fn update(&mut self, connection: &PgConnection, content: String)
-    -> Result<RoomAccountData, ApiError> {
+    pub fn update(
+        &mut self,
+        connection: &PgConnection,
+        content: String,
+    ) -> Result<RoomAccountData, ApiError> {
         self.content = content;
 
         self.save_changes::<RoomAccountData>(connection)
@@ -168,10 +182,8 @@ impl RoomAccountData {
     }
 
     /// Delete all account data for a user given a `UserId`.
-    pub fn delete_by_uid(connection: &PgConnection, uid: &UserId)
-    -> Result<usize, ApiError> {
-        let rows = room_account_data::table
-            .filter(room_account_data::user_id.eq(uid));
+    pub fn delete_by_uid(connection: &PgConnection, uid: &UserId) -> Result<usize, ApiError> {
+        let rows = room_account_data::table.filter(room_account_data::user_id.eq(uid));
 
         diesel::delete(rows)
             .execute(connection)
@@ -179,21 +191,21 @@ impl RoomAccountData {
     }
 
     /// Update an existing entry or create a new one.
-    pub fn upsert(connection: &PgConnection, new_data: &NewRoomAccountData)
-    -> Result<RoomAccountData, ApiError> {
+    pub fn upsert(
+        connection: &PgConnection,
+        new_data: &NewRoomAccountData,
+    ) -> Result<RoomAccountData, ApiError> {
         match RoomAccountData::find(
             connection,
             &new_data.user_id,
             &new_data.room_id,
-            &new_data.data_type
+            &new_data.data_type,
         ) {
             Ok(mut saved) => saved.update(connection, new_data.content.clone()),
-            Err(err) => {
-                match err {
-                    DieselError::NotFound => RoomAccountData::create(connection, new_data),
-                    _ => Err(ApiError::from(err))
-                }
-            }
+            Err(err) => match err {
+                DieselError::NotFound => RoomAccountData::create(connection, new_data),
+                _ => Err(ApiError::from(err)),
+            },
         }
     }
 }

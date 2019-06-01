@@ -26,9 +26,7 @@ pub struct UIAuth {
 impl UIAuth {
     /// Creates a new `UIAuth` from the given `InteractiveAuth`.
     pub fn new(interactive_auth: InteractiveAuth) -> Self {
-        UIAuth {
-            interactive_auth,
-        }
+        UIAuth { interactive_auth }
     }
 }
 
@@ -50,10 +48,10 @@ impl BeforeMiddleware for AccessTokenAuth {
                     request.extensions.insert::<User>(user);
 
                     return Ok(());
-                },
-                None => {
-                    Err(ApiError::unauthorized("No user with the given token was found".to_string()))?
                 }
+                None => Err(ApiError::unauthorized(
+                    "No user with the given token was found".to_string(),
+                ))?,
             }
         }
 
@@ -72,14 +70,12 @@ impl BeforeMiddleware for UIAuth {
         if let Some(auth_json) = json.get("auth") {
             if is_m_login_password(auth_json) {
                 if let Ok((user_id, password)) = get_user_id_and_password(auth_json, &config) {
-                    let auth_params = AuthParams::Password(PasswordAuthParams {
-                        password,
-                        user_id,
-                    });
+                    let auth_params =
+                        AuthParams::Password(PasswordAuthParams { password, user_id });
 
                     let connection = DB::from_request(request)?;
 
-                    if let Ok(user) =  auth_params.authenticate(&connection) {
+                    if let Ok(user) = auth_params.authenticate(&connection) {
                         request.extensions.insert::<User>(user);
 
                         return Ok(());
@@ -93,19 +89,23 @@ impl BeforeMiddleware for UIAuth {
 }
 
 fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, String), ()> {
-    let username = json.get("user").and_then(|username_json| username_json.as_str());
-    let password = json.get("password").and_then(|password_json| password_json.as_str());
+    let username = json
+        .get("user")
+        .and_then(|username_json| username_json.as_str());
+    let password = json
+        .get("password")
+        .and_then(|password_json| password_json.as_str());
 
     match (username, password) {
-        (Some(username), Some(password)) => {
-            match UserId::try_from(username) {
-                Ok(user_id) => Ok((user_id, password.to_string())),
-                Err(_) => match UserId::try_from(format!("@{}:{}", username, &config.domain).as_ref()) {
+        (Some(username), Some(password)) => match UserId::try_from(username) {
+            Ok(user_id) => Ok((user_id, password.to_string())),
+            Err(_) => {
+                match UserId::try_from(format!("@{}:{}", username, &config.domain).as_ref()) {
                     Ok(user_id) => Ok((user_id, password.to_string())),
                     Err(_) => Err(()),
-                },
+                }
             }
-        }
+        },
         _ => Err(()),
     }
 }

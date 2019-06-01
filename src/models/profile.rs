@@ -1,14 +1,14 @@
 //! Matrix profile.
 
-use diesel::prelude::*;
 use diesel::dsl::any;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::UserId;
 
 use crate::error::ApiError;
-use crate::models::room_membership::{RoomMembership, RoomMembershipOptions};
 use crate::models::presence_status::PresenceStatus;
+use crate::models::room_membership::{RoomMembership, RoomMembershipOptions};
 use crate::schema::profiles;
 
 /// A Matrix profile.
@@ -29,26 +29,28 @@ impl Profile {
         connection: &PgConnection,
         homeserver_domain: &str,
         user_id: UserId,
-        avatar_url: Option<String>
+        avatar_url: Option<String>,
     ) -> Result<Profile, ApiError> {
-        connection.transaction::<Profile, ApiError, _>(|| {
-            let profile = Profile::find_by_uid(connection, &user_id)?;
+        connection
+            .transaction::<Profile, ApiError, _>(|| {
+                let profile = Profile::find_by_uid(connection, &user_id)?;
 
-            let profile = match profile {
-                Some(mut profile) => profile.set_avatar_url(connection, avatar_url)?,
-                None => {
-                    let new_profile = Profile {
-                        id: user_id.clone(),
-                        avatar_url,
-                        displayname: None,
-                    };
-                    Profile::create(connection, &new_profile)?
-                }
-            };
+                let profile = match profile {
+                    Some(mut profile) => profile.set_avatar_url(connection, avatar_url)?,
+                    None => {
+                        let new_profile = Profile {
+                            id: user_id.clone(),
+                            avatar_url,
+                            displayname: None,
+                        };
+                        Profile::create(connection, &new_profile)?
+                    }
+                };
 
-            PresenceStatus::upsert(connection, homeserver_domain, &user_id, None, None)?;
-            Ok(profile)
-        }).map_err(ApiError::from)
+                PresenceStatus::upsert(connection, homeserver_domain, &user_id, None, None)?;
+                Ok(profile)
+            })
+            .map_err(ApiError::from)
     }
 
     /// Update or Create a `Profile` entry with new displayname.
@@ -56,31 +58,36 @@ impl Profile {
         connection: &PgConnection,
         homeserver_domain: &str,
         user_id: UserId,
-        displayname: Option<String>
+        displayname: Option<String>,
     ) -> Result<Profile, ApiError> {
-        connection.transaction::<Profile, ApiError, _>(|| {
-            let profile = Profile::find_by_uid(connection, &user_id)?;
+        connection
+            .transaction::<Profile, ApiError, _>(|| {
+                let profile = Profile::find_by_uid(connection, &user_id)?;
 
-            let profile = match profile {
-                Some(mut profile) => profile.set_displayname(connection, displayname)?,
-                None => {
-                    let new_profile = Profile {
-                        id: user_id.clone(),
-                        avatar_url: None,
-                        displayname,
-                    };
-                    Profile::create(connection, &new_profile)?
-                }
-            };
+                let profile = match profile {
+                    Some(mut profile) => profile.set_displayname(connection, displayname)?,
+                    None => {
+                        let new_profile = Profile {
+                            id: user_id.clone(),
+                            avatar_url: None,
+                            displayname,
+                        };
+                        Profile::create(connection, &new_profile)?
+                    }
+                };
 
-            PresenceStatus::upsert(connection, homeserver_domain, &user_id, None, None)?;
-            Ok(profile)
-        }).map_err(ApiError::from)
+                PresenceStatus::upsert(connection, homeserver_domain, &user_id, None, None)?;
+                Ok(profile)
+            })
+            .map_err(ApiError::from)
     }
 
     /// Update a `Profile` entry with new avatar_url.
-    fn set_avatar_url(&mut self, connection: &PgConnection, avatar_url: Option<String>)
-    -> Result<Profile, ApiError> {
+    fn set_avatar_url(
+        &mut self,
+        connection: &PgConnection,
+        avatar_url: Option<String>,
+    ) -> Result<Profile, ApiError> {
         self.avatar_url = avatar_url;
 
         match self.save_changes::<Profile>(connection) {
@@ -90,8 +97,11 @@ impl Profile {
     }
 
     /// Update a `Profile` entry with new displayname.
-    fn set_displayname(&mut self, connection: &PgConnection, displayname: Option<String>)
-    -> Result<Profile, ApiError> {
+    fn set_displayname(
+        &mut self,
+        connection: &PgConnection,
+        displayname: Option<String>,
+    ) -> Result<Profile, ApiError> {
         self.displayname = displayname;
 
         match self.save_changes::<Profile>(connection) {
@@ -101,8 +111,11 @@ impl Profile {
     }
 
     /// Update `RoomMembership`'s due to changed `Profile`.
-    pub fn update_memberships(connection: &PgConnection, homeserver_domain: &str, user_id: UserId)
-    -> Result<(), ApiError> {
+    pub fn update_memberships(
+        connection: &PgConnection,
+        homeserver_domain: &str,
+        user_id: UserId,
+    ) -> Result<(), ApiError> {
         let mut room_memberships = RoomMembership::find_by_uid(connection, user_id.clone())?;
 
         for room_membership in &mut room_memberships {
@@ -128,10 +141,11 @@ impl Profile {
     }
 
     /// Return `Profile` for given `UserId`.
-    pub fn find_by_uid(connection: &PgConnection, user_id: &UserId) -> Result<Option<Profile>, ApiError> {
-        let profile = profiles::table
-            .find(user_id)
-            .get_result(connection);
+    pub fn find_by_uid(
+        connection: &PgConnection,
+        user_id: &UserId,
+    ) -> Result<Option<Profile>, ApiError> {
+        let profile = profiles::table.find(user_id).get_result(connection);
 
         match profile {
             Ok(profile) => Ok(Some(profile)),
@@ -141,7 +155,10 @@ impl Profile {
     }
 
     /// Return `Profile`s for a list of `UserId`'s.
-    pub fn get_profiles(connection: &PgConnection, users: &[UserId]) -> Result<Vec<Profile>, ApiError> {
+    pub fn get_profiles(
+        connection: &PgConnection,
+        users: &[UserId],
+    ) -> Result<Vec<Profile>, ApiError> {
         profiles::table
             .filter(profiles::id.eq(any(users)))
             .get_results(connection)

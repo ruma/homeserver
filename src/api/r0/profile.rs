@@ -1,16 +1,16 @@
 //! Endpoints for profile.
 
 use bodyparser;
-use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
 use iron::status::Status;
+use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 
 use crate::config::Config;
 use crate::db::DB;
 use crate::error::ApiError;
 use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
-use crate::models::profile::{Profile as DataProfile};
+use crate::models::profile::Profile as DataProfile;
 use crate::models::user::User;
-use crate::modifier::{SerializableResponse, EmptyResponse};
+use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The `/profile/:user_id` endpoint.
 pub struct Profile;
@@ -27,24 +27,31 @@ middleware_chain!(Profile, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for Profile {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
         let profile = DataProfile::find_by_uid(&connection, &user_id)?;
 
         let response = match profile {
-            Some(profile) => {
-                ProfileResponse {
-                    avatar_url: profile.avatar_url,
-                    displayname: profile.displayname,
-                }
-            }
-            None => Err(ApiError::not_found(format!("No profile found for {}", user_id)))?,
+            Some(profile) => ProfileResponse {
+                avatar_url: profile.avatar_url,
+                displayname: profile.displayname,
+            },
+            None => Err(ApiError::not_found(format!(
+                "No profile found for {}",
+                user_id
+            )))?,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -64,30 +71,34 @@ middleware_chain!(GetAvatarUrl, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetAvatarUrl {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
         let profile = DataProfile::find_by_uid(&connection, &user_id)?;
 
         let response = match profile {
-            Some(profile) => {
-                match profile.avatar_url {
-                    Some(avatar_url) => {
-                        GetAvatarUrlResponse {
-                            avatar_url,
-                        }
-                    },
-                    None => {
-                        Err(ApiError::not_found(format!("No avatar_url found for {}", user_id)))?
-                    }
-                }
+            Some(profile) => match profile.avatar_url {
+                Some(avatar_url) => GetAvatarUrlResponse { avatar_url },
+                None => Err(ApiError::not_found(format!(
+                    "No avatar_url found for {}",
+                    user_id
+                )))?,
             },
-            None => Err(ApiError::not_found(format!("No profile found for {}", user_id)))?,
+            None => Err(ApiError::not_found(format!(
+                "No profile found for {}",
+                user_id
+            )))?,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -115,15 +126,21 @@ impl Handler for PutAvatarUrl {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                "The given user_id does not correspond to the authenticated user".to_string()
+                "The given user_id does not correspond to the authenticated user".to_string(),
             );
 
             return Err(IronError::from(error));
@@ -133,7 +150,7 @@ impl Handler for PutAvatarUrl {
             &connection,
             &config.domain,
             user_id.clone(),
-            avatar_url_request.avatar_url
+            avatar_url_request.avatar_url,
         )?;
 
         DataProfile::update_memberships(&connection, &config.domain, user_id.clone())?;
@@ -155,30 +172,34 @@ middleware_chain!(GetDisplayName, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetDisplayName {
     fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
-        request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         let connection = DB::from_request(request)?;
 
         let profile = DataProfile::find_by_uid(&connection, &user_id)?;
 
         let response = match profile {
-            Some(profile) => {
-                match profile.displayname {
-                    Some(displayname) => {
-                        GetDisplayNameResponse {
-                            displayname,
-                        }
-                    },
-                    None => {
-                        Err(ApiError::not_found(format!("No displayname found for {}", user_id)))?
-                    }
-                }
-            }
-            None => Err(ApiError::not_found(format!("No profile found for {}", user_id)))?,
+            Some(profile) => match profile.displayname {
+                Some(displayname) => GetDisplayNameResponse { displayname },
+                None => Err(ApiError::not_found(format!(
+                    "No displayname found for {}",
+                    user_id
+                )))?,
+            },
+            None => Err(ApiError::not_found(format!(
+                "No profile found for {}",
+                user_id
+            )))?,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
@@ -206,15 +227,21 @@ impl Handler for PutDisplayName {
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
 
-        let user = request.extensions.get::<User>()
-            .expect("AccessTokenAuth should ensure a user").clone();
+        let user = request
+            .extensions
+            .get::<User>()
+            .expect("AccessTokenAuth should ensure a user")
+            .clone();
 
-        let user_id = request.extensions.get::<UserIdParam>()
-            .expect("UserIdParam should ensure a UserId").clone();
+        let user_id = request
+            .extensions
+            .get::<UserIdParam>()
+            .expect("UserIdParam should ensure a UserId")
+            .clone();
 
         if user_id != user.id {
             let error = ApiError::unauthorized(
-                "The given user_id does not correspond to the authenticated user".to_string()
+                "The given user_id does not correspond to the authenticated user".to_string(),
             );
 
             return Err(IronError::from(error));
@@ -224,7 +251,7 @@ impl Handler for PutDisplayName {
             &connection,
             &config.domain,
             user_id.clone(),
-            displayname_request.displayname
+            displayname_request.displayname,
         )?;
 
         DataProfile::update_memberships(&connection, &config.domain, user_id.clone())?;
@@ -235,9 +262,9 @@ impl Handler for PutDisplayName {
 
 #[cfg(test)]
 mod tests {
+    use crate::query::SyncOptions;
     use crate::test::Test;
     use iron::status::Status;
-    use crate::query::SyncOptions;
 
     #[test]
     fn get_new_user_profile() {
@@ -246,8 +273,7 @@ mod tests {
 
         let profile_path = format!(
             "/_matrix/client/r0/profile/{}?access_token={}",
-            alice.id,
-            alice.token
+            alice.id, alice.token
         );
 
         assert_eq!(test.get(&profile_path).status, Status::Ok);
@@ -261,8 +287,7 @@ mod tests {
 
         let get_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            user_id,
-            carl.token
+            user_id, carl.token
         );
 
         let response = test.get(&get_displayname_path);
@@ -282,8 +307,7 @@ mod tests {
 
         let get_avatar_url = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            user_id,
-            carl.token
+            user_id, carl.token
         );
 
         let response = test.get(&get_avatar_url);
@@ -302,17 +326,18 @@ mod tests {
 
         let put_avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        let response = test.put(&put_avatar_url_path, r#"{"avatar_url": "mxc://matrix.org/wefh34uihSDRGhw34"}"#);
+        let response = test.put(
+            &put_avatar_url_path,
+            r#"{"avatar_url": "mxc://matrix.org/wefh34uihSDRGhw34"}"#,
+        );
 
         assert_eq!(response.status, Status::Ok);
 
         let get_avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            carl.id,
-            carl.token,
+            carl.id, carl.token,
         );
         let response = test.get(&get_avatar_url_path);
         assert_eq!(response.status, Status::Ok);
@@ -329,8 +354,7 @@ mod tests {
 
         let put_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
         let response = test.put(&put_displayname_path, r#"{"displayname": "Bogus"}"#);
 
@@ -338,13 +362,17 @@ mod tests {
 
         let get_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            carl.id,
-            carl.token,
+            carl.id, carl.token,
         );
         let response = test.get(&get_displayname_path);
         assert_eq!(response.status, Status::Ok);
         assert_eq!(
-            response.json().get("displayname").unwrap().as_str().unwrap(),
+            response
+                .json()
+                .get("displayname")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             r#"Bogus"#
         );
     }
@@ -357,8 +385,7 @@ mod tests {
 
         let put_displayname = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            alice.id,
-            bob.token,
+            alice.id, bob.token,
         );
 
         let response = test.put(&put_displayname, r#"{"displayname": "Alice"}"#);
@@ -378,13 +405,12 @@ mod tests {
 
         let put_avatar_url = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            alice.id,
-            bob.token,
+            alice.id, bob.token,
         );
 
         let response = test.put(
             &put_avatar_url,
-            r#"{"avatar_url": "mxc://matrix.org/wefh34uihSDRGhw34"}"#
+            r#"{"avatar_url": "mxc://matrix.org/wefh34uihSDRGhw34"}"#,
         );
 
         assert_eq!(response.status, Status::Forbidden);
@@ -402,25 +428,28 @@ mod tests {
         let avatar_url_body = r#"{"avatar_url": "mxc://matrix.org/some/url"}"#;
         let avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
 
-        assert!(test.put(&avatar_url_path, avatar_url_body).status.is_success());
+        assert!(test
+            .put(&avatar_url_path, avatar_url_body)
+            .status
+            .is_success());
 
         let displayname_body = r#"{"displayname": "Carl"}"#;
         let displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
 
-        assert!(test.put(&displayname_path, displayname_body).status.is_success());
+        assert!(test
+            .put(&displayname_path, displayname_body)
+            .status
+            .is_success());
 
         let profile_path = format!(
             "/_matrix/client/r0/profile/{}?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
 
         let response = test.get(&profile_path);
@@ -431,7 +460,12 @@ mod tests {
             "mxc://matrix.org/some/url"
         );
         assert_eq!(
-            response.json().get("displayname").unwrap().as_str().unwrap(),
+            response
+                .json()
+                .get("displayname")
+                .unwrap()
+                .as_str()
+                .unwrap(),
             "Carl"
         );
     }
@@ -444,8 +478,7 @@ mod tests {
 
         let get_profile = format!(
             "/_matrix/client/r0/profile/{}?access_token={}",
-            user_id,
-            carl.token,
+            user_id, carl.token,
         );
 
         let response = test.get(&get_profile);
@@ -464,19 +497,23 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":["{}"], "drop": []}}"#, carl.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":["{}"], "drop": []}}"#, carl.id),
+        );
         assert_eq!(response.status, Status::Ok);
 
         let avatar_url_body = r#"{"avatar_url": "mxc://matrix.org/some/url"}"#;
         let avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        assert!(test.put(&avatar_url_path, avatar_url_body).status.is_success());
+        assert!(test
+            .put(&avatar_url_path, avatar_url_body)
+            .status
+            .is_success());
 
         test.update_presence(&carl.token, &carl.id, r#"{"presence":"online"}"#);
 
@@ -485,7 +522,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
         let response = test.sync(&carl.token, options);
         let array = response
@@ -501,24 +538,29 @@ mod tests {
         let content = events.next().unwrap().get("content").unwrap();
 
         assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.get("avatar_url").unwrap().as_str().unwrap(), "mxc://matrix.org/some/url");
+        assert_eq!(
+            content.get("avatar_url").unwrap().as_str().unwrap(),
+            "mxc://matrix.org/some/url"
+        );
 
         let next_batch = Test::get_next_batch(&response);
 
         let avatar_url_body = r#"{"avatar_url": "mxc://matrix.org/some/new"}"#;
         let avatar_url_path = format!(
             "/_matrix/client/r0/profile/{}/avatar_url?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        assert!(test.put(&avatar_url_path, avatar_url_body).status.is_success());
+        assert!(test
+            .put(&avatar_url_path, avatar_url_body)
+            .status
+            .is_success());
 
         let options = SyncOptions {
             filter: None,
             since: Some(next_batch),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
 
         let response = test.sync(&carl.token, options);
@@ -535,7 +577,10 @@ mod tests {
         let content = events.next().unwrap().get("content").unwrap();
 
         assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.get("avatar_url").unwrap().as_str().unwrap(), "mxc://matrix.org/some/new");
+        assert_eq!(
+            content.get("avatar_url").unwrap().as_str().unwrap(),
+            "mxc://matrix.org/some/new"
+        );
     }
 
     #[test]
@@ -545,18 +590,22 @@ mod tests {
 
         let presence_list_path = format!(
             "/_matrix/client/r0/presence/list/{}?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        let response = test.post(&presence_list_path, &format!(r#"{{"invite":["{}"], "drop": []}}"#, carl.id));
+        let response = test.post(
+            &presence_list_path,
+            &format!(r#"{{"invite":["{}"], "drop": []}}"#, carl.id),
+        );
         assert_eq!(response.status, Status::Ok);
 
         let put_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        assert!(test.put(&put_displayname_path, r#"{"displayname": "Alice"}"#).status.is_success());
+        assert!(test
+            .put(&put_displayname_path, r#"{"displayname": "Alice"}"#)
+            .status
+            .is_success());
 
         test.update_presence(&carl.token, &carl.id, r#"{"presence":"online"}"#);
 
@@ -565,7 +614,7 @@ mod tests {
             since: None,
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
 
         let response = test.sync(&carl.token, options);
@@ -582,23 +631,28 @@ mod tests {
         let content = events.next().unwrap().get("content").unwrap();
 
         assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.get("displayname").unwrap().as_str().unwrap(), "Alice");
+        assert_eq!(
+            content.get("displayname").unwrap().as_str().unwrap(),
+            "Alice"
+        );
 
         let next_batch = Test::get_next_batch(&response);
 
         let put_displayname_path = format!(
             "/_matrix/client/r0/profile/{}/displayname?access_token={}",
-            carl.id,
-            carl.token
+            carl.id, carl.token
         );
-        assert!(test.put(&put_displayname_path, r#"{"displayname": "Bogus"}"#).status.is_success());
+        assert!(test
+            .put(&put_displayname_path, r#"{"displayname": "Bogus"}"#)
+            .status
+            .is_success());
 
         let options = SyncOptions {
             filter: None,
             since: Some(next_batch),
             full_state: false,
             set_presence: None,
-            timeout: 0
+            timeout: 0,
         };
 
         let response = test.sync(&carl.token, options);
@@ -615,6 +669,9 @@ mod tests {
         let content = events.next().unwrap().get("content").unwrap();
 
         assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
-        assert_eq!(content.get("displayname").unwrap().as_str().unwrap(), "Bogus");
+        assert_eq!(
+            content.get("displayname").unwrap().as_str().unwrap(),
+            "Bogus"
+        );
     }
 }

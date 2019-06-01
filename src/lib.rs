@@ -2,12 +2,18 @@
 
 #![deny(missing_docs)]
 
-#[macro_use] extern crate diesel;
-#[macro_use] extern crate diesel_migrations;
-#[cfg(test)] extern crate env_logger;
-#[cfg(test)] extern crate iron_test;
-#[macro_use] extern crate log;
-#[macro_use] extern crate serde;
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
+#[cfg(test)]
+extern crate env_logger;
+#[cfg(test)]
+extern crate iron_test;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde;
 
 #[macro_use]
 pub mod middleware;
@@ -23,10 +29,11 @@ pub mod error;
 /// Models for the API's domain objects.
 pub mod models;
 pub mod modifier;
+pub mod query;
 pub mod schema;
 pub mod server;
-pub mod query;
 pub mod swagger;
-#[cfg(test)] pub mod test;
+#[cfg(test)]
+pub mod test;
 
 embed_migrations!();
