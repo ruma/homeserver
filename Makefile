@@ -12,5 +12,7 @@ doc:
 
 .PHONY: ci
 ci:
+	@script/cargo fmt -- --check
+	@script/cargo clippy -- -D warnings
 	@script/cargo build --all -v
 	@script/cargo test -v
