@@ -1,6 +1,11 @@
 //! Ruma is a Matrix homeserver.
 
-#![deny(missing_debug_implementations, missing_docs, warnings)]
+#![deny(
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    warnings
+)]
 
 #[macro_use]
 extern crate diesel;
