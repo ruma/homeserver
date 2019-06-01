@@ -2,16 +2,7 @@
 
 use std::convert::TryInto;
 
-use diesel::{
-    Connection,
-    ExpressionMethods,
-    FilterDsl,
-    FindDsl,
-    LoadDsl,
-    ExecuteDsl,
-    insert,
-    delete,
-};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::{Error as DieselError, DatabaseErrorKind};
@@ -72,20 +63,21 @@ impl RoomAlias {
                 content: AliasesEventContent { aliases: ids },
                 event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomAliases,
+                origin_server_ts: 0,
                 prev_content: None,
-                room_id: new_room_alias.room_id.clone(),
+                room_id: Some(new_room_alias.room_id.clone()),
+                sender: new_room_alias.user_id.clone(),
                 state_key: homeserver_domain.to_string(),
                 unsigned: None,
-                user_id: new_room_alias.user_id.clone(),
             }.try_into()?;
 
-            insert(&new_room_alias_event)
-                .into(events::table)
+            diesel::insert_into(events::table)
+                .values(&new_room_alias_event)
                 .execute(connection)
                 .map_err(ApiError::from)?;
 
-            insert(new_room_alias)
-                .into(room_aliases::table)
+            diesel::insert_into(room_aliases::table)
+                .values(new_room_alias)
                 .get_result(connection)
                 .map_err(|err| match err {
                     DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)
@@ -125,7 +117,7 @@ impl RoomAlias {
             .filter(room_aliases::alias.eq(alias_id.to_string()))
             .filter(room_aliases::user_id.eq(user_id.to_string()));
 
-        delete(alias)
+        diesel::delete(alias)
             .execute(connection)
             .map_err(ApiError::from)
     }

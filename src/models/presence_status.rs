@@ -1,16 +1,7 @@
 //! Storage and querying of presence status.
 
-use chrono::{Duration, NaiveDateTime, NaiveDate, UTC};
-use diesel::{
-    insert,
-    Connection,
-    ExecuteDsl,
-    ExpressionMethods,
-    FindDsl,
-    FilterDsl,
-    LoadDsl,
-    SaveChangesDsl,
-};
+use chrono::{Duration, NaiveDateTime, NaiveDate, Utc};
+use diesel::prelude::*;
 use diesel::expression::dsl::any;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
@@ -56,7 +47,7 @@ pub struct PresenceStatus {
 
 /// Return current time in milliseconds
 pub fn get_now() -> i64 {
-    let now = UTC::now().naive_utc();
+    let now = Utc::now().naive_utc();
     get_milliseconds(now)
 }
 
@@ -129,8 +120,8 @@ impl PresenceStatus {
             status_msg: status_msg,
             updated_at: PgTimestamp(get_now()),
         };
-        insert(&new_status)
-            .into(presence_status::table)
+        diesel::insert_into(presence_status::table)
+            .values(&new_status)
             .execute(connection)
             .map_err(ApiError::from)?;
         Ok(())

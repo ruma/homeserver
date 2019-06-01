@@ -4,8 +4,8 @@ use diesel::pg::PgConnection;
 use iron::{Plugin, Request};
 use iron::typemap::Key;
 use persistent::Write;
-use r2d2::{Config as R2D2Config, InitializationError, Pool, PooledConnection};
-use r2d2_diesel::{ConnectionManager, Error as R2D2DieselError};
+use r2d2::{Builder, Error as R2d2Error, Pool, PooledConnection};
+use r2d2_diesel::ConnectionManager;
 
 use error::ApiError;
 
@@ -15,12 +15,12 @@ pub struct DB;
 impl DB {
     /// Creates a connection pool for the PostgreSQL database at the given URL.
     pub fn create_connection_pool(
-        r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
+        r2d2_pool_builder: Builder<ConnectionManager<PgConnection>>,
         postgres_url: &str
-    ) -> Result<Pool<ConnectionManager<PgConnection>>, InitializationError> {
+    ) -> Result<Pool<ConnectionManager<PgConnection>>, R2d2Error> {
         let connection_manager = ConnectionManager::new(postgres_url);
 
-        Pool::new(r2d2_config, connection_manager)
+        r2d2_pool_builder.build(connection_manager)
     }
 
     /// Extract a database conection from the pool stored in the request.

@@ -3,7 +3,7 @@
 use std::error::Error;
 
 use bodyparser;
-use diesel::Connection;
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use iron::status::Status;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};

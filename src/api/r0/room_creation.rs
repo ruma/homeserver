@@ -3,7 +3,7 @@
 use std::convert::From;
 
 use bodyparser;
-use diesel::Connection;
+use diesel::prelude::*;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_events::stripped::StrippedState;

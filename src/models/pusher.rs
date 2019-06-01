@@ -1,16 +1,6 @@
 //! Matrix pusher.
 
-use diesel::{
-    delete,
-    insert,
-    Connection,
-    ExecuteDsl,
-    ExpressionMethods,
-    FilterDsl,
-    FindDsl,
-    LoadDsl,
-    SaveChangesDsl,
-};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::UserId;
@@ -161,7 +151,7 @@ impl Pusher {
         app_id: &str
     ) -> Result<(), ApiError> {
         let pusher = pushers::table.find((user_id, &app_id));
-        delete(pusher).execute(connection)?;
+        diesel::delete(pusher).execute(connection)?;
         Ok(())
     }
 
@@ -202,8 +192,8 @@ impl Pusher {
             url: options.data.url,
         };
 
-        insert(&new_pusher)
-            .into(pushers::table)
+        diesel::insert_into(pushers::table)
+            .values(&new_pusher)
             .get_result(connection)
             .map_err(ApiError::from)
     }
@@ -232,7 +222,7 @@ impl Pusher {
         let pushers = pushers::table
             .filter(pushers::app_id.eq(app_id))
             .filter(pushers::pushkey.eq(pushkey));
-        delete(pushers).execute(connection)?;
+        diesel::delete(pushers).execute(connection)?;
         Ok(())
     }
 

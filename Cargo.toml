@@ -24,44 +24,41 @@ name = "ruma-extra-server"
 
 [dependencies]
 argon2rs = "0.2.5"
-base64 = "0.4.1"
-bodyparser = "0.7.0"
-chrono = "0.3.0"
-clap = "2.23.3"
-env_logger = "0.4.2"
-iron = "0.5.1"
-log = "0.3.7"
+base64 = "0.10.1"
+bodyparser = "0.8.0"
+chrono = "0.4.6"
+clap = "2.33.0"
+env_logger = "0.6.1"
+iron = "0.6.0"
+log = "0.4.6"
 macaroons = "0.3.3"
-mount = "0.3.0"
-persistent = "0.3.0"
+mount = "0.4.0"
+persistent = "0.4.0"
 plugin = "0.2.6"
-r2d2 = "0.7.2"
-r2d2-diesel = "0.12.0"
-rand = "0.3.15"
-router = "0.5.1"
+r2d2 = "0.8.4"
+r2d2-diesel = "1.0.0"
+rand = "0.6.5"
+router = "0.6.0"
 ruma-events = "0.12.0"
 serde = "1.0.92"
-serde_derive = "1.0.0"
+serde_derive = "1.0.92"
 serde_json = "1.0.39"
 serde_yaml = "0.8.9"
-toml = "0.4.0"
+toml = "0.5.1"
 unicase = "1.4.0"
-url = "1.4.0"
+url = "1.7.2"
+diesel_migrations = "1.4.0"
 
 [dependencies.diesel]
 features = ["postgres"]
-version = "0.12.0"
-
-[dependencies.diesel_codegen]
-features = ["postgres"]
-version = "0.12.0"
+version = "1.4.2"
 
 [dependencies.ruma-identifiers]
 features = ["diesel"]
 version = "0.12.1"
 
 [dev-dependencies]
-iron-test = "0.5.0"
+iron-test = "0.6.0"
 
 [lib]
 doctest = false

@@ -80,7 +80,7 @@ impl Handler for Login {
 
         let config = Config::from_request(request)?;
 
-        let user_id = match UserId::try_from(&login_request.user) {
+        let user_id = match UserId::try_from(login_request.user.as_ref()) {
             Ok(user_id) => {
                 if user_id.hostname().to_string() != config.domain {
                     Err(ApiError::unauthorized("User cannot be identified by this homeserver".to_string()))?;
@@ -88,7 +88,7 @@ impl Handler for Login {
 
                 user_id
             },
-            Err(_) => UserId::try_from(&format!("@{}:{}", login_request.user, &config.domain))
+            Err(_) => UserId::try_from(format!("@{}:{}", login_request.user, &config.domain).as_ref())
                         .map_err(ApiError::from)?,
         };
 

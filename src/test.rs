@@ -2,7 +2,7 @@ use std::sync::{ONCE_INIT, Once};
 use std::convert::TryFrom;
 
 use env_logger;
-use diesel::Connection;
+use diesel::prelude::*;
 use diesel::migrations::setup_database;
 use diesel::pg::PgConnection;
 use iron;
@@ -11,8 +11,8 @@ use iron::method::Method;
 use iron::status::Status;
 use iron_test::{request, response};
 use mount::Mount;
-use r2d2::{Config as R2D2Config, CustomizeConnection};
-use r2d2_diesel::Error as R2D2DieselError;
+use r2d2::{CustomizeConnection, Pool};
+use r2d2_diesel::Error as R2d2DieselError;
 use serde_json::{Value, from_str, to_string};
 use ruma_events::presence::PresenceState;
 use ruma_identifiers::UserId;
@@ -57,14 +57,14 @@ pub struct Response {
     pub status: Status,
 }
 
-/// An R2D2 plugin for starting a test transaction whenever a database connection is acquired from
+/// An r2d2 plugin for starting a test transaction whenever a database connection is acquired from
 /// the connection pool.
 #[derive(Debug)]
 pub struct TestTransactionConnectionCustomizer;
 
-impl CustomizeConnection<PgConnection, R2D2DieselError> for TestTransactionConnectionCustomizer {
-    fn on_acquire(&self, conn: &mut PgConnection) -> Result<(), R2D2DieselError> {
-        conn.begin_test_transaction().map_err(|error| R2D2DieselError::QueryError(error))
+impl CustomizeConnection<PgConnection, R2d2DieselError> for TestTransactionConnectionCustomizer {
+    fn on_acquire(&self, conn: &mut PgConnection) -> Result<(), R2d2DieselError> {
+        conn.begin_test_transaction().map_err(|error| R2d2DieselError::QueryError(error))
     }
 }
 
@@ -115,12 +115,11 @@ impl Test {
             postgres_url: DATABASE_URL.to_string(),
         };
 
-        let r2d2_config = R2D2Config::builder()
+        let r2d2_pool_builder = Pool::builder()
             .pool_size(1)
-            .connection_customizer(Box::new(TestTransactionConnectionCustomizer))
-            .build();
+            .connection_customizer(Box::new(TestTransactionConnectionCustomizer));
 
-        let server = match Server::new(&config).mount_all_with_options(r2d2_config, false) {
+        let server = match Server::new(&config).mount_all_with_options(r2d2_pool_builder, false) {
             Ok(server) => server,
             Err(error) => panic!("Failed to create Iron server: {}", error),
         };
@@ -198,7 +197,7 @@ impl Test {
             .unwrap()
             .to_string();
 
-        TestUser::new(UserId::try_from(&user_id).unwrap(), access_token)
+        TestUser::new(UserId::try_from(user_id.as_ref()).unwrap(), access_token)
     }
 
     /// Creates a room given the body parameters and returns the room ID as a string.

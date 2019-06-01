@@ -1,10 +1,6 @@
 //! Matrix transaction.
 
-use diesel::{
-    FindDsl,
-    LoadDsl,
-    insert,
-};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 
@@ -39,8 +35,8 @@ impl Transaction {
             response: response,
         };
 
-        insert(&new_transaction)
-            .into(transactions::table)
+        diesel::insert_into(transactions::table)
+            .values(&new_transaction)
             .get_result(connection)
             .map_err(ApiError::from)
     }

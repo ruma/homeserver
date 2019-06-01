@@ -1,14 +1,6 @@
 //! Matrix profile.
 
-use diesel::{
-    insert,
-    Connection,
-    ExpressionMethods,
-    FilterDsl,
-    FindDsl,
-    LoadDsl,
-    SaveChangesDsl,
-};
+use diesel::prelude::*;
 use diesel::expression::dsl::any;
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
@@ -129,8 +121,8 @@ impl Profile {
 
     /// Create a `Profile` entry.
     pub fn create(connection: &PgConnection, new_profile: &Profile) -> Result<Profile, ApiError> {
-        insert(new_profile)
-            .into(profiles::table)
+        diesel::insert_into(profiles::table)
+            .values(new_profile)
             .get_result(connection)
             .map_err(ApiError::from)
     }

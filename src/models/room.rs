@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use diesel::{Connection, ExecuteDsl, ExpressionMethods, FilterDsl, FindDsl, LoadDsl, OrderDsl, insert};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
@@ -116,8 +116,8 @@ impl Room {
         creation_options: &CreationOptions,
     ) -> Result<Room, ApiError> {
         connection.transaction::<Room, ApiError, _>(|| {
-            let room: Room = insert(new_room)
-                .into(rooms::table)
+            let room: Room = diesel::insert_into(rooms::table)
+                .values(new_room)
                 .get_result(connection)
                 .map_err(ApiError::from)?;
 
@@ -130,11 +130,12 @@ impl Room {
                 },
                 event_id: EventId::new(homeserver_domain)?,
                 event_type: EventType::RoomCreate,
+                origin_server_ts: 0,
                 prev_content: None,
-                room_id: room.id.clone(),
+                room_id: Some(room.id.clone()),
+                sender: new_room.user_id.clone(),
                 state_key: "".to_string(),
                 unsigned: None,
-                user_id: new_room.user_id.clone(),
             }.try_into()?;
 
             new_events.push(new_create_event);
@@ -151,11 +152,12 @@ impl Room {
                         content: JoinRulesEventContent { join_rule: JoinRule::Invite },
                         event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomJoinRules,
+                        origin_server_ts: 0,
                         prev_content: None,
-                        room_id: room.id.clone(),
+                        room_id: Some(room.id.clone()),
+                        sender: new_room.user_id.clone(),
                         state_key: "".to_string(),
                         unsigned: None,
-                        user_id: new_room.user_id.clone(),
                     }.try_into()?;
 
                     new_events.push(new_join_rules_event);
@@ -165,11 +167,12 @@ impl Room {
                         content: JoinRulesEventContent { join_rule: JoinRule::Public },
                         event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomJoinRules,
+                        origin_server_ts: 0,
                         prev_content: None,
-                        room_id: room.id.clone(),
+                        room_id: Some(room.id.clone()),
+                        sender: new_room.user_id.clone(),
                         state_key: "".to_string(),
                         unsigned: None,
-                        user_id: new_room.user_id.clone(),
                     }.try_into()?;
 
                     new_events.push(new_join_rules_event);
@@ -181,11 +184,12 @@ impl Room {
                         content: JoinRulesEventContent { join_rule: JoinRule::Invite },
                         event_id: EventId::new(homeserver_domain)?,
                         event_type: EventType::RoomJoinRules,
+                        origin_server_ts: 0,
                         prev_content: None,
-                        room_id: room.id.clone(),
+                        room_id: Some(room.id.clone()),
+                        sender: new_room.user_id.clone(),
                         state_key: "".to_string(),
                         unsigned: None,
-                        user_id: new_room.user_id.clone(),
                     }.try_into()?;
 
                     new_events.push(new_join_rules_event);
@@ -195,15 +199,16 @@ impl Room {
             if let Some(ref name) = creation_options.name {
                 let new_name_event: NewEvent = NameEvent {
                     content: NameEventContent {
-                        name: name.to_string(),
+                        name: Some(name.to_string()),
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomName,
+                    origin_server_ts: 0,
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: Some(room.id.clone()),
+                    sender: new_room.user_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_name_event);
@@ -216,11 +221,12 @@ impl Room {
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomTopic,
+                    origin_server_ts: 0,
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: Some(room.id.clone()),
+                    sender: new_room.user_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_topic_event);
@@ -254,18 +260,21 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomAvatar,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_avatar_event);
                         },
                         StrippedState::RoomCanonicalAlias(event) => {
-                            if event.content.alias.hostname().to_string() != homeserver_domain {
-                                return Err(ApiError::unimplemented("Federation is not yet supported".to_string()));
+                            if let Some(room_alias_id) = event.content.alias {
+                                if room_alias_id.hostname().to_string() != homeserver_domain {
+                                    return Err(ApiError::unimplemented("Federation is not yet supported".to_string()));
+                                }
                             }
 
                             is_canonical_alias_set = true;
@@ -274,11 +283,12 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomCanonicalAlias,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_canonical_alias_event);
@@ -293,11 +303,12 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomHistoryVisibility,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_history_visibility_event);
@@ -307,11 +318,12 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomJoinRules,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_join_rules_event);
@@ -325,11 +337,12 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomName,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_name_event);
@@ -348,11 +361,12 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomPowerLevels,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_power_levels_event);
@@ -369,11 +383,12 @@ impl Room {
                                 content: event.content.clone(),
                                 event_id: EventId::new(homeserver_domain)?,
                                 event_type: EventType::RoomTopic,
+                                origin_server_ts: 0,
                                 prev_content: None,
-                                room_id: room.id.clone(),
+                                room_id: Some(room.id.clone()),
+                                sender: room.user_id.clone(),
                                 state_key: event.state_key.to_string(),
                                 unsigned: None,
-                                user_id: room.user_id.clone(),
                             }.try_into()?;
 
                             new_events.push(new_topic_event);
@@ -396,11 +411,12 @@ impl Room {
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomHistoryVisibility,
+                    origin_server_ts: 0,
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: Some(room.id.clone()),
+                    sender: new_room.user_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: new_room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_history_visibility_event);
@@ -430,11 +446,12 @@ impl Room {
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomPowerLevels,
+                    origin_server_ts: 0,
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: Some(room.id.clone()),
+                    sender: room.user_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_power_levels_event);
@@ -443,24 +460,25 @@ impl Room {
             if creation_options.alias.is_some() && !is_canonical_alias_set {
                 let new_canonical_alias_event: NewEvent = CanonicalAliasEvent {
                     content: CanonicalAliasEventContent {
-                        alias: RoomAliasId::try_from(
-                            &format!("#{}:{}", creation_options.alias.clone().unwrap(), homeserver_domain)
-                        )?
+                        alias: Some(RoomAliasId::try_from(
+                            format!("#{}:{}", creation_options.alias.clone().unwrap(), homeserver_domain).as_ref()
+                        )?)
                     },
                     event_id: EventId::new(homeserver_domain)?,
                     event_type: EventType::RoomCanonicalAlias,
+                    origin_server_ts: 0,
                     prev_content: None,
-                    room_id: room.id.clone(),
+                    room_id: Some(room.id.clone()),
+                    sender: room.user_id.clone(),
                     state_key: "".to_string(),
                     unsigned: None,
-                    user_id: room.user_id.clone(),
                 }.try_into()?;
 
                 new_events.push(new_canonical_alias_event);
             }
 
-            insert(&new_events)
-                .into(events::table)
+            diesel::insert_into(events::table)
+                .values(&new_events)
                 .execute(connection)
                 .map_err(ApiError::from)?;
 
@@ -470,7 +488,7 @@ impl Room {
 
             if let Some(ref alias) = creation_options.alias {
                 let new_room_alias = NewRoomAlias {
-                    alias: RoomAliasId::try_from(&format!("#{}:{}", alias, homeserver_domain))?,
+                    alias: RoomAliasId::try_from(format!("#{}:{}", alias, homeserver_domain).as_ref())?,
                     room_id: room.id.clone(),
                     user_id: new_room.user_id.clone(),
                     servers: vec![homeserver_domain.to_string()],

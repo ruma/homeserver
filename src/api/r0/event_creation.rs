@@ -3,7 +3,7 @@
 use std::convert::TryInto;
 
 use bodyparser;
-use diesel::{Connection, ExecuteDsl, insert};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, status};
 use router::Router;
@@ -59,9 +59,10 @@ macro_rules! room_event {
             content: extract_event_content($event_content, &$event_type)?,
             event_id: $event_id.clone(),
             event_type: $event_type.clone(),
-            room_id: $room_id.clone(),
+            origin_server_ts: 0,
+            room_id: Some($room_id.clone()),
+            sender: $user.id.clone(),
             unsigned: None,
-            user_id: $user.id.clone(),
         }.try_into().map_err(ApiError::from)?
     };
 }
@@ -80,11 +81,12 @@ macro_rules! state_event {
             content: extract_event_content($event_content, &$event_type)?,
             event_id: $event_id.clone(),
             event_type: $event_type.clone(),
+            origin_server_ts: 0,
             prev_content: None,
-            room_id: $room_id.clone(),
+            room_id: Some($room_id.clone()),
+            sender: $user.id.clone(),
             state_key: $state_key.to_string(),
             unsigned: None,
-            user_id: $user.id.clone(),
         }.try_into().map_err(ApiError::from)?
     };
 }
@@ -144,9 +146,10 @@ impl Handler for SendMessageEvent {
                     content: event_content,
                     event_id: event_id.clone(),
                     event_type: EventType::Custom(custom_event_type.clone()),
-                    room_id: room_id.clone(),
+                    origin_server_ts: 0,
+                    room_id: Some(room_id.clone()),
+                    sender: user.id.clone(),
                     unsigned: None,
-                    user_id: user.id.clone(),
                 }.try_into().map_err(ApiError::from)?
             }
             _ => {
@@ -176,8 +179,8 @@ impl Handler for SendMessageEvent {
         connection.transaction(|| {
             verify_permissions(&connection, &room_id, &user, &event_type)?;
 
-            insert(&room_event)
-                .into(events::table)
+            diesel::insert_into(events::table)
+                .values(&room_event)
                 .execute(&*connection)
                 .map_err(ApiError::from)?;
 
@@ -349,11 +352,12 @@ impl Handler for StateMessageEvent {
                     content: event_content,
                     event_id: event_id.clone(),
                     event_type: EventType::Custom(custom_event_type.clone()),
+                    origin_server_ts: 0,
                     prev_content: None,
-                    room_id: room_id.clone(),
+                    room_id: Some(room_id.clone()),
+                    sender: user.id.clone(),
                     state_key: state_key.to_string(),
                     unsigned: None,
-                    user_id: user.id.clone(),
                 }.try_into().map_err(ApiError::from)?
             }
             _ => {
@@ -370,8 +374,8 @@ impl Handler for StateMessageEvent {
         connection.transaction(|| {
             verify_permissions(&connection, &room_id, &user, &event_type)?;
 
-            insert(&state_event)
-                .into(events::table)
+            diesel::insert_into(events::table)
+                .values(&state_event)
                 .execute(&*connection)
                 .map_err(ApiError::from)
         }).map_err(ApiError::from)?;

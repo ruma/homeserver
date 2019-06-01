@@ -2,16 +2,7 @@
 
 use std::convert::{TryInto, TryFrom};
 
-use diesel::{
-    ExpressionMethods,
-    FilterDsl,
-    FindDsl,
-    GroupByDsl,
-    LoadDsl,
-    OrderDsl,
-    SelectDsl,
-    TextExpressionMethods,
-};
+use diesel::prelude::*;
 use diesel::expression::dsl::{any, max};
 use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
@@ -58,7 +49,7 @@ use ruma_events::stripped::{
     StrippedState,
 };
 use ruma_identifiers::{EventId, RoomId, UserId};
-use serde_json::{Value, from_str, from_value, to_string};
+use serde_json::{from_str, to_string};
 
 use error::ApiError;
 use schema::events;
@@ -84,18 +75,16 @@ const STATE_EVENTS: [EventType; 12] = [
 pub struct NewEvent {
     /// The type of the event, e.g. *m.room.create*.
     pub event_type: String,
-    /// Extra key-value pairs to be mixed into the top-level JSON representation of the event.
-    pub extra_content: Option<String>,
     /// The unique event ID.
     pub id: EventId,
     /// JSON of the event's content.
     pub content: String,
     /// The room the event was sent in.
-    pub room_id: RoomId,
+    pub room_id: Option<RoomId>,
+    /// The user who sent the event.
+    pub sender: UserId,
     /// An event subtype that determines whether or not the event will overwrite a previous one.
     pub state_key: Option<String>,
-    /// The user who sent the event.
-    pub user_id: UserId,
 }
 
 /// A Matrix event.
@@ -106,17 +95,15 @@ pub struct Event {
     /// The depth of the event within its room, with the first event in the room being 1.
     pub ordering: i64,
     /// The room the event was sent in.
-    pub room_id: RoomId,
+    pub room_id: Option<RoomId>,
     /// The user who sent the event.
-    pub user_id: UserId,
+    pub sender: UserId,
     /// The type of the event, e.g. *m.room.create*.
     pub event_type: String,
     /// An event subtype that determines whether or not the event will overwrite a previous one.
     pub state_key: Option<String>,
     /// JSON of the event's content.
     pub content: String,
-    /// Extra key-value pairs to be mixed into the top-level JSON representation of the event.
-    pub extra_content: Option<String>,
     /// The time the event was created.
     pub created_at: PgTimestamp,
 }
@@ -241,11 +228,10 @@ macro_rules! impl_try_from_room_event_for_new_event {
                 Ok(NewEvent {
                     content: to_string(event.content()).map_err(ApiError::from)?,
                     event_type: event.event_type().to_string(),
-                    extra_content: None,
                     id: event.event_id().clone(),
-                    room_id: event.room_id().clone(),
+                    room_id: event.room_id().map(|room_id| room_id.clone()),
+                    sender: event.sender().clone(),
                     state_key: None,
-                    user_id: event.user_id().clone(),
                 })
             }
         }
@@ -261,16 +247,10 @@ macro_rules! impl_try_from_state_event_for_new_event {
                 Ok(NewEvent {
                     content: to_string(event.content()).map_err(ApiError::from)?,
                     event_type: event.event_type().to_string(),
-                    extra_content: match event.extra_content() {
-                        Some(extra_content) => Some(
-                            to_string(&extra_content).map_err(ApiError::from)?
-                        ),
-                        None => None,
-                    },
                     id: event.event_id().clone(),
-                    room_id: event.room_id().clone(),
+                    room_id: event.room_id().map(|room_id| room_id.clone()),
+                    sender: event.sender().clone(),
                     state_key: Some(event.state_key().to_string()),
-                    user_id: event.user_id().clone(),
                 })
             }
         }
@@ -287,9 +267,15 @@ macro_rules! impl_try_into_room_event_for_event {
                     content: from_str(&self.content).map_err(ApiError::from)?,
                     event_id: self.id,
                     event_type: EventType::from(self.event_type.as_ref()),
+                    // FIXME: This is a dummy value just to satisfy event types' new schema.
+                    // The real value should come from the database record's created_at timestamp,
+                    // but it's unclear exactly how.
+                    //
+                    // See https://github.com/matrix-org/matrix-doc/issues/2064
+                    origin_server_ts: 0,
                     room_id: self.room_id,
+                    sender: self.sender,
                     unsigned: None,
-                    user_id: self.user_id,
                 })
             }
         }
@@ -304,13 +290,19 @@ macro_rules! impl_try_into_state_event_for_event {
             fn try_into(self) -> Result<$ty, Self::Error> {
                 Ok($ty {
                     content: from_str(&self.content).map_err(ApiError::from)?,
-                    prev_content: None,
                     event_id: self.id,
-                    state_key: "".to_string(),
                     event_type: EventType::from(self.event_type.as_ref()),
+                    // FIXME: This is a dummy value just to satisfy event types' new schema.
+                    // The real value should come from the database record's created_at timestamp,
+                    // but it's unclear exactly how.
+                    //
+                    // See https://github.com/matrix-org/matrix-doc/issues/2064
+                    origin_server_ts: 0,
+                    prev_content: None,
                     room_id: self.room_id,
+                    sender: self.sender,
+                    state_key: "".to_string(),
                     unsigned: None,
-                    user_id: self.user_id,
                 })
             }
         }
@@ -327,6 +319,7 @@ macro_rules! impl_try_into_stripped_state_event_for_event {
                     content: from_str(&self.content).map_err(ApiError::from)?,
                     state_key: "".to_string(),
                     event_type: EventType::from(self.event_type.as_ref()),
+                    sender: self.sender,
                 })
             }
         }
@@ -394,25 +387,22 @@ impl TryInto<MemberEvent> for Event {
         Ok(MemberEvent {
             content: from_str(&self.content)?,
             event_id: self.id,
-            invite_room_state: match self.extra_content {
-                Some(extra_content) => {
-                    let object: Value = from_str(&extra_content).map_err(ApiError::from)?;
-                    let field: &Value = object.get("invite_room_state")
-                        .ok_or_else(||
-                            ApiError::unknown("Data for member event was missing invite_room_state".to_string()
-                    ))?;
-
-
-                    from_value(field.clone()).map_err(ApiError::from)?
-                },
-                None => None,
-            },
-            prev_content: None,
-            state_key: "".to_string(),
             event_type: EventType::RoomMember,
+            // FIXME: As of the client-server spec r0.4.0, this data is under the `unsigned` field.
+            // Once ruma-events is updated to account for this, this whole TryInto impl can be
+            // killed. This is just a dummy value for now to satisfy the old schema.
+            invite_room_state: None,
+            // FIXME: This is a dummy value just to satisfy event types' new schema.
+            // The real value should come from the database record's created_at timestamp,
+            // but it's unclear exactly how.
+            //
+            // See https://github.com/matrix-org/matrix-doc/issues/2064
+            origin_server_ts: 0,
+            prev_content: None,
             room_id: self.room_id,
+            sender: self.sender,
+            state_key: "".to_string(),
             unsigned: None,
-            user_id: self.user_id,
         })
     }
 }

@@ -2,12 +2,7 @@
 
 use std::fmt::{Formatter, Result as FmtResult};
 
-use diesel::{
-    ExpressionMethods,
-    FilterDsl,
-    LoadDsl,
-    insert,
-};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::{RoomId, UserId};
@@ -210,8 +205,8 @@ impl Filter {
             content: content,
         };
 
-        let filter: Filter = insert(&new_filter)
-            .into(filters::table)
+        let filter: Filter = diesel::insert_into(filters::table)
+            .values(&new_filter)
             .get_result(connection)
             .map_err(ApiError::from)?;
         Ok(filter.id)

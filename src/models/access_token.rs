@@ -1,8 +1,8 @@
 //! User access tokens.
 
 use base64::encode;
-use chrono::{Duration, UTC};
-use diesel::{ExpressionMethods, FilterDsl, LoadDsl, SaveChangesDsl, insert};
+use chrono::{Duration, Utc};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
@@ -55,8 +55,8 @@ impl AccessToken {
             value: create_macaroon(macaroon_secret_key, user_id)?,
         };
 
-        insert(&new_access_token)
-            .into(access_tokens::table)
+        diesel::insert_into(access_tokens::table)
+            .values(&new_access_token)
             .get_result(connection)
             .map_err(ApiError::from)
     }
@@ -95,7 +95,7 @@ impl Key for AccessToken {
 }
 
 fn create_macaroon(macaroon_secret_key: &[u8], user_id: &UserId) -> Result<String, ApiError> {
-    let expiration = match UTC::now().checked_add_signed(Duration::hours(1)) {
+    let expiration = match Utc::now().checked_add_signed(Duration::hours(1)) {
         Some(datetime) => datetime,
         None => return Err(
             ApiError::unknown("Failed to generate access token expiration datetime.".to_string())

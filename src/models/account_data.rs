@@ -1,14 +1,6 @@
 //! Account information stored for a user.
 
-use diesel::{
-    ExecuteDsl,
-    ExpressionMethods,
-    FilterDsl,
-    LoadDsl,
-    SaveChangesDsl,
-    delete,
-    insert,
-};
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use diesel::pg::PgConnection;
 use iron::typemap::Key;
@@ -47,8 +39,8 @@ impl AccountData {
     /// Create new `AccountData` for a user.
     pub fn create(connection: &PgConnection, new_account_data: &NewAccountData)
     -> Result<AccountData, ApiError> {
-        insert(new_account_data)
-            .into(account_data::table)
+        diesel::insert_into(account_data::table)
+            .values(new_account_data)
             .get_result(connection)
             .map_err(ApiError::from)
     }
@@ -78,7 +70,7 @@ impl AccountData {
         let rows = account_data::table
             .filter(account_data::user_id.eq(uid));
 
-        delete(rows)
+        diesel::delete(rows)
             .execute(connection)
             .map_err(ApiError::from)
     }
@@ -149,8 +141,8 @@ impl RoomAccountData {
     /// Create new `RoomAccountData` for a user.
     pub fn create(connection: &PgConnection, new_account_data: &NewRoomAccountData)
     -> Result<RoomAccountData, ApiError> {
-        insert(new_account_data)
-            .into(room_account_data::table)
+        diesel::insert_into(room_account_data::table)
+            .values(new_account_data)
             .get_result(connection)
             .map_err(ApiError::from)
     }
@@ -181,7 +173,7 @@ impl RoomAccountData {
         let rows = room_account_data::table
             .filter(room_account_data::user_id.eq(uid));
 
-        delete(rows)
+        diesel::delete(rows)
             .execute(connection)
             .map_err(ApiError::from)
     }

@@ -2,16 +2,7 @@
 
 use std::collections::HashSet;
 
-use diesel::{
-    insert,
-    Connection,
-    ExpressionMethods,
-    FilterDsl,
-    FindDsl,
-    LoadDsl,
-    SaveChangesDsl,
-    SelectDsl,
-};
+use diesel::prelude::*;
 use diesel::expression::dsl::any;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
@@ -58,8 +49,8 @@ impl User {
         macaroon_secret_key: &[u8],
     ) -> Result<(User, AccessToken), ApiError> {
         connection.transaction::<(User, AccessToken), ApiError, _>(|| {
-            let user: User = insert(new_user)
-                .into(users::table)
+            let user: User = diesel::insert_into(users::table)
+                .values(new_user)
                 .get_result(connection)
                 .map_err(ApiError::from)?;
 

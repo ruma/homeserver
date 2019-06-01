@@ -35,7 +35,7 @@ impl BeforeMiddleware for RoomIdParam {
                         ApiError::invalid_param("room_id", err.description())
                     })?;
 
-                RoomId::try_from(&decoded_room_id).map_api_err(|err| {
+                RoomId::try_from(decoded_room_id.as_ref()).map_api_err(|err| {
                     ApiError::invalid_param("room_id", err.description())
                 })
             },
@@ -64,7 +64,7 @@ impl BeforeMiddleware for RoomIdOrAliasParam {
                         ApiError::invalid_param("room_id_or_alias", err.description())
                     })?;
 
-                RoomIdOrAliasId::try_from(&decoded_room_id_or_alias).map_api_err(|err| {
+                RoomIdOrAliasId::try_from(decoded_room_id_or_alias.as_ref()).map_api_err(|err| {
                     ApiError::invalid_param("room_id_or_alias", err.description())
                 })
             },
@@ -95,7 +95,7 @@ impl BeforeMiddleware for UserIdParam {
                         ApiError::invalid_param("user_id", err.description())
                     })?;
 
-                UserId::try_from(&decoded_user_id).map_api_err(|err| {
+                UserId::try_from(decoded_user_id.as_ref()).map_api_err(|err| {
                     ApiError::invalid_param("user_id", err.description())
                 })
             },
@@ -172,7 +172,7 @@ impl BeforeMiddleware for RoomAliasIdParam {
                 debug!("room_alias param: {}", room_alias);
 
                 RoomAliasId::try_from(
-                    &format!("#{}:{}", room_alias, config.domain)
+                    format!("#{}:{}", room_alias, config.domain).as_ref()
                 ).map_api_err(|err| {
                     ApiError::invalid_param("room_alias", err.description())
                 })?

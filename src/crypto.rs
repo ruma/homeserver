@@ -2,7 +2,10 @@
 
 use argon2rs::verifier::Encoded;
 use base64::encode;
-use rand::{OsRng, Rng};
+use rand::{
+    RngCore,
+    rngs::OsRng,
+};
 
 use error::{ApiError, CliError};
 

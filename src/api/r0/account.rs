@@ -1,6 +1,6 @@
 //! Endpoints for accounts.
 use bodyparser;
-use diesel::SaveChangesDsl;
+use diesel::prelude::*;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 

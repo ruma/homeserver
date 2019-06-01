@@ -8,7 +8,7 @@ extern crate bodyparser;
 extern crate chrono;
 extern crate clap;
 #[macro_use] extern crate diesel;
-#[macro_use] extern crate diesel_codegen;
+#[macro_use] extern crate diesel_migrations;
 #[cfg(test)] extern crate env_logger;
 extern crate iron;
 #[cfg(test)] extern crate iron_test;

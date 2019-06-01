@@ -100,7 +100,7 @@ fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, St
         (Some(username), Some(password)) => {
             match UserId::try_from(username) {
                 Ok(user_id) => Ok((user_id, password.to_string())),
-                Err(_) => match UserId::try_from(&format!("@{}:{}", username, &config.domain)) {
+                Err(_) => match UserId::try_from(format!("@{}:{}", username, &config.domain).as_ref()) {
                     Ok(user_id) => Ok((user_id, password.to_string())),
                     Err(_) => Err(()),
                 },

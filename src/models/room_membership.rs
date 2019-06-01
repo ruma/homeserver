@@ -3,18 +3,7 @@
 use std::convert::TryInto;
 use std::error::Error;
 
-use diesel::{
-    Connection,
-    ExpressionMethods,
-    ExecuteDsl,
-    FilterDsl,
-    FindDsl,
-    LoadDsl,
-    SaveChangesDsl,
-    SelectDsl,
-    insert,
-    update,
-};
+use diesel::prelude::*;
 use diesel::expression::dsl::*;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
@@ -151,13 +140,13 @@ impl RoomMembership {
     fn save_memberships(connection: &PgConnection, events: Vec<NewEvent>, new_memberships: Vec<NewRoomMembership>)
     -> Result<Vec<RoomMembership>, ApiError> {
         connection.transaction::<Vec<RoomMembership>, ApiError, _>(|| {
-            insert(&events)
-                .into(events::table)
+            diesel::insert_into(events::table)
+                .values(&events)
                 .execute(connection)
                 .map_err(ApiError::from)?;
 
-            let memberships: Vec<RoomMembership> = insert(&new_memberships)
-                                                    .into(room_memberships::table)
+            let memberships: Vec<RoomMembership> = diesel::insert_into(room_memberships::table)
+                                                    .values(&new_memberships)
                                                     .get_results(connection)
                                                     .map_err(ApiError::from)?;
             Ok(memberships)
@@ -255,8 +244,8 @@ impl RoomMembership {
         self.sender = options.sender.clone();
 
         connection.transaction::<RoomMembership, ApiError, _>(|| {
-            insert(&event)
-                .into(events::table)
+            diesel::insert_into(events::table)
+                .values(&event)
                 .execute(connection)
                 .map_err(ApiError::from)?;
 
@@ -264,7 +253,7 @@ impl RoomMembership {
                 .map_err(ApiError::from)?;
 
             // Use the new `EventId` as primary key.
-            update(room_memberships::table.find(self.event_id.clone()))
+            diesel::update(room_memberships::table.find(self.event_id.clone()))
                 .set(room_memberships::event_id.eq(event.id.clone()))
                 .get_result(connection)
                 .map_err(ApiError::from)
@@ -290,17 +279,20 @@ impl RoomMembership {
             content: MemberEventContent {
                 avatar_url: avatar_url,
                 displayname: displayname,
+                // TODO: This needs to be set based on options provided by new APIs that use it.
+                is_direct: None,
                 membership: membership,
                 third_party_invite: None,
             },
             event_id: event_id.clone(),
             event_type: EventType::RoomMember,
             invite_room_state: None,
+            origin_server_ts: 0,
             prev_content: None,
-            room_id: options.room_id.clone(),
+            room_id: Some(options.room_id.clone()),
+            sender: options.user_id.clone(),
             state_key: format!("@{}:{}", options.user_id.clone(), &homeserver_domain),
             unsigned: None,
-            user_id: options.user_id.clone(),
         }.try_into()?;
 
         Ok(new_member_event)

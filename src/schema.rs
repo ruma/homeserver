@@ -28,12 +28,11 @@ table! {
     events {
         id -> Text,
         ordering -> BigSerial,
-        room_id -> Text,
-        user_id -> Text,
+        room_id -> Nullable<Text>,
+        sender -> Text,
         event_type -> Text,
         state_key -> Nullable<Text>,
         content -> Text,
-        extra_content -> Nullable<Text>,
         created_at -> Timestamp,
     }
 }

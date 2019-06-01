@@ -1,12 +1,12 @@
 //! Iron web server that serves the API.
-use diesel::migrations::setup_database;
+use diesel_migrations::setup_database;
 use diesel::pg::PgConnection;
 use iron::{Chain, Iron, IronError, IronResult, Listening, Request, Response};
 use iron::error::HttpResult;
 use mount::Mount;
 use persistent::{Read, Write};
-use r2d2::Config as R2D2Config;
-use r2d2_diesel::Error as R2D2DieselError;
+use r2d2::{Builder, Pool};
+use r2d2_diesel::ConnectionManager;
 use router::Router;
 
 use api::r0::{
@@ -79,21 +79,21 @@ impl<'a> Server<'a> {
     /// Mount all APIs with some extra options.
     pub fn mount_all_with_options(
         self,
-        r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
+        r2d2_pool_builder: Builder<ConnectionManager<PgConnection>>,
         set_up_db: bool,
     ) -> Result<Self, CliError> {
-        self.mount_extra().mount_client_with_options(r2d2_config, set_up_db)
+        self.mount_extra().mount_client_with_options(r2d2_pool_builder, set_up_db)
     }
 
     /// Mount the client APIs.
     pub fn mount_client(self) -> Result<Self, CliError> {
-        self.mount_client_with_options(R2D2Config::default(), true)
+        self.mount_client_with_options(Pool::builder(), true)
     }
 
     /// Mount the client APIs with some extra options.
     pub fn mount_client_with_options(
         mut self,
-        r2d2_config: R2D2Config<PgConnection, R2D2DieselError>,
+        r2d2_pool_builder: Builder<ConnectionManager<PgConnection>>,
         set_up_db: bool,
     ) -> Result<Self, CliError> {
         let mut r0_router = Router::new();
@@ -165,7 +165,7 @@ impl<'a> Server<'a> {
         let mut r0 = Chain::new(r0_router);
 
         debug!("Connecting to PostgreSQL.");
-        let connection_pool = DB::create_connection_pool(r2d2_config, &self.config.postgres_url)?;
+        let connection_pool = DB::create_connection_pool(r2d2_pool_builder, &self.config.postgres_url)?;
         let connection = connection_pool.get()?;
 
         if set_up_db {

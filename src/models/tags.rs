@@ -1,17 +1,7 @@
 //! Matrix room tags.
 use std::collections::HashMap;
 
-use diesel::{
-    Connection,
-    ExpressionMethods,
-    ExecuteDsl,
-    FindDsl,
-    LoadDsl,
-    FilterDsl,
-    SaveChangesDsl,
-    insert,
-    delete,
-};
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 use ruma_events::tag::TagInfo;
@@ -139,8 +129,8 @@ impl RoomTag {
                 tag: tag,
                 content: content,
             };
-            insert(&new_room_tag)
-                .into(room_tags::table)
+            diesel::insert_into(room_tags::table)
+                .values(&new_room_tag)
                 .execute(connection)
                 .map_err(ApiError::from)
         })?;
@@ -171,7 +161,7 @@ impl RoomTag {
                 DieselError::NotFound => ApiError::not_found("The given room_id does not correspond to a tag".to_string()),
                 _ => ApiError::from(err),
             })?;
-        delete(tag)
+        diesel::delete(tag)
             .execute(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found("The given user_id and room_id does not correspond to a tag".to_string()),

@@ -2,16 +2,7 @@
 
 use std::cmp;
 
-use diesel::{
-    delete,
-    insert,
-    Connection,
-    ExpressionMethods,
-    ExecuteDsl,
-    FilterDsl,
-    LoadDsl,
-    SelectDsl,
-};
+use diesel::prelude::*;
 use diesel::expression::dsl::any;
 use diesel::pg::PgConnection;
 use ruma_events::EventType;
@@ -105,15 +96,15 @@ impl PresenceList {
                     observed_user_id: (*observed_user).clone(),
                 });
             }
-            insert(&invites)
-                .into(presence_list::table)
+            diesel::insert_into(presence_list::table)
+                .values(&invites)
                 .execute(connection)
                 .map_err(ApiError::from)?;
 
             let drop = presence_list::table
                 .filter(presence_list::user_id.eq(user_id))
                 .filter(presence_list::observed_user_id.eq(any(drop)));
-            delete(drop)
+            diesel::delete(drop)
                 .execute(connection)
                 .map_err(ApiError::from)?;
             Ok(())
@@ -173,14 +164,13 @@ impl PresenceList {
             let event = PresenceEvent {
                 content: PresenceEventContent {
                     avatar_url: avatar_url,
-                    currently_active: PresenceState::Online == presence_state,
+                    currently_active: Some(PresenceState::Online == presence_state),
                     displayname: displayname,
                     last_active_ago: Some(last_active_ago as u64),
                     presence: presence_state,
-                    user_id: status.user_id,
                 },
                 event_type: EventType::Presence,
-                event_id: status.event_id,
+                sender: status.user_id,
             };
 
             events.push(event);

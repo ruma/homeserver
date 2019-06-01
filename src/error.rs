@@ -9,7 +9,6 @@ use std::sync::PoisonError;
 use std::time::SystemTimeError;
 
 use argon2rs::verifier::DecodeError;
-use base64::Base64Error;
 use diesel::result::Error as DieselError;
 use iron::{IronError, Response};
 use iron::headers::ContentType;
@@ -17,7 +16,8 @@ use iron::modifier::Modifier;
 use iron::status::Status;
 use macaroons::error::Error as MacaroonsError;
 use persistent::PersistentError;
-use r2d2::GetTimeout;
+use r2d2::Error as R2d2Error;
+use rand::Error as RandError;
 use ruma_identifiers::Error as RumaIdentifiersError;
 use serde::ser::{Serialize, Serializer};
 use serde_json::{Error as SerdeJsonError, to_string};
@@ -232,15 +232,6 @@ impl From<DecodeError> for ApiError {
     }
 }
 
-
-impl From<Base64Error> for ApiError {
-    fn from(error: Base64Error) -> ApiError {
-        debug!("Converting to ApiError from: {:?}", error);
-
-        ApiError::unknown(None)
-    }
-}
-
 impl From<DieselError> for ApiError {
     fn from(error: DieselError) -> ApiError {
         debug!("Converting to ApiError from: {:?}", error);
@@ -273,16 +264,24 @@ impl From<PersistentError> for ApiError {
     }
 }
 
-impl From<RumaIdentifiersError> for ApiError {
-    fn from(error: RumaIdentifiersError) -> ApiError {
+impl From<R2d2Error> for ApiError {
+    fn from(error: R2d2Error) -> ApiError {
         debug!("Converting to ApiError from: {:?}", error);
 
         ApiError::unknown(None)
     }
 }
 
-impl From<GetTimeout> for ApiError {
-    fn from(error: GetTimeout) -> ApiError {
+impl From<RandError> for ApiError {
+    fn from(error: RandError) -> ApiError {
+        debug!("Converting to ApiError from: {:?}", error);
+
+        ApiError::unknown(None)
+    }
+}
+
+impl From<RumaIdentifiersError> for ApiError {
+    fn from(error: RumaIdentifiersError) -> ApiError {
         debug!("Converting to ApiError from: {:?}", error);
 
         ApiError::unknown(None)

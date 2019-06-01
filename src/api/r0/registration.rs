@@ -95,7 +95,7 @@ impl Handler for Register {
         let new_user = NewUser {
             id: match registration_request.username {
                 Some(username) => {
-                    UserId::try_from(&format!("@{}:{}", username, &config.domain))
+                    UserId::try_from(format!("@{}:{}", username, &config.domain).as_ref())
                         .map_err(ApiError::from)?
                 }
                 None => UserId::new(&config.domain).map_err(ApiError::from)?,
