@@ -3,7 +3,7 @@
 use std::cmp;
 
 use diesel::prelude::*;
-use diesel::expression::dsl::any;
+use diesel::dsl::any;
 use diesel::pg::PgConnection;
 use ruma_events::EventType;
 use ruma_events::presence::{PresenceEvent, PresenceEventContent, PresenceState};

@@ -2,7 +2,7 @@
 
 use chrono::{Duration, NaiveDateTime, NaiveDate, Utc};
 use diesel::prelude::*;
-use diesel::expression::dsl::any;
+use diesel::dsl::any;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;

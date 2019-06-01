@@ -3,7 +3,7 @@
 use std::convert::{TryInto, TryFrom};
 
 use diesel::prelude::*;
-use diesel::expression::dsl::{any, max};
+use diesel::dsl::{any, max};
 use diesel::result::Error as DieselError;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::pg::PgConnection;
@@ -184,7 +184,7 @@ impl Event {
             .group_by(events::event_type);
 
         events::table
-            .filter(events::ordering.nullable().eq(any(&ordering)))
+            .filter(events::ordering.nullable().eq(any(ordering)))
             .get_results(connection)
             .map_err(ApiError::from)
     }
@@ -212,7 +212,7 @@ impl Event {
             .group_by(events::event_type);
 
         events::table
-            .filter(events::ordering.nullable().eq(any(&ordering)))
+            .filter(events::ordering.nullable().eq(any(ordering)))
             .get_results(connection)
             .map_err(ApiError::from)
     }

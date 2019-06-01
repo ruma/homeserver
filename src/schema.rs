@@ -152,3 +152,7 @@ table! {
         app_display_name -> Text,
     }
 }
+
+// Diesel macros needed to enable queries with multiple tables involving foreign key relationships.
+
+allow_tables_to_appear_in_same_query!(events, room_memberships);

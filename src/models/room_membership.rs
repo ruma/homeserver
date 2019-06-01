@@ -4,7 +4,7 @@ use std::convert::TryInto;
 use std::error::Error;
 
 use diesel::prelude::*;
-use diesel::expression::dsl::*;
+use diesel::expression::dsl::any;
 use diesel::pg::PgConnection;
 use diesel::pg::data_types::PgTimestamp;
 use diesel::result::Error as DieselError;
