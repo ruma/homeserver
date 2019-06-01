@@ -101,7 +101,7 @@ impl Handler for PutRoomAlias {
 
         let new_room_alias = NewRoomAlias {
             alias: room_alias_id,
-            room_id: room_id,
+            room_id,
             user_id: user.id,
             servers: vec![config.domain.to_string()],
         };

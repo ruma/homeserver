@@ -277,11 +277,11 @@ impl RoomMembership {
 
         let new_member_event: NewEvent = MemberEvent {
             content: MemberEventContent {
-                avatar_url: avatar_url,
-                displayname: displayname,
+                avatar_url,
+                displayname,
                 // TODO: This needs to be set based on options provided by new APIs that use it.
                 is_direct: None,
-                membership: membership,
+                membership,
                 third_party_invite: None,
             },
             event_id: event_id.clone(),

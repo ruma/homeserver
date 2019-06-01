@@ -94,7 +94,7 @@ impl Handler for Login {
 
         let auth_params = AuthParams::Password(PasswordAuthParams {
             password: login_request.password,
-            user_id: user_id,
+            user_id,
         });
 
         let connection = DB::from_request(request)?;

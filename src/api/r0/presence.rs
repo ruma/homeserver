@@ -122,7 +122,7 @@ impl Handler for GetPresenceStatus {
         let response = GetPresenceStatusResponse {
             status_msg: status.status_msg,
             currently_active: PresenceState::Online == presence_state,
-            last_active_ago: last_active_ago,
+            last_active_ago,
             presence: presence_state,
         };
 

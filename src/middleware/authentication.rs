@@ -27,7 +27,7 @@ impl UIAuth {
     /// Creates a new `UIAuth` from the given `InteractiveAuth`.
     pub fn new(interactive_auth: InteractiveAuth) -> Self {
         UIAuth {
-            interactive_auth: interactive_auth,
+            interactive_auth,
         }
     }
 }
@@ -73,8 +73,8 @@ impl BeforeMiddleware for UIAuth {
             if is_m_login_password(auth_json) {
                 if let Ok((user_id, password)) = get_user_id_and_password(auth_json, &config) {
                     let auth_params = AuthParams::Password(PasswordAuthParams {
-                        password: password,
-                        user_id: user_id,
+                        password,
+                        user_id,
                     });
 
                     let connection = DB::from_request(request)?;

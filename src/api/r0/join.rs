@@ -208,7 +208,7 @@ impl Handler for KickFromRoom {
         }
 
         let room_membership_options = RoomMembershipOptions {
-            room_id: room_id,
+            room_id,
             user_id: kickee_id,
             sender: kicker.id,
             membership: "leave".to_string(),
@@ -282,7 +282,7 @@ impl Handler for InviteToRoom {
         }).map_err(ApiError::from)?;
 
         let new_membership_options = RoomMembershipOptions {
-            room_id: room_id,
+            room_id,
             user_id: invitee_id,
             sender: inviter.id,
             membership: "invite".to_string(),

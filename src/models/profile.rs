@@ -39,7 +39,7 @@ impl Profile {
                 None => {
                     let new_profile = Profile {
                         id: user_id.clone(),
-                        avatar_url: avatar_url,
+                        avatar_url,
                         displayname: None,
                     };
                     Profile::create(connection, &new_profile)?
@@ -67,7 +67,7 @@ impl Profile {
                     let new_profile = Profile {
                         id: user_id.clone(),
                         avatar_url: None,
-                        displayname: displayname,
+                        displayname,
                     };
                     Profile::create(connection, &new_profile)?
                 }

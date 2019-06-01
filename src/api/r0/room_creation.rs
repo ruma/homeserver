@@ -94,7 +94,7 @@ impl Handler for CreateRoom {
             initial_state: create_room_request.initial_state,
             invite_list: create_room_request.invite,
             name: create_room_request.name,
-            preset: preset,
+            preset,
             topic: create_room_request.topic,
         };
 

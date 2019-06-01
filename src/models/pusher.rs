@@ -181,7 +181,7 @@ impl Pusher {
         options: PusherOptions
     ) -> Result<Pusher, ApiError> {
         let new_pusher = Pusher {
-            user_id: user_id,
+            user_id,
             lang: options.lang,
             kind: options.kind,
             device_display_name: options.device_display_name,

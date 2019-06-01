@@ -96,7 +96,7 @@ impl Config {
             bind_address: v1_config.bind_address.unwrap_or_else(|| "127.0.0.1".to_string()),
             bind_port: v1_config.bind_port.unwrap_or_else(|| "3000".to_string()),
             domain: v1_config.domain,
-            macaroon_secret_key: macaroon_secret_key,
+            macaroon_secret_key,
             postgres_url: v1_config.postgres_url,
         })
     }

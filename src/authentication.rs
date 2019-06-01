@@ -19,7 +19,7 @@ impl InteractiveAuth {
     /// Creates a new `InteractiveAuth` from the given flows.
     pub fn new(flows: Vec<Flow>) -> Self {
         InteractiveAuth {
-            flows: flows,
+            flows,
         }
     }
 }
@@ -42,7 +42,7 @@ impl Flow {
     /// Creates a new `Flow` from the given auth types.
     pub fn new(auth_types: Vec<AuthType>) -> Self {
         Flow {
-            auth_types: auth_types,
+            auth_types,
         }
     }
 }

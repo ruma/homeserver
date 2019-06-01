@@ -115,8 +115,8 @@ impl Batch {
     /// Create a new `Batch`.
     pub fn new(room_key: i64, presence_key: i64) -> Batch {
         Batch {
-            room_key: room_key,
-            presence_key: presence_key,
+            room_key,
+            presence_key,
         }
     }
 }
@@ -211,7 +211,7 @@ impl Sync {
             presence: Events {
                 events: presence,
             },
-            rooms: rooms,
+            rooms,
         };
 
         Ok(state)
@@ -302,7 +302,7 @@ impl Sync {
                             highlight_count: 0,
                             notification_count: 0,
                         },
-                        timeline: timeline,
+                        timeline,
                         state: Events {
                             events: state_events,
                         },
@@ -354,7 +354,7 @@ impl Sync {
                         .collect::<Result<Vec<StateEvent>, ApiError>>()?;
 
                     leave.insert(room_membership.room_id, LeftRoom {
-                        timeline: timeline,
+                        timeline,
                         state: Events {
                             events: state_events,
                         },
@@ -365,9 +365,9 @@ impl Sync {
         }
 
         Ok((room_ordering, Rooms {
-            join: join,
-            leave: leave,
-            invite: invite,
+            join,
+            leave,
+            invite,
         }))
     }
 
@@ -434,7 +434,7 @@ impl Sync {
 
         Ok((room_ordering, Timeline {
             events: timeline_events,
-            limited: limited,
+            limited,
             prev_batch: String::from(""),
         }))
     }

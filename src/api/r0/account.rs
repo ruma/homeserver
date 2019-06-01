@@ -124,7 +124,7 @@ impl Handler for PutAccountData {
         let new_data = NewAccountData {
             user_id: user.id,
             data_type: data_type.to_string(),
-            content: content,
+            content,
         };
 
         let connection = DB::from_request(request)?;
@@ -189,9 +189,9 @@ impl Handler for PutRoomAccountData {
 
         let new_data = NewRoomAccountData {
             user_id: user.id,
-            room_id: room_id,
+            room_id,
             data_type: data_type.to_string(),
-            content: content,
+            content,
         };
 
         RoomAccountData::upsert(&connection, &new_data)?;

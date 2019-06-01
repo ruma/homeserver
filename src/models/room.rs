@@ -246,7 +246,7 @@ impl Room {
                                 }
 
                                 let new_room_alias = NewRoomAlias {
-                                    alias: alias,
+                                    alias,
                                     room_id: room.id.clone(),
                                     user_id: new_room.user_id.clone(),
                                     servers: vec![homeserver_domain.to_string()],

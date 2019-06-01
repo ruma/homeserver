@@ -116,8 +116,8 @@ impl PresenceStatus {
         let new_status = NewPresenceStatus {
             user_id: user_id.clone(),
             event_id: event_id.clone(),
-            presence: presence,
-            status_msg: status_msg,
+            presence,
+            status_msg,
             updated_at: PgTimestamp(get_now()),
         };
         diesel::insert_into(presence_status::table)

@@ -79,11 +79,11 @@ impl Handler for Sync {
         }
 
         let options = SyncOptions {
-            filter: filter,
-            since: since,
-            full_state: full_state,
-            set_presence: set_presence,
-            timeout: timeout,
+            filter,
+            since,
+            full_state,
+            set_presence,
+            timeout,
         };
 
         let response = query::Sync::sync(&connection, &config.domain, &user, options)?;

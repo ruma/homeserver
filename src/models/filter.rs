@@ -201,8 +201,8 @@ impl Filter {
     /// Creates a new `Filter`
     pub fn create(connection: &PgConnection, user_id: UserId, content: String)-> Result<i64, ApiError> {
         let new_filter = NewFilter {
-            user_id: user_id,
-            content: content,
+            user_id,
+            content,
         };
 
         let filter: Filter = diesel::insert_into(filters::table)

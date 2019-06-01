@@ -43,7 +43,7 @@ impl Handler for GetTags {
         let tags = RoomTag::find(&connection, user_id, room_id)?;
 
         let response = TagsResponse {
-            tags: tags,
+            tags,
         };
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))

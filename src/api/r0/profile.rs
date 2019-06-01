@@ -79,7 +79,7 @@ impl Handler for GetAvatarUrl {
                 match profile.avatar_url {
                     Some(avatar_url) => {
                         GetAvatarUrlResponse {
-                            avatar_url: avatar_url,
+                            avatar_url,
                         }
                     },
                     None => {
@@ -170,7 +170,7 @@ impl Handler for GetDisplayName {
                 match profile.displayname {
                     Some(displayname) => {
                         GetDisplayNameResponse {
-                            displayname: displayname,
+                            displayname,
                         }
                     },
                     None => {

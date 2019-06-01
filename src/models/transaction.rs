@@ -30,9 +30,9 @@ impl Transaction {
         response: String
     ) -> Result<Transaction, ApiError> {
         let new_transaction = Transaction {
-            path: path,
-            access_token: access_token,
-            response: response,
+            path,
+            access_token,
+            response,
         };
 
         diesel::insert_into(transactions::table)

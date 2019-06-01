@@ -124,10 +124,10 @@ impl RoomTag {
                     _ => ApiError::from(err),
                 })?;
             let new_room_tag = NewRoomTag {
-                user_id: user_id,
-                room_id: room_id,
-                tag: tag,
-                content: content,
+                user_id,
+                room_id,
+                tag,
+                content,
             };
             diesel::insert_into(room_tags::table)
                 .values(&new_room_tag)
