@@ -1,6 +1,5 @@
 //! Ruma is a Matrix homeserver.
 
-#![feature(try_from)]
 #![deny(missing_docs)]
 
 extern crate argon2rs;
