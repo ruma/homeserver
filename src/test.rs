@@ -1,10 +1,10 @@
 use std::convert::TryFrom;
 use std::sync::{Once, ONCE_INIT};
 
-use diesel::migrations::setup_database;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{CustomizeConnection, Error as R2d2DieselError, Pool};
+use diesel_migrations::setup_database;
 use env_logger;
 use iron;
 use iron::headers::{ContentType, Headers};
@@ -87,11 +87,9 @@ impl Test {
                 let connection = PgConnection::establish(POSTGRES_URL)
                     .expect("Failed to connect to Postgres to drop the existing ruma_test table.");
 
-                connection.silence_notices(|| {
-                    connection
-                        .execute("DROP DATABASE IF EXISTS ruma_test")
-                        .expect("Failed to drop the existing ruma_test table.");
-                });
+                connection
+                    .execute("DROP DATABASE IF EXISTS ruma_test")
+                    .expect("Failed to drop the existing ruma_test table.");
             }
 
             let pg_connection =
@@ -117,7 +115,7 @@ impl Test {
         };
 
         let r2d2_pool_builder = Pool::builder()
-            .pool_size(1)
+            .max_size(1)
             .connection_customizer(Box::new(TestTransactionConnectionCustomizer));
 
         let server = match Server::new(&config).mount_all_with_options(r2d2_pool_builder, false) {
