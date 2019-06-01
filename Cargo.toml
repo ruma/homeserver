@@ -2,6 +2,7 @@
 authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
 description = "A Matrix homeserver."
 documentation = "https://ruma.io"
+edition = "2018"
 homepage = "https://ruma.io"
 keywords = ["matrix", "chat", "messaging", "ruma"]
 license = "MIT"
