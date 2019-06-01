@@ -10,13 +10,13 @@ use std::time::SystemTimeError;
 
 use argon2rs::verifier::DecodeError;
 use diesel::result::Error as DieselError;
+use diesel::r2d2::PoolError as R2d2Error;
 use iron::{IronError, Response};
 use iron::headers::ContentType;
 use iron::modifier::Modifier;
 use iron::status::Status;
 use macaroons::error::Error as MacaroonsError;
 use persistent::PersistentError;
-use r2d2::Error as R2d2Error;
 use rand::Error as RandError;
 use ruma_identifiers::Error as RumaIdentifiersError;
 use serde::ser::{Serialize, Serializer};

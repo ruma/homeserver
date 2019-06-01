@@ -1,12 +1,11 @@
 //! Iron web server that serves the API.
 use diesel_migrations::setup_database;
 use diesel::pg::PgConnection;
+use diesel::r2d2::{Builder, ConnectionManager, Pool};
 use iron::{Chain, Iron, IronError, IronResult, Listening, Request, Response};
 use iron::error::HttpResult;
 use mount::Mount;
 use persistent::{Read, Write};
-use r2d2::{Builder, Pool};
-use r2d2_diesel::ConnectionManager;
 use router::Router;
 
 use api::r0::{

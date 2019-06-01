@@ -1,11 +1,10 @@
 //! Database-related functionality.
 
 use diesel::pg::PgConnection;
+use diesel::r2d2::{Builder, ConnectionManager, PoolError as R2d2Error, Pool, PooledConnection};
 use iron::{Plugin, Request};
 use iron::typemap::Key;
 use persistent::Write;
-use r2d2::{Builder, Error as R2d2Error, Pool, PooledConnection};
-use r2d2_diesel::ConnectionManager;
 
 use error::ApiError;
 
