@@ -31,7 +31,7 @@ impl<'de> Deserialize<'de> for LoginType {
         impl<'de> Visitor<'de> for LoginTypeVisitor {
             type Value = LoginType;
 
-            fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> FmtResult {
                 write!(formatter, "a login type")
             }
 
@@ -71,7 +71,7 @@ struct LoginResponse {
 middleware_chain!(Login, [JsonRequest]);
 
 impl Handler for Login {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let login_request = match request.get::<bodyparser::Struct<LoginRequest>>() {
             Ok(Some(request)) => request,
             Ok(None) => Err(ApiError::bad_json(None))?,

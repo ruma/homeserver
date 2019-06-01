@@ -21,7 +21,7 @@ struct MembersResponse {
 middleware_chain!(Members, [RoomIdParam, AccessTokenAuth]);
 
 impl Handler for Members {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         request.extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user");

@@ -137,7 +137,7 @@ impl Config {
     }
 
     /// Extract the `Config` stored in the request.
-    pub fn from_request(request: &mut Request) -> Result<Arc<Config>, ApiError> {
+    pub fn from_request(request: &mut Request<'_, '_>) -> Result<Arc<Config>, ApiError> {
         request.get::<PersistentRead<Config>>().map_err(ApiError::from)
     }
 }

@@ -103,7 +103,7 @@ pub struct SendMessageEvent;
 middleware_chain!(SendMessageEvent, [JsonRequest, RoomIdParam, EventTypeParam, TransactionIdParam, AccessTokenAuth]);
 
 impl Handler for SendMessageEvent {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let room_id = request.extensions.get::<RoomIdParam>()
             .expect("Should have been required by RoomIdParam.").clone();
 
@@ -205,7 +205,7 @@ pub struct StateMessageEvent;
 middleware_chain!(StateMessageEvent, [JsonRequest, RoomIdParam, EventTypeParam, AccessTokenAuth]);
 
 impl Handler for StateMessageEvent {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
 
         let room_id = request.extensions.get::<RoomIdParam>()

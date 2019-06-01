@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for RegistrationKind {
         impl<'de> Visitor<'de> for RegistrationKindVisitor {
             type Value = RegistrationKind;
 
-            fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> FmtResult {
                 write!(formatter, "a registration kind")
             }
 
@@ -78,7 +78,7 @@ impl<'de> Deserialize<'de> for RegistrationKind {
 }
 
 impl Handler for Register {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let registration_request = match request.get::<bodyparser::Struct<RegistrationRequest>>() {
             Ok(Some(registration_request)) => registration_request,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,

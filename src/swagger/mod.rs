@@ -10,7 +10,7 @@ use crate::middleware::{MiddlewareChain, ResponseHeaders};
 pub struct Swagger;
 
 impl Handler for Swagger {
-    fn handle(&self, _request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, _request: &mut Request<'_, '_>) -> IronResult<Response> {
         let json = include_str!("swagger.json");
 
         Ok(Response::with((

@@ -12,7 +12,7 @@ pub struct Logout;
 middleware_chain!(Logout, [AccessTokenAuth]);
 
 impl Handler for Logout {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let connection = DB::from_request(request)?;
 
         let access_token = request.extensions.get_mut::<AccessToken>()

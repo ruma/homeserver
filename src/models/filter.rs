@@ -136,7 +136,7 @@ impl<'de> ::serde::Deserialize<'de> for EventFormat {
         impl<'de> Visitor<'de> for EventFormatVisitor {
             type Value = EventFormat;
 
-            fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> FmtResult {
                 write!(formatter, "an event format")
             }
 

@@ -22,7 +22,7 @@ struct GetPushersResponse {
 middleware_chain!(GetPushers, [AccessTokenAuth]);
 
 impl Handler for GetPushers {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 
@@ -44,7 +44,7 @@ pub struct SetPushers;
 middleware_chain!(SetPushers, [JsonRequest, AccessTokenAuth]);
 
 impl Handler for SetPushers {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 

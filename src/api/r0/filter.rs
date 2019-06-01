@@ -17,7 +17,7 @@ pub struct GetFilter;
 middleware_chain!(GetFilter, [AccessTokenAuth, FilterIdParam, UserIdParam]);
 
 impl Handler for GetFilter {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 
@@ -43,7 +43,7 @@ struct PostFilterResponse {
 middleware_chain!(PostFilter, [JsonRequest, AccessTokenAuth, UserIdParam]);
 
 impl Handler for PostFilter {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 

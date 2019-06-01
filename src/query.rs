@@ -123,7 +123,7 @@ impl Batch {
 
 impl Display for Batch {
     /// Make a String from a `Batch`.
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}_{}", self.room_key, self.presence_key)
     }
 }
@@ -223,7 +223,7 @@ impl Sync {
         homeserver_domain: &str,
         user: &User,
         set_presence: Option<PresenceState>,
-        context: &Context
+        context: &Context<'_>
     ) -> Result<(i64, Vec<PresenceEvent>), ApiError> {
         let set_presence = match set_presence {
             Some(set_presence) => set_presence,
@@ -251,7 +251,7 @@ impl Sync {
         connection: &PgConnection,
         user: &User,
         room_filter: Option<RoomFilter>,
-        context: &Context,
+        context: &Context<'_>,
     ) -> Result<(i64, Rooms), ApiError> {
         let mut join = HashMap::new();
         let mut invite = HashMap::new();

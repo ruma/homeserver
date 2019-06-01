@@ -26,7 +26,7 @@ struct ProfileResponse {
 middleware_chain!(Profile, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for Profile {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 
@@ -63,7 +63,7 @@ struct GetAvatarUrlResponse {
 middleware_chain!(GetAvatarUrl, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetAvatarUrl {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 
@@ -106,7 +106,7 @@ struct PutAvatarUrlRequest {
 middleware_chain!(PutAvatarUrl, [JsonRequest, UserIdParam, AccessTokenAuth]);
 
 impl Handler for PutAvatarUrl {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let avatar_url_request = match request.get::<bodyparser::Struct<PutAvatarUrlRequest>>() {
             Ok(Some(avatar_url_request)) => avatar_url_request,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
@@ -154,7 +154,7 @@ struct GetDisplayNameResponse {
 middleware_chain!(GetDisplayName, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetDisplayName {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 
@@ -197,7 +197,7 @@ struct PutDisplayNameRequest {
 middleware_chain!(PutDisplayName, [JsonRequest, UserIdParam, AccessTokenAuth]);
 
 impl Handler for PutDisplayName {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let displayname_request = match request.get::<bodyparser::Struct<PutDisplayNameRequest>>() {
             Ok(Some(displayname_request)) => displayname_request,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,

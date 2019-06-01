@@ -25,7 +25,7 @@ impl Key for RoomIdParam {
 }
 
 impl BeforeMiddleware for RoomIdParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
         let room_id = match params.find("room_id") {
             Some(room_id) => {
@@ -54,7 +54,7 @@ impl Key for RoomIdOrAliasParam {
 }
 
 impl BeforeMiddleware for RoomIdOrAliasParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>().expect("Params object is missing").clone();
         let room_id_or_alias = match params.find("room_id_or_alias") {
             Some(room_id_or_alias) => {
@@ -83,7 +83,7 @@ impl Key for UserIdParam {
 }
 
 impl BeforeMiddleware for UserIdParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 
@@ -116,7 +116,7 @@ impl Key for DataTypeParam {
 }
 
 impl BeforeMiddleware for DataTypeParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 
@@ -138,7 +138,7 @@ impl Key for FilterIdParam {
 }
 
 impl BeforeMiddleware for FilterIdParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 
@@ -161,7 +161,7 @@ impl Key for RoomAliasIdParam {
 }
 
 impl BeforeMiddleware for RoomAliasIdParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 
@@ -194,7 +194,7 @@ impl Key for EventTypeParam {
 }
 
 impl BeforeMiddleware for EventTypeParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 
@@ -216,7 +216,7 @@ impl Key for TagParam {
 }
 
 impl BeforeMiddleware for TagParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 
@@ -238,7 +238,7 @@ impl Key for TransactionIdParam {
 }
 
 impl BeforeMiddleware for TransactionIdParam {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let params = request.extensions.get::<Router>()
             .expect("Params object is missing").clone();
 

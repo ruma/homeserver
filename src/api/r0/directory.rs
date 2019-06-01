@@ -27,7 +27,7 @@ struct GetRoomAliasResponse {
 middleware_chain!(GetRoomAlias, [RoomAliasIdParam]);
 
 impl Handler for GetRoomAlias {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
             .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
 
@@ -50,7 +50,7 @@ pub struct DeleteRoomAlias;
 middleware_chain!(DeleteRoomAlias, [RoomAliasIdParam, AccessTokenAuth]);
 
 impl Handler for DeleteRoomAlias {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let room_alias_id = request.extensions.get::<RoomAliasIdParam>()
             .expect("RoomAliasIdParam should ensure a RoomAliasId").clone();
 
@@ -83,7 +83,7 @@ struct PutRoomAliasRequest {
 middleware_chain!(PutRoomAlias, [JsonRequest, RoomAliasIdParam, AccessTokenAuth]);
 
 impl Handler for PutRoomAlias {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let config = Config::from_request(request)?;
 
         let room_alias_id = request.extensions.get::<RoomAliasIdParam>()

@@ -25,7 +25,7 @@ pub struct TagsResponse {
 }
 
 impl Handler for GetTags {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
         let room_id = request.extensions.get::<RoomIdParam>()
@@ -56,7 +56,7 @@ pub struct PutTag;
 middleware_chain!(PutTag, [UserIdParam, RoomIdParam, TagParam, JsonRequest, AccessTokenAuth]);
 
 impl Handler for PutTag {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
         let room_id = request.extensions.get::<RoomIdParam>()
@@ -91,7 +91,7 @@ pub struct DeleteTag;
 middleware_chain!(DeleteTag, [UserIdParam, RoomIdParam, TagParam, AccessTokenAuth]);
 
 impl Handler for DeleteTag {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
         let room_id = request.extensions.get::<RoomIdParam>()

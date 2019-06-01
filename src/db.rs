@@ -23,7 +23,7 @@ impl DB {
     }
 
     /// Extract a database conection from the pool stored in the request.
-    pub fn from_request(request: &mut Request)
+    pub fn from_request(request: &mut Request<'_, '_>)
         -> Result<PooledConnection<ConnectionManager<PgConnection>>, ApiError>
     {
         let mutex = request.get::<Write<DB>>().map_err(ApiError::from)?;

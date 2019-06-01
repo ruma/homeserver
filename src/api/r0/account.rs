@@ -38,7 +38,7 @@ struct AccountPasswordRequest {
 middleware_chain!(AccountPassword, [AccessTokenAuth]);
 
 impl Handler for AccountPassword {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let account_password_request = match request
             .get::<bodyparser::Struct<AccountPasswordRequest>>()
             {
@@ -68,7 +68,7 @@ pub struct DeactivateAccount;
 middleware_chain!(DeactivateAccount, [AccessTokenAuth]);
 
 impl Handler for DeactivateAccount {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let connection = DB::from_request(request)?;
 
         {
@@ -98,7 +98,7 @@ pub struct PutAccountData;
 middleware_chain!(PutAccountData, [JsonRequest, UserIdParam, DataTypeParam, AccessTokenAuth]);
 
 impl Handler for PutAccountData {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 
@@ -142,7 +142,7 @@ pub struct PutRoomAccountData;
 middleware_chain!(PutRoomAccountData, [JsonRequest, UserIdParam, RoomIdParam, DataTypeParam, AccessTokenAuth]);
 
 impl Handler for PutRoomAccountData {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 

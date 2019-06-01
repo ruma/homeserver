@@ -30,7 +30,7 @@ struct PutPresenceStatusRequest {
 middleware_chain!(PutPresenceStatus, [UserIdParam, JsonRequest, AccessTokenAuth]);
 
 impl Handler for PutPresenceStatus {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 
@@ -83,7 +83,7 @@ struct GetPresenceStatusResponse {
 }
 
 impl Handler for GetPresenceStatus {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 
@@ -144,7 +144,7 @@ struct PostPresenceListRequest {
 middleware_chain!(PostPresenceList, [JsonRequest, UserIdParam, AccessTokenAuth]);
 
 impl Handler for PostPresenceList {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let put_presence_list_request = match request.get::<bodyparser::Struct<PostPresenceListRequest>>() {
             Ok(Some(request)) => request,
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
@@ -182,7 +182,7 @@ pub struct GetPresenceList;
 middleware_chain!(GetPresenceList, [UserIdParam, AccessTokenAuth]);
 
 impl Handler for GetPresenceList {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user_id = request.extensions.get::<UserIdParam>()
             .expect("UserIdParam should ensure a UserId").clone();
 

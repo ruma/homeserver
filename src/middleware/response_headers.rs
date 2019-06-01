@@ -30,7 +30,7 @@ fn add_cors_headers(response: &mut Response) {
 }
 
 impl AfterMiddleware for ResponseHeaders {
-    fn after(&self, request: &mut Request, mut response: Response) -> IronResult<Response> {
+    fn after(&self, request: &mut Request<'_, '_>, mut response: Response) -> IronResult<Response> {
         if request.method == Method::Options {
             response = Response::with(status::Ok);
         }
@@ -40,7 +40,7 @@ impl AfterMiddleware for ResponseHeaders {
         Ok(response)
     }
 
-    fn catch(&self, _: &mut Request, mut error: IronError) -> IronResult<Response> {
+    fn catch(&self, _: &mut Request<'_, '_>, mut error: IronError) -> IronResult<Response> {
         add_server_header(&mut error.response);
         add_cors_headers(&mut error.response);
 

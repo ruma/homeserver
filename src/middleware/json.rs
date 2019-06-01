@@ -15,7 +15,7 @@ impl Key for JsonRequest {
 }
 
 impl BeforeMiddleware for JsonRequest {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         if request.headers.get::<ContentType>().and_then(|content_type| match **content_type {
             Mime(TopLevel::Application, SubLevel::Json, _) => Some(()),
             _ => None,

@@ -32,7 +32,7 @@ struct JoinRoomResponse {
 middleware_chain!(JoinRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for JoinRoom {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
@@ -55,7 +55,7 @@ pub struct JoinRoomWithIdOrAlias;
 middleware_chain!(JoinRoomWithIdOrAlias, [JsonRequest, RoomIdOrAliasParam, AccessTokenAuth]);
 
 impl Handler for JoinRoomWithIdOrAlias {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
@@ -106,7 +106,7 @@ pub struct LeaveRoom;
 middleware_chain!(LeaveRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for LeaveRoom {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
@@ -166,7 +166,7 @@ struct KickFromRoomRequest {
 middleware_chain!(KickFromRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for KickFromRoom {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let room_id = request.extensions.get::<RoomIdParam>()
             .expect("RoomIdParam should ensure a room_id").clone();
 
@@ -233,7 +233,7 @@ struct InviteToRoomRequest {
 middleware_chain!(InviteToRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
 
 impl Handler for InviteToRoom {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let room_id = request.extensions.get::<RoomIdParam>()
             .expect("RoomIdParam should ensure a room_id").clone();
 

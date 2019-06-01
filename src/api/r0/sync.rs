@@ -23,7 +23,7 @@ pub struct Sync;
 middleware_chain!(Sync, [AccessTokenAuth]);
 
 impl Handler for Sync {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
 

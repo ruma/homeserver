@@ -33,7 +33,7 @@ impl UIAuth {
 }
 
 impl BeforeMiddleware for AccessTokenAuth {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let connection = DB::from_request(request)?;
         let url: Url = request.url.clone().into();
         let mut query_pairs = url.query_pairs();
@@ -62,7 +62,7 @@ impl BeforeMiddleware for AccessTokenAuth {
 }
 
 impl BeforeMiddleware for UIAuth {
-    fn before(&self, request: &mut Request) -> IronResult<()> {
+    fn before(&self, request: &mut Request<'_, '_>) -> IronResult<()> {
         let json = request
             .get::<bodyparser::Json>()
             .expect("bodyparser failed to parse")

@@ -216,6 +216,6 @@ impl<'a> Server<'a> {
     }
 }
 
-fn deprecated(_: &mut Request) -> IronResult<Response> {
+fn deprecated(_: &mut Request<'_, '_>) -> IronResult<Response> {
     Err(IronError::from(ApiError::unauthorized("tokenrefresh is no longer supported".to_string())))
 }

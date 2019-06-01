@@ -57,7 +57,7 @@ struct CreateRoomResponse {
 middleware_chain!(CreateRoom, [JsonRequest, AccessTokenAuth]);
 
 impl Handler for CreateRoom {
-    fn handle(&self, request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, request: &mut Request<'_, '_>) -> IronResult<Response> {
         let user = request.extensions.get::<User>()
             .expect("AccessTokenAuth should ensure a user").clone();
         let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {

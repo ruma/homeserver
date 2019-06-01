@@ -205,7 +205,7 @@ impl ApiError {
 }
 
 impl Display for ApiError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.error)
     }
 }
@@ -385,7 +385,7 @@ impl<E> From<E> for CliError where E: Error {
 }
 
 impl Display for CliError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.error)
     }
 }

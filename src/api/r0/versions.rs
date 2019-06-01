@@ -22,7 +22,7 @@ impl Versions {
 }
 
 impl Handler for Versions {
-    fn handle(&self, _request: &mut Request) -> IronResult<Response> {
+    fn handle(&self, _request: &mut Request<'_, '_>) -> IronResult<Response> {
         Ok(Response::with((status::Ok, SerializableResponse(&self))))
     }
 }
