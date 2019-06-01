@@ -9,8 +9,8 @@ use diesel::result::Error as DieselError;
 use ruma_events::presence::PresenceState;
 use ruma_identifiers::{UserId, EventId};
 
-use error::ApiError;
-use schema::presence_status;
+use crate::error::ApiError;
+use crate::schema::presence_status;
 
 /// A Matrix presence status, not saved yet.
 #[derive(Debug, Clone, Insertable)]

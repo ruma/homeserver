@@ -10,10 +10,10 @@ use diesel::result::Error as DieselError;
 use iron::typemap::Key;
 use ruma_identifiers::UserId;
 
-use crypto::verify_password;
-use error::ApiError;
-use models::access_token::AccessToken;
-use schema::users;
+use crate::crypto::verify_password;
+use crate::error::ApiError;
+use crate::models::access_token::AccessToken;
+use crate::schema::users;
 
 /// A Matrix user.
 #[derive(AsChangeset, Debug, Clone, Identifiable, Queryable)]

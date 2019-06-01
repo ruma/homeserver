@@ -5,7 +5,7 @@ use iron::mime::{Mime, SubLevel, TopLevel};
 use iron::typemap::Key;
 use serde_json::Value;
 
-use error::ApiError;
+use crate::error::ApiError;
 
 /// Ensures that requests contain valid JSON and stores the parsed JSON in the Iron request.
 pub struct JsonRequest;

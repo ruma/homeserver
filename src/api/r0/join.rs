@@ -9,15 +9,15 @@ use iron::status::Status;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_identifiers::{UserId, RoomId, RoomIdOrAliasId};
 
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, RoomIdOrAliasParam};
-use models::room::Room;
-use models::room_alias::RoomAlias;
-use models::room_membership::{RoomMembership, RoomMembershipOptions};
-use models::user::User;
-use modifier::{SerializableResponse, EmptyResponse};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, RoomIdOrAliasParam};
+use crate::models::room::Room;
+use crate::models::room_alias::RoomAlias;
+use crate::models::room_membership::{RoomMembership, RoomMembershipOptions};
+use crate::models::user::User;
+use crate::modifier::{SerializableResponse, EmptyResponse};
 
 
 /// The `/rooms/:room_id/join` endpoint.
@@ -325,7 +325,7 @@ impl Handler for InviteToRoom {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

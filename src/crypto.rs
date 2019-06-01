@@ -7,7 +7,7 @@ use rand::{
     rngs::OsRng,
 };
 
-use error::{ApiError, CliError};
+use crate::error::{ApiError, CliError};
 
 /// Generates a random 32-byte secret key for macaroons.
 pub fn generate_macaroon_secret_key() -> Result<String, CliError> {

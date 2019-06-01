@@ -4,12 +4,12 @@ use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use serde_json::{from_str, to_value};
 
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, FilterIdParam, JsonRequest, MiddlewareChain, UserIdParam};
-use models::filter::{Filter, ContentFilter};
-use models::user::User;
-use modifier::SerializableResponse;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, FilterIdParam, JsonRequest, MiddlewareChain, UserIdParam};
+use crate::models::filter::{Filter, ContentFilter};
+use crate::models::user::User;
+use crate::modifier::SerializableResponse;
 
 /// The GET `/user/:user_id/filter/:filter_id` endpoint.
 pub struct GetFilter;
@@ -73,7 +73,7 @@ impl Handler for PostFilter {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

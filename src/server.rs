@@ -8,7 +8,7 @@ use mount::Mount;
 use persistent::{Read, Write};
 use router::Router;
 
-use api::r0::{
+use crate::api::r0::{
     AccountPassword,
     CreateRoom,
     DeactivateAccount,
@@ -48,12 +48,12 @@ use api::r0::{
     Sync,
     Versions,
 };
-use config::Config;
-use embedded_migrations::run as run_pending_migrations;
-use error::{ApiError, CliError};
-use db::DB;
-use middleware::{ResponseHeaders, MiddlewareChain};
-use swagger::Swagger;
+use crate::config::Config;
+use crate::embedded_migrations::run as run_pending_migrations;
+use crate::error::{ApiError, CliError};
+use crate::db::DB;
+use crate::middleware::{ResponseHeaders, MiddlewareChain};
+use crate::swagger::Swagger;
 
 /// Ruma's web server.
 pub struct Server<'a> {

@@ -4,7 +4,7 @@ use iron::{Chain, Handler, IronResult, Request, Response, status};
 use iron::headers::ContentType;
 use iron::modifiers::Header;
 
-use middleware::{MiddlewareChain, ResponseHeaders};
+use crate::middleware::{MiddlewareChain, ResponseHeaders};
 
 /// Mounts the Swagger endpoint onto the given `Mount`.
 pub struct Swagger;

@@ -7,12 +7,12 @@ use iron::status::Status;
 use ruma_events::tag::TagInfo;
 use serde_json::Value;
 
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, UserIdParam, TagParam};
-use models::tags::RoomTag;
-use models::user::User;
-use modifier::{SerializableResponse, EmptyResponse};
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomIdParam, UserIdParam, TagParam};
+use crate::models::tags::RoomTag;
+use crate::models::user::User;
+use crate::modifier::{SerializableResponse, EmptyResponse};
 
 /// The GET `/user/:user_id/rooms/:room_id/tags` endpoint.
 pub struct GetTags;
@@ -117,7 +117,7 @@ impl Handler for DeleteTag {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

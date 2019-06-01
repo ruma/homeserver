@@ -4,11 +4,11 @@ use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 use ruma_events::room::member::MemberEvent;
 
-use db::DB;
-use middleware::{AccessTokenAuth, MiddlewareChain, RoomIdParam};
-use models::room_membership::RoomMembership;
-use models::user::User;
-use modifier::SerializableResponse;
+use crate::db::DB;
+use crate::middleware::{AccessTokenAuth, MiddlewareChain, RoomIdParam};
+use crate::models::room_membership::RoomMembership;
+use crate::models::user::User;
+use crate::modifier::SerializableResponse;
 
 /// The `/rooms/:room_id/members` endpoint.
 pub struct Members;
@@ -42,7 +42,7 @@ impl Handler for Members {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

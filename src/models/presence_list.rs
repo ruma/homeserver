@@ -9,12 +9,12 @@ use ruma_events::EventType;
 use ruma_events::presence::{PresenceEvent, PresenceEventContent, PresenceState};
 use ruma_identifiers::UserId;
 
-use error::ApiError;
-use models::presence_status::{PresenceStatus, get_now};
-use models::profile::Profile;
-use models::room_membership::RoomMembership;
-use models::user::User;
-use schema::presence_list;
+use crate::error::ApiError;
+use crate::models::presence_status::{PresenceStatus, get_now};
+use crate::models::profile::Profile;
+use crate::models::room_membership::RoomMembership;
+use crate::models::user::User;
+use crate::schema::presence_list;
 
 /// A Matrix presence list.
 #[derive(Debug, Clone, Insertable, Queryable)]

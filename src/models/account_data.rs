@@ -6,8 +6,8 @@ use diesel::pg::PgConnection;
 use iron::typemap::Key;
 use ruma_identifiers::{UserId, RoomId};
 
-use error::ApiError;
-use schema::{account_data, room_account_data};
+use crate::error::ApiError;
+use crate::schema::{account_data, room_account_data};
 
 /// Holds personal information/configuration for a user.
 #[derive(AsChangeset, Debug, Clone, Identifiable, Queryable)]

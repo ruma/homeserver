@@ -12,8 +12,8 @@ use macaroons::token::Token;
 use macaroons::v1::V1Token;
 use ruma_identifiers::UserId;
 
-use error::ApiError;
-use schema::access_tokens;
+use crate::error::ApiError;
+use crate::schema::access_tokens;
 
 /// A User access token.
 #[derive(AsChangeset, Clone, Debug, Identifiable, Queryable)]

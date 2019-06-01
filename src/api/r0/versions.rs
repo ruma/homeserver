@@ -2,7 +2,7 @@
 
 use iron::{Handler, IronResult, Request, Response, status};
 
-use modifier::SerializableResponse;
+use crate::modifier::SerializableResponse;
 
 /// The /versions endpoint.
 #[derive(Serialize)]

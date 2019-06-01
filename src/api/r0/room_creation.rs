@@ -9,14 +9,14 @@ use iron::status::Status;
 use ruma_events::stripped::StrippedState;
 use ruma_identifiers::{RoomId, UserId};
 
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
-use models::room::{CreationOptions, NewRoom, Room, RoomPreset, RoomVisibility};
-use models::room_membership::{RoomMembership, RoomMembershipOptions};
-use models::user::User;
-use modifier::SerializableResponse;
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
+use crate::models::room::{CreationOptions, NewRoom, Room, RoomPreset, RoomVisibility};
+use crate::models::room_membership::{RoomMembership, RoomMembershipOptions};
+use crate::models::user::User;
+use crate::modifier::SerializableResponse;
 
 /// The `/createRoom` endpoint.
 pub struct CreateRoom;
@@ -124,7 +124,7 @@ impl Handler for CreateRoom {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

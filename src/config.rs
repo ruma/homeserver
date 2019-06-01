@@ -13,7 +13,7 @@ use serde_json;
 use serde_yaml;
 use toml;
 
-use error::{ApiError, CliError};
+use crate::error::{ApiError, CliError};
 
 /// Default paths where Ruma will look for a configuration file if left unspecified.
 static DEFAULT_CONFIG_FILES: [&'static str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];

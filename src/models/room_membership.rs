@@ -18,12 +18,12 @@ use ruma_events::room::member::{
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde_json::{Value, from_value};
 
-use error::ApiError;
-use models::event::{NewEvent, Event};
-use models::user::User;
-use models::profile::Profile;
-use models::room::Room;
-use schema::{events, room_memberships};
+use crate::error::ApiError;
+use crate::models::event::{NewEvent, Event};
+use crate::models::user::User;
+use crate::models::profile::Profile;
+use crate::models::room::Room;
+use crate::schema::{events, room_memberships};
 
 /// Room membership update or create data.
 #[derive(Debug, Clone)]

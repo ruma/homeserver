@@ -57,7 +57,7 @@ mod tests {
         AccessControlAllowOrigin,
         Server
     };
-    use test::{Response, Test};
+    use crate::test::{Response, Test};
     use unicase::UniCase;
 
     fn check_for_modified_headers(response: &Response) {

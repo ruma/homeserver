@@ -7,13 +7,13 @@ use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use ruma_identifiers::UserId;
 use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
-use authentication::{AuthParams, PasswordAuthParams};
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{JsonRequest, MiddlewareChain};
-use models::access_token::AccessToken;
-use modifier::SerializableResponse;
+use crate::authentication::{AuthParams, PasswordAuthParams};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{JsonRequest, MiddlewareChain};
+use crate::models::access_token::AccessToken;
+use crate::modifier::SerializableResponse;
 
 /// The `/login` endpoint.
 pub struct Login;
@@ -115,7 +115,7 @@ impl Handler for Login {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

@@ -4,12 +4,12 @@ use iron::{Chain, Handler, IronError, IronResult, Request, Response, Plugin};
 use iron::status::Status;
 use serde_json::{Value, from_value};
 
-use db::DB;
-use error::{ApiError, MapApiError};
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
-use models::pusher::{Pusher, PusherOptions};
-use models::user::User;
-use modifier::{SerializableResponse, EmptyResponse};
+use crate::db::DB;
+use crate::error::{ApiError, MapApiError};
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain};
+use crate::models::pusher::{Pusher, PusherOptions};
+use crate::models::user::User;
+use crate::modifier::{SerializableResponse, EmptyResponse};
 
 /// The GET `/pushers` endpoint.
 pub struct GetPushers;
@@ -77,10 +77,10 @@ impl Handler for SetPushers {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
-    use models::pusher::PusherOptions;
-    use models::pusher::PusherData;
+    use crate::models::pusher::PusherOptions;
+    use crate::models::pusher::PusherData;
     use serde_json::from_value;
 
     #[test]

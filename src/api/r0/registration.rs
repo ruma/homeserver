@@ -8,14 +8,14 @@ use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response, sta
 use ruma_identifiers::UserId;
 use serde::de::{Deserialize, Deserializer, Visitor, Error as SerdeError};
 
-use config::Config;
-use crypto::hash_password;
-use db::DB;
-use error::ApiError;
-use middleware::{JsonRequest, MiddlewareChain};
-use models::profile::Profile;
-use models::user::{NewUser, User};
-use modifier::SerializableResponse;
+use crate::config::Config;
+use crate::crypto::hash_password;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{JsonRequest, MiddlewareChain};
+use crate::models::profile::Profile;
+use crate::models::user::{NewUser, User};
+use crate::modifier::SerializableResponse;
 
 /// The `/register` endpoint.
 pub struct Register;
@@ -137,7 +137,7 @@ impl Handler for Register {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

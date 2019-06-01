@@ -1,10 +1,10 @@
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 
-use db::DB;
-use middleware::{AccessTokenAuth, MiddlewareChain};
-use models::access_token::AccessToken;
-use modifier::EmptyResponse;
+use crate::db::DB;
+use crate::middleware::{AccessTokenAuth, MiddlewareChain};
+use crate::models::access_token::AccessToken;
+use crate::modifier::EmptyResponse;
 
 /// The `/logout` endpoint.
 pub struct Logout;
@@ -28,7 +28,7 @@ impl Handler for Logout {
 mod tests {
     use iron::status::Status;
 
-    use test::Test;
+    use crate::test::Test;
 
     #[test]
     fn logout_revokes_access_token() {

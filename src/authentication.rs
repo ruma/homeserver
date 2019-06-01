@@ -6,8 +6,8 @@ use iron::modifier::Modifier;
 use ruma_identifiers::UserId;
 use serde::{Serialize, Serializer};
 
-use error::{ApiError, ApiErrorCode};
-use models::user::User;
+use crate::error::{ApiError, ApiErrorCode};
+use crate::models::user::User;
 
 /// A set of authorization flows the user can follow to authenticate a request.
 #[derive(Debug, Serialize)]

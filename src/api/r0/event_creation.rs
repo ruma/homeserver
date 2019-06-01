@@ -26,10 +26,10 @@ use ruma_identifiers::{RoomId, EventId};
 use serde::Deserialize;
 use serde_json::{Value, from_str, from_value, to_string};
 
-use db::DB;
-use config::Config;
-use error::{ApiError, MapApiError};
-use middleware::{
+use crate::db::DB;
+use crate::config::Config;
+use crate::error::{ApiError, MapApiError};
+use crate::middleware::{
     AccessTokenAuth,
     EventTypeParam,
     JsonRequest,
@@ -37,14 +37,14 @@ use middleware::{
     RoomIdParam,
     TransactionIdParam,
 };
-use models::access_token::AccessToken;
-use models::event::NewEvent;
-use models::room::Room;
-use models::room_membership::RoomMembership;
-use models::transaction::Transaction;
-use models::user::User;
-use modifier::SerializableResponse;
-use schema::events;
+use crate::models::access_token::AccessToken;
+use crate::models::event::NewEvent;
+use crate::models::room::Room;
+use crate::models::room_membership::RoomMembership;
+use crate::models::transaction::Transaction;
+use crate::models::user::User;
+use crate::modifier::SerializableResponse;
+use crate::schema::events;
 
 macro_rules! room_event {
     (
@@ -454,7 +454,7 @@ where T: for<'de> Deserialize<'de> {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

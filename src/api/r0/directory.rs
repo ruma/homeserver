@@ -5,13 +5,13 @@ use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 use ruma_identifiers::RoomId;
 
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomAliasIdParam};
-use models::room_alias::{RoomAlias, NewRoomAlias};
-use models::user::User;
-use modifier::{SerializableResponse, EmptyResponse};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, RoomAliasIdParam};
+use crate::models::room_alias::{RoomAlias, NewRoomAlias};
+use crate::models::user::User;
+use crate::modifier::{SerializableResponse, EmptyResponse};
 
 /// The GET `/directory/room/:room_alias` endpoint.
 pub struct GetRoomAlias;
@@ -114,7 +114,7 @@ impl Handler for PutRoomAlias {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]

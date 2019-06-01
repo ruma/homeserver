@@ -6,7 +6,7 @@ use iron::{Plugin, Request};
 use iron::typemap::Key;
 use persistent::Write;
 
-use error::ApiError;
+use crate::error::ApiError;
 
 /// An Iron plugin for attaching a database connection pool to an Iron request.
 pub struct DB;

@@ -27,11 +27,11 @@ use ruma_events::room::power_levels::{PowerLevelsEvent, PowerLevelsEventContent}
 use ruma_events::room::topic::{TopicEvent, TopicEventContent};
 use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 
-use error::ApiError;
-use models::event::{Event, NewEvent};
-use models::room_alias::{NewRoomAlias, RoomAlias};
-use models::room_membership::RoomMembership;
-use schema::{events, rooms};
+use crate::error::ApiError;
+use crate::models::event::{Event, NewEvent};
+use crate::models::room_alias::{NewRoomAlias, RoomAlias};
+use crate::models::room_membership::RoomMembership;
+use crate::schema::{events, rooms};
 
 /// Options provided by the user to customize the room upon creation.
 pub struct CreationOptions {

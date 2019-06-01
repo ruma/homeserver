@@ -13,8 +13,8 @@ use ruma_identifiers::{
     RoomIdOrAliasId
 };
 
-use config::Config;
-use error::{ApiError, MapApiError};
+use crate::config::Config;
+use crate::error::{ApiError, MapApiError};
 use url::percent_encoding::percent_decode;
 
 /// Extracts a `RoomId` from the URL path parameter `room_id`.

@@ -17,13 +17,13 @@ use ruma_events::presence::PresenceState;
 use ruma_identifiers::RoomId;
 use serde_json::Value;
 
-use error::ApiError;
-use models::event::Event;
-use models::filter::{ContentFilter, RoomEventFilter, RoomFilter};
-use models::room_membership::RoomMembership;
-use models::presence_list::PresenceList;
-use models::presence_status::PresenceStatus;
-use models::user::User;
+use crate::error::ApiError;
+use crate::models::event::Event;
+use crate::models::filter::{ContentFilter, RoomEventFilter, RoomFilter};
+use crate::models::room_membership::RoomMembership;
+use crate::models::presence_list::PresenceList;
+use crate::models::presence_status::PresenceStatus;
+use crate::models::user::User;
 
 /// Counts of unread notifications for a room.
 #[derive(Debug, Clone, Serialize)]

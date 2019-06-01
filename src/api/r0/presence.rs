@@ -6,15 +6,15 @@ use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
 use ruma_identifiers::UserId;
 use ruma_events::presence::PresenceState;
 
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
-use models::room_membership::RoomMembership;
-use models::presence_list::PresenceList;
-use models::presence_status::{PresenceStatus, get_now};
-use models::user::User;
-use modifier::{SerializableResponse, EmptyResponse};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
+use crate::models::room_membership::RoomMembership;
+use crate::models::presence_list::PresenceList;
+use crate::models::presence_status::{PresenceStatus, get_now};
+use crate::models::user::User;
+use crate::modifier::{SerializableResponse, EmptyResponse};
 
 /// The PUT `/presence/:user_id/status` endpoint.
 pub struct PutPresenceStatus;
@@ -205,7 +205,7 @@ mod tests {
 
     use iron::status::Status;
 
-    use test::Test;
+    use crate::test::Test;
 
     #[test]
     fn basic_presence_status() {

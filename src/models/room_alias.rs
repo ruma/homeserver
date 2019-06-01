@@ -10,10 +10,10 @@ use ruma_identifiers::{EventId, RoomAliasId, RoomId, UserId};
 use ruma_events::room::aliases::{AliasesEvent, AliasesEventContent};
 use ruma_events::EventType;
 
-use error::ApiError;
-use models::event::NewEvent;
-use models::room::Room;
-use schema::{events, room_aliases};
+use crate::error::ApiError;
+use crate::models::event::NewEvent;
+use crate::models::room::Room;
+use crate::schema::{events, room_aliases};
 
 /// A new room alias, not yet saved.
 #[derive(Debug, Insertable)]

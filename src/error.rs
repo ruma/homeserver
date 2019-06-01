@@ -414,7 +414,7 @@ mod tests {
     use iron::headers::ContentType;
     use iron::modifier::Modifier;
     use iron::status::Status;
-    use error::ApiError;
+    use crate::error::ApiError;
 
     #[test]
     fn api_error_status_and_headers_modified() {

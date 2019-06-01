@@ -4,8 +4,8 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 
-use error::ApiError;
-use schema::transactions;
+use crate::error::ApiError;
+use crate::schema::transactions;
 
 /// A Transaction.
 #[derive(AsChangeset, Clone, Debug, Identifiable, Insertable, Queryable)]

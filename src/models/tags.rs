@@ -8,9 +8,9 @@ use ruma_events::tag::TagInfo;
 use ruma_identifiers::{RoomId, UserId};
 use serde_json::de::from_str;
 
-use error::ApiError;
-use models::room::Room;
-use schema::{rooms, room_tags};
+use crate::error::ApiError;
+use crate::models::room::Room;
+use crate::schema::{rooms, room_tags};
 
 /// A new Matrix room tag, not yet saved.
 #[derive(Debug, Clone, Insertable)]

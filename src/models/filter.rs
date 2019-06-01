@@ -9,8 +9,8 @@ use ruma_identifiers::{RoomId, UserId};
 use serde::{Deserializer, Serializer};
 use serde::de::{Error as SerdeError, Unexpected, Visitor};
 
-use error::ApiError;
-use schema::filters;
+use crate::error::ApiError;
+use crate::schema::filters;
 
 /// Defines the default format of `Filter` for `account_data` and `presence`.
 #[derive(Debug, Clone, Serialize, Deserialize)]

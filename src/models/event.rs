@@ -51,8 +51,8 @@ use ruma_events::stripped::{
 use ruma_identifiers::{EventId, RoomId, UserId};
 use serde_json::{from_str, to_string};
 
-use error::ApiError;
-use schema::events;
+use crate::error::ApiError;
+use crate::schema::events;
 
 const STATE_EVENTS: [EventType; 12] = [
     EventType::RoomAliases,

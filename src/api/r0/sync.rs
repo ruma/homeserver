@@ -9,13 +9,13 @@ use ruma_events::presence::PresenceState;
 use serde_json::from_str;
 use url::Url;
 
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, MiddlewareChain};
-use models::user::User;
-use modifier::SerializableResponse;
-use query::{self, Batch, SyncOptions};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, MiddlewareChain};
+use crate::models::user::User;
+use crate::modifier::SerializableResponse;
+use crate::query::{self, Batch, SyncOptions};
 
 /// The `/sync` endpoint.
 pub struct Sync;
@@ -96,14 +96,14 @@ impl Handler for Sync {
 mod tests {
     use std::convert::TryFrom;
 
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
     use ruma_events::presence::PresenceState;
     use ruma_identifiers::EventId;
     use serde_json::from_str;
 
-    use models::filter::ContentFilter;
-    use query::{SyncOptions};
+    use crate::models::filter::ContentFilter;
+    use crate::query::{SyncOptions};
 
     #[test]
     fn sync_without_new_events() {

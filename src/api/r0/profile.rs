@@ -4,13 +4,13 @@ use bodyparser;
 use iron::{Chain, Handler, IronResult, IronError, Plugin, Request, Response};
 use iron::status::Status;
 
-use config::Config;
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
-use models::profile::{Profile as DataProfile};
-use models::user::User;
-use modifier::{SerializableResponse, EmptyResponse};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, JsonRequest, MiddlewareChain, UserIdParam};
+use crate::models::profile::{Profile as DataProfile};
+use crate::models::user::User;
+use crate::modifier::{SerializableResponse, EmptyResponse};
 
 /// The `/profile/:user_id` endpoint.
 pub struct Profile;
@@ -235,9 +235,9 @@ impl Handler for PutDisplayName {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
-    use query::SyncOptions;
+    use crate::query::SyncOptions;
 
     #[test]
     fn get_new_user_profile() {

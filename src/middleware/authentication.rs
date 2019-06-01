@@ -6,12 +6,12 @@ use ruma_identifiers::UserId;
 use serde_json::Value;
 use url::Url;
 
-use authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
-use config::Config;
-use db::DB;
-use error::ApiError;
-use models::access_token::AccessToken;
-use models::user::User;
+use crate::authentication::{AuthParams, InteractiveAuth, PasswordAuthParams};
+use crate::config::Config;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::models::access_token::AccessToken;
+use crate::models::user::User;
 
 /// Handles access token authentication for all API endpoints that require it.
 #[derive(Debug)]

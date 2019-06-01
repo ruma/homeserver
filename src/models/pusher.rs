@@ -5,8 +5,8 @@ use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::UserId;
 
-use error::ApiError;
-use schema::pushers;
+use crate::error::ApiError;
+use crate::schema::pushers;
 
 /// Data need for kind is http.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]

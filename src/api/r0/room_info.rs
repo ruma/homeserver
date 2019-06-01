@@ -6,14 +6,14 @@ use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::status::Status;
 use ruma_events::collections::all::StateEvent;
 
-use db::DB;
-use error::ApiError;
-use middleware::{AccessTokenAuth, MiddlewareChain, RoomIdParam};
-use models::event::Event;
-use models::room::Room;
-use models::room_membership::RoomMembership;
-use models::user::User;
-use modifier::SerializableResponse;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{AccessTokenAuth, MiddlewareChain, RoomIdParam};
+use crate::models::event::Event;
+use crate::models::room::Room;
+use crate::models::room_membership::RoomMembership;
+use crate::models::user::User;
+use crate::modifier::SerializableResponse;
 
 /// The `/rooms/:room_id/state` endpoint.
 pub struct RoomState;
@@ -75,7 +75,7 @@ impl Handler for RoomState {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
     use serde_json::Value;
 

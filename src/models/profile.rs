@@ -6,10 +6,10 @@ use diesel::pg::PgConnection;
 use diesel::result::Error as DieselError;
 use ruma_identifiers::UserId;
 
-use error::ApiError;
-use models::room_membership::{RoomMembership, RoomMembershipOptions};
-use models::presence_status::PresenceStatus;
-use schema::profiles;
+use crate::error::ApiError;
+use crate::models::room_membership::{RoomMembership, RoomMembershipOptions};
+use crate::models::presence_status::PresenceStatus;
+use crate::schema::profiles;
 
 /// A Matrix profile.
 #[derive(AsChangeset, Debug, Clone, Identifiable, Insertable, Queryable)]

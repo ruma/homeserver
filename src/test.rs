@@ -16,11 +16,11 @@ use serde_json::{Value, from_str, to_string};
 use ruma_events::presence::PresenceState;
 use ruma_identifiers::UserId;
 
-use config::Config;
-use embedded_migrations::run as run_pending_migrations;
-use models::pusher::PusherOptions;
-use query::{SyncOptions, Batch};
-use server::Server;
+use crate::config::Config;
+use crate::embedded_migrations::run as run_pending_migrations;
+use crate::models::pusher::PusherOptions;
+use crate::query::{SyncOptions, Batch};
+use crate::server::Server;
 
 static START: Once = ONCE_INIT;
 

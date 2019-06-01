@@ -4,10 +4,10 @@ use diesel::prelude::*;
 use iron::{Chain, Handler, IronError, IronResult, Plugin, Request, Response};
 use iron::status::Status;
 
-use crypto::hash_password;
-use db::DB;
-use error::ApiError;
-use middleware::{
+use crate::crypto::hash_password;
+use crate::db::DB;
+use crate::error::ApiError;
+use crate::middleware::{
     AccessTokenAuth,
     DataTypeParam,
     JsonRequest,
@@ -15,16 +15,16 @@ use middleware::{
     RoomIdParam,
     UserIdParam,
 };
-use models::access_token::AccessToken;
-use models::account_data::{
+use crate::models::access_token::AccessToken;
+use crate::models::account_data::{
     AccountData,
     NewAccountData,
     RoomAccountData,
     NewRoomAccountData,
 };
-use models::room_membership::RoomMembership;
-use models::user::User;
-use modifier::EmptyResponse;
+use crate::models::room_membership::RoomMembership;
+use crate::models::user::User;
+use crate::modifier::EmptyResponse;
 
 /// The `/account/password` endpoint.
 #[derive(Debug)]
@@ -202,7 +202,7 @@ impl Handler for PutRoomAccountData {
 
 #[cfg(test)]
 mod tests {
-    use test::Test;
+    use crate::test::Test;
     use iron::status::Status;
 
     #[test]
