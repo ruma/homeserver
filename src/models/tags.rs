@@ -58,7 +58,7 @@ impl RoomTag {
                 }
                 _ => ApiError::from(err),
             })?;
-        let tags: Vec<RoomTag> = room_tags::table
+        let tags: Vec<Self> = room_tags::table
             .filter(room_tags::room_id.eq(room_id))
             .filter(room_tags::user_id.eq(user_id))
             .get_results(connection)
@@ -84,7 +84,7 @@ impl RoomTag {
         user_id: UserId,
         room_id: RoomId,
         tag: String,
-    ) -> Result<Option<RoomTag>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let tag = room_tags::table
             .filter(room_tags::room_id.eq(room_id))
             .filter(room_tags::user_id.eq(user_id))
@@ -106,11 +106,11 @@ impl RoomTag {
         tag: String,
         content: String,
     ) -> Result<(), ApiError> {
-        let entry = RoomTag::first(connection, user_id.clone(), room_id.clone(), tag.clone())?;
+        let entry = Self::first(connection, user_id.clone(), room_id.clone(), tag.clone())?;
 
         match entry {
             Some(mut entry) => entry.update(connection, content),
-            None => RoomTag::create(connection, user_id, room_id, tag, content),
+            None => Self::create(connection, user_id, room_id, tag, content),
         }
     }
 
@@ -149,7 +149,7 @@ impl RoomTag {
     /// Update a `RoomTag`.
     pub fn update(&mut self, connection: &PgConnection, content: String) -> Result<(), ApiError> {
         self.content = content;
-        self.save_changes::<RoomTag>(connection)
+        self.save_changes::<Self>(connection)
             .map_err(ApiError::from)?;
         Ok(())
     }
@@ -166,7 +166,7 @@ impl RoomTag {
             .filter(room_tags::user_id.eq(user_id))
             .filter(room_tags::tag.eq(tag));
         tag.clone()
-            .first::<RoomTag>(connection)
+            .first::<Self>(connection)
             .map_err(|err| match err {
                 DieselError::NotFound => ApiError::not_found(
                     "The given room_id does not correspond to a tag".to_string(),

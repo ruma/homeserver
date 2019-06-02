@@ -78,16 +78,12 @@ fn default_vec_user_id() -> Vec<UserId> {
     Vec::new()
 }
 
-fn is_false(test: &bool) -> bool {
-    !test
-}
-
 /// `RoomFilter`'s to be applied to room data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomFilter {
     /// Include rooms that the user has left in the sync, default false
     #[serde(default = "default_include_leave")]
-    #[serde(skip_serializing_if = "is_false")]
+    #[serde(skip_serializing_if = "super::is_false")]
     pub include_leave: bool,
     /// The per user account data to include for rooms.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -214,7 +210,7 @@ impl Filter {
     ) -> Result<i64, ApiError> {
         let new_filter = NewFilter { user_id, content };
 
-        let filter: Filter = diesel::insert_into(filters::table)
+        let filter: Self = diesel::insert_into(filters::table)
             .values(&new_filter)
             .get_result(connection)
             .map_err(ApiError::from)?;
@@ -222,7 +218,7 @@ impl Filter {
     }
 
     /// Return `Filter`'s for given `UserId` and `id`.
-    pub fn find(connection: &PgConnection, user_id: UserId, id: i64) -> Result<Filter, ApiError> {
+    pub fn find(connection: &PgConnection, user_id: UserId, id: i64) -> Result<Self, ApiError> {
         let filter = filters::table
             .filter(filters::id.eq(id))
             .filter(filters::user_id.eq(user_id))

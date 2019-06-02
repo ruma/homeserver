@@ -67,12 +67,11 @@ impl AccessToken {
     pub fn find_valid_by_token(
         connection: &PgConnection,
         token: &str,
-    ) -> Result<Option<AccessToken>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let token = access_tokens::table
             .filter(access_tokens::value.eq(token))
             .filter(access_tokens::revoked.eq(false))
-            .first(connection)
-            .map(AccessToken::from);
+            .first(connection);
 
         match token {
             Ok(token) => Ok(Some(token)),
@@ -85,7 +84,7 @@ impl AccessToken {
     pub fn revoke(&mut self, connection: &PgConnection) -> Result<(), ApiError> {
         self.revoked = true;
 
-        match self.save_changes::<AccessToken>(connection) {
+        match self.save_changes::<Self>(connection) {
             Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
@@ -93,7 +92,7 @@ impl AccessToken {
 }
 
 impl Key for AccessToken {
-    type Value = AccessToken;
+    type Value = Self;
 }
 
 fn create_macaroon(macaroon_secret_key: &[u8], user_id: &UserId) -> Result<String, ApiError> {

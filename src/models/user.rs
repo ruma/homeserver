@@ -47,10 +47,10 @@ impl User {
         connection: &PgConnection,
         new_user: &NewUser,
         macaroon_secret_key: &[u8],
-    ) -> Result<(User, AccessToken), ApiError> {
+    ) -> Result<(Self, AccessToken), ApiError> {
         connection
-            .transaction::<(User, AccessToken), ApiError, _>(|| {
-                let user: User = diesel::insert_into(users::table)
+            .transaction::<(Self, AccessToken), ApiError, _>(|| {
+                let user: Self = diesel::insert_into(users::table)
                     .values(new_user)
                     .get_result(connection)
                     .map_err(ApiError::from)?;
@@ -67,8 +67,8 @@ impl User {
         connection: &PgConnection,
         id: &UserId,
         plaintext_password: &str,
-    ) -> Result<User, ApiError> {
-        match User::find_active_user(connection, id)? {
+    ) -> Result<Self, ApiError> {
+        match Self::find_active_user(connection, id)? {
             Some(user) => {
                 if !verify_password(user.password_hash.as_bytes(), plaintext_password)? {
                     return Err(ApiError::unauthorized("Invalid credentials".to_string()));
@@ -87,7 +87,7 @@ impl User {
     pub fn find_registered_user(
         connection: &PgConnection,
         id: &UserId,
-    ) -> Result<Option<User>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let result = users::table.find(id).get_result(connection);
 
         match result {
@@ -103,8 +103,8 @@ impl User {
     pub fn find_active_user(
         connection: &PgConnection,
         id: &UserId,
-    ) -> Result<Option<User>, ApiError> {
-        match User::find_registered_user(connection, id)? {
+    ) -> Result<Option<Self>, ApiError> {
+        match Self::find_registered_user(connection, id)? {
             Some(ref user) if user.active => Ok(Some(user.clone())),
             _ => Ok(None),
         }
@@ -114,7 +114,7 @@ impl User {
     pub fn deactivate(&mut self, connection: &PgConnection) -> Result<(), ApiError> {
         self.active = false;
 
-        match self.save_changes::<User>(connection) {
+        match self.save_changes::<Self>(connection) {
             Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
@@ -146,5 +146,5 @@ impl User {
 }
 
 impl Key for User {
-    type Value = User;
+    type Value = Self;
 }

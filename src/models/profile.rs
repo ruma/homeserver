@@ -30,24 +30,25 @@ impl Profile {
         homeserver_domain: &str,
         user_id: UserId,
         avatar_url: Option<String>,
-    ) -> Result<Profile, ApiError> {
+    ) -> Result<Self, ApiError> {
         connection
-            .transaction::<Profile, ApiError, _>(|| {
-                let profile = Profile::find_by_uid(connection, &user_id)?;
+            .transaction::<Self, ApiError, _>(|| {
+                let maybe_profile = Self::find_by_uid(connection, &user_id)?;
 
-                let profile = match profile {
-                    Some(mut profile) => profile.set_avatar_url(connection, avatar_url)?,
-                    None => {
-                        let new_profile = Profile {
-                            id: user_id.clone(),
-                            avatar_url,
-                            displayname: None,
-                        };
-                        Profile::create(connection, &new_profile)?
-                    }
+                let profile = if let Some(mut profile) = maybe_profile {
+                    profile.set_avatar_url(connection, avatar_url)?
+                } else {
+                    let new_profile = Self {
+                        id: user_id.clone(),
+                        avatar_url,
+                        displayname: None,
+                    };
+
+                    Self::create(connection, &new_profile)?
                 };
 
                 PresenceStatus::upsert(connection, homeserver_domain, &user_id, None, None)?;
+
                 Ok(profile)
             })
             .map_err(ApiError::from)
@@ -59,24 +60,25 @@ impl Profile {
         homeserver_domain: &str,
         user_id: UserId,
         displayname: Option<String>,
-    ) -> Result<Profile, ApiError> {
+    ) -> Result<Self, ApiError> {
         connection
-            .transaction::<Profile, ApiError, _>(|| {
-                let profile = Profile::find_by_uid(connection, &user_id)?;
+            .transaction::<Self, ApiError, _>(|| {
+                let maybe_profile = Self::find_by_uid(connection, &user_id)?;
 
-                let profile = match profile {
-                    Some(mut profile) => profile.set_displayname(connection, displayname)?,
-                    None => {
-                        let new_profile = Profile {
-                            id: user_id.clone(),
-                            avatar_url: None,
-                            displayname,
-                        };
-                        Profile::create(connection, &new_profile)?
-                    }
+                let profile = if let Some(mut profile) = maybe_profile {
+                    profile.set_displayname(connection, displayname)?
+                } else {
+                    let new_profile = Self {
+                        id: user_id.clone(),
+                        avatar_url: None,
+                        displayname,
+                    };
+
+                    Self::create(connection, &new_profile)?
                 };
 
                 PresenceStatus::upsert(connection, homeserver_domain, &user_id, None, None)?;
+
                 Ok(profile)
             })
             .map_err(ApiError::from)
@@ -87,10 +89,10 @@ impl Profile {
         &mut self,
         connection: &PgConnection,
         avatar_url: Option<String>,
-    ) -> Result<Profile, ApiError> {
+    ) -> Result<Self, ApiError> {
         self.avatar_url = avatar_url;
 
-        match self.save_changes::<Profile>(connection) {
+        match self.save_changes::<Self>(connection) {
             Ok(_) => Ok(self.clone()),
             Err(error) => Err(ApiError::from(error)),
         }
@@ -101,10 +103,10 @@ impl Profile {
         &mut self,
         connection: &PgConnection,
         displayname: Option<String>,
-    ) -> Result<Profile, ApiError> {
+    ) -> Result<Self, ApiError> {
         self.displayname = displayname;
 
-        match self.save_changes::<Profile>(connection) {
+        match self.save_changes::<Self>(connection) {
             Ok(_) => Ok(self.clone()),
             Err(error) => Err(ApiError::from(error)),
         }
@@ -133,7 +135,7 @@ impl Profile {
     }
 
     /// Create a `Profile` entry.
-    pub fn create(connection: &PgConnection, new_profile: &Profile) -> Result<Profile, ApiError> {
+    pub fn create(connection: &PgConnection, new_profile: &Self) -> Result<Self, ApiError> {
         diesel::insert_into(profiles::table)
             .values(new_profile)
             .get_result(connection)
@@ -144,7 +146,7 @@ impl Profile {
     pub fn find_by_uid(
         connection: &PgConnection,
         user_id: &UserId,
-    ) -> Result<Option<Profile>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let profile = profiles::table.find(user_id).get_result(connection);
 
         match profile {
@@ -158,7 +160,7 @@ impl Profile {
     pub fn get_profiles(
         connection: &PgConnection,
         users: &[UserId],
-    ) -> Result<Vec<Profile>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         profiles::table
             .filter(profiles::id.eq(any(users)))
             .get_results(connection)

@@ -40,7 +40,7 @@ impl AccountData {
     pub fn create(
         connection: &PgConnection,
         new_account_data: &NewAccountData,
-    ) -> Result<AccountData, ApiError> {
+    ) -> Result<Self, ApiError> {
         diesel::insert_into(account_data::table)
             .values(new_account_data)
             .get_result(connection)
@@ -52,23 +52,18 @@ impl AccountData {
         connection: &PgConnection,
         user_id: &UserId,
         data_type: &str,
-    ) -> Result<AccountData, DieselError> {
+    ) -> Result<Self, DieselError> {
         account_data::table
             .filter(account_data::user_id.eq(user_id))
             .filter(account_data::data_type.eq(data_type))
             .first(connection)
-            .map(AccountData::from)
     }
 
     /// Update an `AccountData` entry with new content.
-    pub fn update(
-        &mut self,
-        connection: &PgConnection,
-        content: String,
-    ) -> Result<AccountData, ApiError> {
+    pub fn update(&mut self, connection: &PgConnection, content: String) -> Result<Self, ApiError> {
         self.content = content;
 
-        self.save_changes::<AccountData>(connection)
+        self.save_changes::<Self>(connection)
             .map_err(ApiError::from)
     }
 
@@ -82,26 +77,19 @@ impl AccountData {
     }
 
     /// Get all account data given a `UserId`.
-    pub fn get_by_uid(
-        connection: &PgConnection,
-        uid: &UserId,
-    ) -> Result<Vec<AccountData>, ApiError> {
+    pub fn get_by_uid(connection: &PgConnection, uid: &UserId) -> Result<Vec<Self>, ApiError> {
         account_data::table
             .filter(account_data::user_id.eq(uid))
-            .load::<AccountData>(connection)
+            .load::<Self>(connection)
             .map_err(ApiError::from)
     }
 
     /// Update an existing entry or create a new one.
-    pub fn upsert(
-        connection: &PgConnection,
-        new_data: &NewAccountData,
-    ) -> Result<AccountData, ApiError> {
-        match AccountData::find_by_uid_and_type(connection, &new_data.user_id, &new_data.data_type)
-        {
+    pub fn upsert(connection: &PgConnection, new_data: &NewAccountData) -> Result<Self, ApiError> {
+        match Self::find_by_uid_and_type(connection, &new_data.user_id, &new_data.data_type) {
             Ok(mut saved) => saved.update(connection, new_data.content.clone()),
             Err(err) => match err {
-                DieselError::NotFound => AccountData::create(connection, new_data),
+                DieselError::NotFound => Self::create(connection, new_data),
                 _ => Err(ApiError::from(err)),
             },
         }
@@ -109,7 +97,7 @@ impl AccountData {
 }
 
 impl Key for AccountData {
-    type Value = AccountData;
+    type Value = Self;
 }
 
 /// Holds user's information/configuration per room.
@@ -147,7 +135,7 @@ impl RoomAccountData {
     pub fn create(
         connection: &PgConnection,
         new_account_data: &NewRoomAccountData,
-    ) -> Result<RoomAccountData, ApiError> {
+    ) -> Result<Self, ApiError> {
         diesel::insert_into(room_account_data::table)
             .values(new_account_data)
             .get_result(connection)
@@ -160,24 +148,19 @@ impl RoomAccountData {
         uid: &UserId,
         rid: &RoomId,
         data_type: &str,
-    ) -> Result<RoomAccountData, DieselError> {
+    ) -> Result<Self, DieselError> {
         room_account_data::table
             .filter(room_account_data::user_id.eq(uid))
             .filter(room_account_data::room_id.eq(rid))
             .filter(room_account_data::data_type.eq(data_type))
             .first(connection)
-            .map(RoomAccountData::from)
     }
 
     /// Update an `RoomAccountData` entry with new content.
-    pub fn update(
-        &mut self,
-        connection: &PgConnection,
-        content: String,
-    ) -> Result<RoomAccountData, ApiError> {
+    pub fn update(&mut self, connection: &PgConnection, content: String) -> Result<Self, ApiError> {
         self.content = content;
 
-        self.save_changes::<RoomAccountData>(connection)
+        self.save_changes::<Self>(connection)
             .map_err(ApiError::from)
     }
 
@@ -194,8 +177,8 @@ impl RoomAccountData {
     pub fn upsert(
         connection: &PgConnection,
         new_data: &NewRoomAccountData,
-    ) -> Result<RoomAccountData, ApiError> {
-        match RoomAccountData::find(
+    ) -> Result<Self, ApiError> {
+        match Self::find(
             connection,
             &new_data.user_id,
             &new_data.room_id,
@@ -203,7 +186,7 @@ impl RoomAccountData {
         ) {
             Ok(mut saved) => saved.update(connection, new_data.content.clone()),
             Err(err) => match err {
-                DieselError::NotFound => RoomAccountData::create(connection, new_data),
+                DieselError::NotFound => Self::create(connection, new_data),
                 _ => Err(ApiError::from(err)),
             },
         }
@@ -211,5 +194,5 @@ impl RoomAccountData {
 }
 
 impl Key for RoomAccountData {
-    type Value = RoomAccountData;
+    type Value = Self;
 }

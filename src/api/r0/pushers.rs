@@ -66,21 +66,19 @@ impl Handler for SetPushers {
         let borrowed_value = value.clone();
         let kind = borrowed_value
             .get("kind")
-            .ok_or(ApiError::missing_param("kind"))?;
-        match *kind {
-            Value::Null => {
-                let app_id = value
-                    .get("app_id")
-                    .ok_or(ApiError::missing_param("app_id"))?;
-                let app_id = app_id.as_str().ok_or(ApiError::bad_json(
-                    "The app_id parameter should be a string".to_string(),
-                ))?;
-                Pusher::delete(&connection, &user.id, app_id)?;
-            }
-            _ => {
-                let pusher_options = from_value(value).map_api_err(ApiError::from)?;
-                Pusher::upsert(&connection, &user.id, &pusher_options)?;
-            }
+            .ok_or_else(|| ApiError::missing_param("kind"))?;
+
+        if *kind == Value::Null {
+            let app_id = value
+                .get("app_id")
+                .ok_or_else(|| ApiError::missing_param("app_id"))?;
+            let app_id = app_id.as_str().ok_or_else(|| {
+                ApiError::bad_json("The app_id parameter should be a string".to_string())
+            })?;
+            Pusher::delete(&connection, &user.id, app_id)?;
+        } else {
+            let pusher_options = from_value(value).map_api_err(ApiError::from)?;
+            Pusher::upsert(&connection, &user.id, &pusher_options)?;
         }
 
         Ok(Response::with(EmptyResponse(Status::Ok)))

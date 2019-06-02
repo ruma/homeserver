@@ -1,3 +1,5 @@
+//! Iron middleware to handle extracting various values from URL path parameters.
+
 use std::convert::From;
 use std::convert::TryFrom;
 use std::error::Error;
@@ -38,7 +40,7 @@ impl BeforeMiddleware for RoomIdParam {
             }
             None => Err(ApiError::missing_param("room_id")),
         }?;
-        request.extensions.insert::<RoomIdParam>(room_id);
+        request.extensions.insert::<Self>(room_id);
         Ok(())
     }
 }
@@ -72,9 +74,7 @@ impl BeforeMiddleware for RoomIdOrAliasParam {
             }
             None => Err(ApiError::missing_param("room_id_or_alias")),
         }?;
-        request
-            .extensions
-            .insert::<RoomIdOrAliasParam>(room_id_or_alias);
+        request.extensions.insert::<Self>(room_id_or_alias);
         Ok(())
     }
 }
@@ -107,7 +107,7 @@ impl BeforeMiddleware for UserIdParam {
             None => Err(ApiError::missing_param("user_id")),
         }?;
 
-        request.extensions.insert::<UserIdParam>(user_id);
+        request.extensions.insert::<Self>(user_id);
 
         Ok(())
     }
@@ -135,7 +135,7 @@ impl BeforeMiddleware for DataTypeParam {
 
         request
             .extensions
-            .insert::<DataTypeParam>(data_type.to_string().clone());
+            .insert::<Self>(data_type.to_string().clone());
 
         Ok(())
     }
@@ -164,7 +164,7 @@ impl BeforeMiddleware for FilterIdParam {
             .parse()
             .map_err(|_| ApiError::invalid_param("filter_id", "Parsing failed"))?;
 
-        request.extensions.insert::<FilterIdParam>(filter_id);
+        request.extensions.insert::<Self>(filter_id);
 
         Ok(())
     }
@@ -198,7 +198,7 @@ impl BeforeMiddleware for RoomAliasIdParam {
             None => Err(ApiError::missing_param("room_alias"))?,
         };
 
-        request.extensions.insert::<RoomAliasIdParam>(room_alias_id);
+        request.extensions.insert::<Self>(room_alias_id);
 
         Ok(())
     }
@@ -225,7 +225,7 @@ impl BeforeMiddleware for EventTypeParam {
             .ok_or_else(|| ApiError::missing_param("event_type"))
             .map(EventType::from)?;
 
-        request.extensions.insert::<EventTypeParam>(event_type);
+        request.extensions.insert::<Self>(event_type);
 
         Ok(())
     }
@@ -251,9 +251,7 @@ impl BeforeMiddleware for TagParam {
             .find("tag")
             .ok_or_else(|| ApiError::missing_param("tag"))?;
 
-        request
-            .extensions
-            .insert::<TagParam>(tag.to_string().clone());
+        request.extensions.insert::<Self>(tag.to_string().clone());
 
         Ok(())
     }
@@ -281,7 +279,7 @@ impl BeforeMiddleware for TransactionIdParam {
 
         request
             .extensions
-            .insert::<TransactionIdParam>(transaction_id.to_string().clone());
+            .insert::<Self>(transaction_id.to_string().clone());
 
         Ok(())
     }

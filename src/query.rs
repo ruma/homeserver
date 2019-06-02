@@ -113,8 +113,8 @@ pub struct Batch {
 
 impl Batch {
     /// Create a new `Batch`.
-    pub fn new(room_key: i64, presence_key: i64) -> Batch {
-        Batch {
+    pub fn new(room_key: i64, presence_key: i64) -> Self {
+        Self {
             room_key,
             presence_key,
         }
@@ -130,7 +130,7 @@ impl Display for Batch {
 
 impl FromStr for Batch {
     type Err = String;
-    fn from_str(s: &str) -> Result<Batch, String> {
+    fn from_str(s: &str) -> Result<Self, String> {
         let values: Vec<&str> = s.split('_').collect();
 
         if values.len() != 2 {
@@ -141,7 +141,7 @@ impl FromStr for Batch {
 
         let presence_key = i64::from_str_radix(values[1], 10).map_err(|err| err.to_string())?;
 
-        Ok(Batch::new(room_key, presence_key))
+        Ok(Self::new(room_key, presence_key))
     }
 }
 
@@ -178,7 +178,7 @@ impl Sync {
         homeserver_domain: &str,
         user: &User,
         options: SyncOptions,
-    ) -> Result<Sync, ApiError> {
+    ) -> Result<Self, ApiError> {
         let mut context = Context::Initial;
 
         if let Some(ref batch) = options.since {
@@ -194,7 +194,7 @@ impl Sync {
             None => None,
         };
 
-        let (presence_key, presence) = Sync::get_presence_events(
+        let (presence_key, presence) = Self::get_presence_events(
             connection,
             homeserver_domain,
             user,
@@ -202,9 +202,9 @@ impl Sync {
             &context,
         )?;
 
-        let (room_key, rooms) = Sync::get_rooms_events(connection, user, filter_room, &context)?;
+        let (room_key, rooms) = Self::get_rooms_events(connection, user, filter_room, &context)?;
         let batch = Batch::new(room_key, presence_key);
-        let state = Sync {
+        let state = Self {
             next_batch: batch.to_string(),
             presence: Events { events: presence },
             rooms,
@@ -292,7 +292,7 @@ impl Sync {
                     }
 
                     let (ordering, timeline) =
-                        Sync::convert_events_to_timeline(events, &timeline_filter)?;
+                        Self::convert_events_to_timeline(events, &timeline_filter)?;
                     room_ordering = cmp::max(ordering, room_ordering);
 
                     let state_events: Vec<StateEvent> = room_state_events
@@ -341,17 +341,17 @@ impl Sync {
                         continue;
                     }
 
-                    let last_event = Event::find(&connection, &room_membership.event_id)?
+                    let last_event = Event::find(connection, &room_membership.event_id)?
                         .expect("A room membership should be associated with an event");
 
                     let events = Event::find_room_events_until(
                         connection,
                         &room_membership.room_id,
-                        &last_event.ordering,
+                        last_event.ordering,
                     )?;
 
                     let (ordering, timeline) =
-                        Sync::convert_events_to_timeline(events, &timeline_filter)?;
+                        Self::convert_events_to_timeline(events, &timeline_filter)?;
                     room_ordering = cmp::max(ordering, room_ordering);
 
                     let room_state_events = Event::get_room_state_events_until(

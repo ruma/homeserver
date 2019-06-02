@@ -71,7 +71,7 @@ impl PresenceStatus {
 
         connection
             .transaction::<(), ApiError, _>(|| {
-                let status = PresenceStatus::find_by_uid(connection, user_id)?;
+                let status = Self::find_by_uid(connection, user_id)?;
                 let presence = match presence {
                     Some(presence) => presence.to_string(),
                     None => match status {
@@ -82,9 +82,7 @@ impl PresenceStatus {
 
                 match status {
                     Some(mut status) => status.update(connection, presence, status_msg, event_id),
-                    None => {
-                        PresenceStatus::create(connection, user_id, presence, status_msg, event_id)
-                    }
+                    None => Self::create(connection, user_id, presence, status_msg, event_id),
                 }
             })
             .map_err(ApiError::from)
@@ -103,7 +101,7 @@ impl PresenceStatus {
         self.event_id = event_id.clone();
         self.updated_at = PgTimestamp(get_now());
 
-        match self.save_changes::<PresenceStatus>(connection) {
+        match self.save_changes::<Self>(connection) {
             Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
@@ -135,7 +133,7 @@ impl PresenceStatus {
     pub fn find_by_uid(
         connection: &PgConnection,
         user_id: &UserId,
-    ) -> Result<Option<PresenceStatus>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let status = presence_status::table.find(user_id).first(connection);
 
         match status {
@@ -151,7 +149,7 @@ impl PresenceStatus {
         connection: &PgConnection,
         users: &[UserId],
         since: Option<i64>,
-    ) -> Result<Vec<PresenceStatus>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         match since {
             Some(since) => {
                 let time = PgTimestamp(since);

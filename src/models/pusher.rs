@@ -41,7 +41,7 @@ pub struct PusherOptions {
     ///
     /// The default is false.
     #[serde(default = "default_append")]
-    #[serde(skip_serializing_if = "is_false")]
+    #[serde(skip_serializing_if = "super::is_false")]
     pub append: bool,
 }
 
@@ -56,8 +56,8 @@ impl PusherOptions {
 }
 
 impl From<Pusher> for PusherOptions {
-    fn from(pusher: Pusher) -> PusherOptions {
-        PusherOptions {
+    fn from(pusher: Pusher) -> Self {
+        Self {
             lang: pusher.lang,
             kind: pusher.kind,
             data: PusherData { url: pusher.url },
@@ -73,10 +73,6 @@ impl From<Pusher> for PusherOptions {
 
 fn default_append() -> bool {
     false
-}
-
-fn is_false(test: &bool) -> bool {
-    !test
 }
 
 /// A matrix pusher.
@@ -110,38 +106,30 @@ impl Pusher {
         connection: &PgConnection,
         user_id: &UserId,
         options: &PusherOptions,
-    ) -> Result<Pusher, ApiError> {
+    ) -> Result<Self, ApiError> {
         connection
-            .transaction::<Pusher, ApiError, _>(|| {
+            .transaction::<Self, ApiError, _>(|| {
                 if !options.is_valid() {
                     return Err(ApiError::bad_json(
                         "If kind is http, data.url shouldn't be null.".to_string(),
                     ));
                 }
-                match options.append {
-                    true => {
-                        let pusher = Pusher::find(connection, &user_id, &options.app_id)?;
-                        match pusher {
-                            Some(mut pusher) => {
-                                pusher.update(connection, options.clone())?;
-                                return Ok(pusher);
-                            }
-                            None => (),
-                        }
+                if options.append {
+                    let maybe_pusher = Self::find(connection, user_id, &options.app_id)?;
+
+                    if let Some(mut pusher) = maybe_pusher {
+                        pusher.update(connection, options.clone())?;
+
+                        return Ok(pusher);
                     }
-                    false => {
-                        Pusher::delete_by_app_id_and_pushkey(
-                            connection,
-                            &options.app_id,
-                            &options.pushkey,
-                        )?;
-                    }
+                } else {
+                    Self::delete_by_app_id_and_pushkey(
+                        connection,
+                        &options.app_id,
+                        &options.pushkey,
+                    )?;
                 }
-                Ok(Pusher::create(
-                    connection,
-                    user_id.clone(),
-                    options.clone(),
-                )?)
+                Ok(Self::create(connection, user_id.clone(), options.clone())?)
             })
             .map_err(ApiError::from)
     }
@@ -170,7 +158,7 @@ impl Pusher {
         self.profile_tag = options.profile_tag;
         self.url = options.data.url;
 
-        match self.save_changes::<Pusher>(connection) {
+        match self.save_changes::<Self>(connection) {
             Ok(_) => Ok(()),
             Err(error) => Err(ApiError::from(error)),
         }
@@ -181,8 +169,8 @@ impl Pusher {
         connection: &PgConnection,
         user_id: UserId,
         options: PusherOptions,
-    ) -> Result<Pusher, ApiError> {
-        let new_pusher = Pusher {
+    ) -> Result<Self, ApiError> {
+        let new_pusher = Self {
             user_id,
             lang: options.lang,
             kind: options.kind,
@@ -205,7 +193,7 @@ impl Pusher {
         connection: &PgConnection,
         user_id: &UserId,
         app_id: &str,
-    ) -> Result<Option<Pusher>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let pusher = pushers::table
             .find((user_id, app_id))
             .get_result(connection);
@@ -231,10 +219,7 @@ impl Pusher {
     }
 
     /// Return all `Pusher`'s for given `UserId`.
-    pub fn find_by_uid(
-        connection: &PgConnection,
-        user_id: &UserId,
-    ) -> Result<Vec<Pusher>, ApiError> {
+    pub fn find_by_uid(connection: &PgConnection, user_id: &UserId) -> Result<Vec<Self>, ApiError> {
         pushers::table
             .filter(pushers::user_id.eq(user_id))
             .get_results(connection)

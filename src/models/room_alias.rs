@@ -52,14 +52,14 @@ impl RoomAlias {
         connection: &PgConnection,
         homeserver_domain: &str,
         new_room_alias: &NewRoomAlias,
-    ) -> Result<RoomAlias, ApiError> {
+    ) -> Result<Self, ApiError> {
         connection
             .transaction(|| {
                 if Room::find(connection, &new_room_alias.room_id)?.is_none() {
                     return Err(ApiError::bad_json("Room not found".to_string()));
                 }
 
-                let aliases = RoomAlias::find_by_room_id(connection, &new_room_alias.room_id)?;
+                let aliases = Self::find_by_room_id(connection, &new_room_alias.room_id)?;
                 let mut ids: Vec<RoomAliasId> = aliases.iter().map(|a| a.alias.clone()).collect();
                 ids.push(new_room_alias.alias.clone());
 
@@ -95,10 +95,7 @@ impl RoomAlias {
     }
 
     /// Return the `RoomAlias` entry for given `RoomAliasId`.
-    pub fn find_by_alias(
-        connection: &PgConnection,
-        alias: &RoomAliasId,
-    ) -> Result<RoomAlias, ApiError> {
+    pub fn find_by_alias(connection: &PgConnection, alias: &RoomAliasId) -> Result<Self, ApiError> {
         room_aliases::table
             .find(alias)
             .get_result(connection)
@@ -109,11 +106,8 @@ impl RoomAlias {
     }
 
     /// Return all aliases associated with the given `RoomId`.
-    fn find_by_room_id(
-        connection: &PgConnection,
-        room_id: &RoomId,
-    ) -> Result<Vec<RoomAlias>, ApiError> {
-        let aliases: Vec<RoomAlias> = room_aliases::table
+    fn find_by_room_id(connection: &PgConnection, room_id: &RoomId) -> Result<Vec<Self>, ApiError> {
+        let aliases: Vec<Self> = room_aliases::table
             .filter(room_aliases::room_id.eq(room_id))
             .get_results(connection)
             .map_err(ApiError::from)?;

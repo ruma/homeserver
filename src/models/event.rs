@@ -101,7 +101,7 @@ impl Event {
         connection: &PgConnection,
         room_id: RoomId,
     ) -> Result<JoinRulesEvent, ApiError> {
-        let event: Event = events::table
+        let event: Self = events::table
             .filter(events::event_type.eq(EventType::RoomJoinRules.to_string()))
             .filter(events::room_id.eq(room_id))
             .order(events::ordering.desc())
@@ -118,7 +118,7 @@ impl Event {
         connection: &PgConnection,
         room_id: &RoomId,
         since: i64,
-    ) -> Result<Vec<Event>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         events::table
             .filter(events::event_type.like("m.room.%"))
             .filter(events::ordering.gt(since))
@@ -135,8 +135,8 @@ impl Event {
     pub fn find_room_events_until(
         connection: &PgConnection,
         room_id: &RoomId,
-        until: &i64,
-    ) -> Result<Vec<Event>, ApiError> {
+        until: i64,
+    ) -> Result<Vec<Self>, ApiError> {
         events::table
             .filter(events::event_type.like("m.room.%"))
             .filter(events::ordering.lt(until))
@@ -150,7 +150,7 @@ impl Event {
     }
 
     /// Look up an event given its `EventId`.
-    pub fn find(connection: &PgConnection, event_id: &EventId) -> Result<Option<Event>, ApiError> {
+    pub fn find(connection: &PgConnection, event_id: &EventId) -> Result<Option<Self>, ApiError> {
         match events::table.find(event_id).first(connection) {
             Ok(event) => Ok(Some(event)),
             Err(DieselError::NotFound) => Ok(None),
@@ -162,8 +162,8 @@ impl Event {
     pub fn get_room_state_events_until(
         connection: &PgConnection,
         room_id: &RoomId,
-        until: &Event,
-    ) -> Result<Vec<Event>, ApiError> {
+        until: &Self,
+    ) -> Result<Vec<Self>, ApiError> {
         let state_events: Vec<String> = STATE_EVENTS.iter().map(EventType::to_string).collect();
 
         let ordering: Vec<Option<i64>> = events::table
@@ -185,8 +185,8 @@ impl Event {
     pub fn get_room_full_state(
         connection: &PgConnection,
         room_id: &RoomId,
-    ) -> Result<Vec<Event>, ApiError> {
-        Event::get_room_state_events_since(connection, room_id, -1)
+    ) -> Result<Vec<Self>, ApiError> {
+        Self::get_room_state_events_since(connection, room_id, -1)
     }
 
     /// Return the state changes in a room after a specific point in time.
@@ -194,7 +194,7 @@ impl Event {
         connection: &PgConnection,
         room_id: &RoomId,
         since: i64,
-    ) -> Result<Vec<Event>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         let state_events: Vec<String> = STATE_EVENTS.iter().map(EventType::to_string).collect();
 
         let ordering: Vec<Option<i64>> = events::table
@@ -219,7 +219,7 @@ macro_rules! impl_try_from_room_event_for_new_event {
             type Error = ApiError;
 
             fn try_from(event: $ty) -> Result<Self, Self::Error> {
-                Ok(NewEvent {
+                Ok(Self {
                     content: to_string(event.content()).map_err(ApiError::from)?,
                     event_type: event.event_type().to_string(),
                     id: event.event_id().clone(),
@@ -238,7 +238,7 @@ macro_rules! impl_try_from_state_event_for_new_event {
             type Error = ApiError;
 
             fn try_from(event: $ty) -> Result<Self, Self::Error> {
-                Ok(NewEvent {
+                Ok(Self {
                     content: to_string(event.content()).map_err(ApiError::from)?,
                     event_type: event.event_type().to_string(),
                     id: event.event_id().clone(),

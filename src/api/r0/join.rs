@@ -333,27 +333,22 @@ impl Handler for InviteToRoom {
             membership: "invite".to_string(),
         };
 
-        match invitee_membership {
-            Some(mut entry) => match entry.membership.as_ref() {
-                "invite" => Ok(()),
+        if let Some(mut entry) = invitee_membership {
+            match entry.membership.as_ref() {
+                "invite" => {}
                 "ban" => Err(ApiError::unauthorized(
                     "The invited user is banned from the room".to_string(),
-                )),
+                ))?,
                 "join" => Err(ApiError::unauthorized(
                     "The invited user has already joined".to_string(),
-                )),
+                ))?,
                 _ => {
                     entry.update(&connection, &config.domain, new_membership_options)?;
-
-                    Ok(())
                 }
-            },
-            None => {
-                RoomMembership::create(&connection, &config.domain, new_membership_options)?;
-
-                Ok(())
             }
-        }?;
+        } else {
+            RoomMembership::create(&connection, &config.domain, new_membership_options)?;
+        }
 
         Ok(Response::with(EmptyResponse(Status::Ok)))
     }

@@ -29,7 +29,7 @@ struct CreateRoomRequest {
     pub creation_content: Option<CreationContent>,
     /// A list of state events to set in the new room. This allows the
     /// user to override the default state events set in the new room.
-    pub initial_state: Option<Vec<Box<StrippedState>>>,
+    pub initial_state: Option<Vec<StrippedState>>,
     /// A list of user IDs to invite to the room.
     pub invite: Option<Vec<UserId>>,
     /// Indicates the room's name.

@@ -1,3 +1,5 @@
+//! Iron middleware to handle verifying the presence of valid JSON in a request.
+
 use bodyparser;
 use iron::headers::ContentType;
 use iron::mime::{Mime, SubLevel, TopLevel};

@@ -62,7 +62,7 @@ impl Config {
     ///
     /// If a path is given, it will try to load the configuration there.
     /// Otherwise, try to load a file from the defaults locations.
-    pub fn from_file(path: Option<&str>) -> Result<Config, CliError> {
+    pub fn from_file(path: Option<&str>) -> Result<Self, CliError> {
         let config_path = if let Some(path_str) = path {
             let path = Path::new(path_str);
             if !path.is_file() {
@@ -97,7 +97,7 @@ impl Config {
             Err(_) => Err(CliError::new("macaroon_secret_key must be valid Base64."))?,
         };
 
-        Ok(Config {
+        Ok(Self {
             bind_address: v1_config
                 .bind_address
                 .unwrap_or_else(|| "127.0.0.1".to_string()),
@@ -144,15 +144,15 @@ impl Config {
     }
 
     /// Extract the `Config` stored in the request.
-    pub fn from_request(request: &mut Request<'_, '_>) -> Result<Arc<Config>, ApiError> {
+    pub fn from_request(request: &mut Request<'_, '_>) -> Result<Arc<Self>, ApiError> {
         request
-            .get::<PersistentRead<Config>>()
+            .get::<PersistentRead<Self>>()
             .map_err(ApiError::from)
     }
 }
 
 impl Key for Config {
-    type Value = Config;
+    type Value = Self;
 }
 
 #[cfg(test)]

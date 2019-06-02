@@ -63,7 +63,7 @@ impl PresenceList {
                 let room_ids =
                     RoomMembership::find_room_ids_by_uid_and_state(connection, user_id, "join")?;
 
-                let mut invites: Vec<PresenceList> = Vec::new();
+                let mut invites: Vec<Self> = Vec::new();
                 for observed_user in invite {
                     if observed_user != user_id {
                         let rooms = RoomMembership::filter_rooms_by_state(
@@ -79,7 +79,7 @@ impl PresenceList {
                             )));
                         }
                     }
-                    invites.push(PresenceList {
+                    invites.push(Self {
                         user_id: user_id.clone(),
                         observed_user_id: (*observed_user).clone(),
                     });
@@ -125,7 +125,7 @@ impl PresenceList {
             None => 0,
         };
 
-        let observed_users = PresenceList::find_observed_users(connection, user_id)?;
+        let observed_users = Self::find_observed_users(connection, user_id)?;
         let users_status = PresenceStatus::get_users(connection, &observed_users, since)?;
 
         let observed_users: Vec<UserId> = users_status

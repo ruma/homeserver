@@ -13,7 +13,7 @@ pub struct Versions {
 impl Versions {
     /// Returns the list of supported `Versions` of the Matrix spec.
     pub fn supported() -> Self {
-        Versions {
+        Self {
             versions: vec!["r0.2.0"],
         }
     }

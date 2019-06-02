@@ -27,7 +27,7 @@ impl DB {
     pub fn from_request(
         request: &mut Request<'_, '_>,
     ) -> Result<PooledConnection<ConnectionManager<PgConnection>>, ApiError> {
-        let mutex = request.get::<Write<DB>>().map_err(ApiError::from)?;
+        let mutex = request.get::<Write<Self>>().map_err(ApiError::from)?;
         let pool = mutex.lock().map_err(ApiError::from)?;
         pool.get().map_err(ApiError::from)
     }

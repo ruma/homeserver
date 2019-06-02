@@ -1,4 +1,5 @@
 //! Iron middleware.
+
 use iron::Chain;
 
 mod authentication;

@@ -75,13 +75,13 @@ impl RoomMembership {
         connection: &PgConnection,
         homeserver_domain: &str,
         options: RoomMembershipOptions,
-    ) -> Result<RoomMembership, ApiError> {
-        RoomMembership::verify_creation_priviledges(connection, &options)?;
+    ) -> Result<Self, ApiError> {
+        Self::verify_creation_priviledges(connection, &options)?;
 
         let profile = Profile::find_by_uid(connection, &options.user_id)?;
 
         let new_member_event =
-            RoomMembership::create_new_room_member_event(homeserver_domain, &options, profile)?;
+            Self::create_new_room_member_event(homeserver_domain, &options, profile)?;
 
         let new_membership = NewRoomMembership {
             event_id: new_member_event.id.clone(),
@@ -91,11 +91,8 @@ impl RoomMembership {
             membership: options.membership.clone(),
         };
 
-        let memberships = RoomMembership::save_memberships(
-            connection,
-            vec![new_member_event],
-            vec![new_membership],
-        )?;
+        let memberships =
+            Self::save_memberships(connection, vec![new_member_event], vec![new_membership])?;
 
         Ok(memberships[0].clone())
     }
@@ -105,17 +102,17 @@ impl RoomMembership {
         connection: &PgConnection,
         homeserver_domain: &str,
         options: Vec<RoomMembershipOptions>,
-    ) -> Result<Vec<RoomMembership>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         let mut events: Vec<NewEvent> = Vec::new();
         let mut new_memberships: Vec<NewRoomMembership> = Vec::new();
 
         for option in options {
-            RoomMembership::verify_creation_priviledges(connection, &option)?;
+            Self::verify_creation_priviledges(connection, &option)?;
 
             let profile = Profile::find_by_uid(connection, &option.user_id)?;
 
             let new_member_event =
-                RoomMembership::create_new_room_member_event(homeserver_domain, &option, profile)?;
+                Self::create_new_room_member_event(homeserver_domain, &option, profile)?;
 
             let new_membership = NewRoomMembership {
                 event_id: new_member_event.id.clone(),
@@ -129,7 +126,7 @@ impl RoomMembership {
             new_memberships.push(new_membership);
         }
 
-        RoomMembership::save_memberships(connection, events, new_memberships)
+        Self::save_memberships(connection, events, new_memberships)
     }
 
     /// Save new memberships along with their corresponding `m.room.member` events.
@@ -137,15 +134,15 @@ impl RoomMembership {
         connection: &PgConnection,
         events: Vec<NewEvent>,
         new_memberships: Vec<NewRoomMembership>,
-    ) -> Result<Vec<RoomMembership>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         connection
-            .transaction::<Vec<RoomMembership>, ApiError, _>(|| {
+            .transaction::<Vec<Self>, ApiError, _>(|| {
                 diesel::insert_into(events::table)
                     .values(&events)
                     .execute(connection)
                     .map_err(ApiError::from)?;
 
-                let memberships: Vec<RoomMembership> = diesel::insert_into(room_memberships::table)
+                let memberships: Vec<Self> = diesel::insert_into(room_memberships::table)
                     .values(&new_memberships)
                     .get_results(connection)
                     .map_err(ApiError::from)?;
@@ -200,7 +197,7 @@ impl RoomMembership {
         connection: &PgConnection,
         room_id: &RoomId,
         user_id: &UserId,
-    ) -> Result<Option<RoomMembership>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let membership = room_memberships::table
             .filter(room_memberships::room_id.eq(room_id))
             .filter(room_memberships::user_id.eq(user_id))
@@ -214,11 +211,8 @@ impl RoomMembership {
     }
 
     /// Return `RoomMembership`'s for given `UserId`.
-    pub fn find_by_uid(
-        connection: &PgConnection,
-        user_id: UserId,
-    ) -> Result<Vec<RoomMembership>, ApiError> {
-        let room_memberships: Vec<RoomMembership> = room_memberships::table
+    pub fn find_by_uid(connection: &PgConnection, user_id: UserId) -> Result<Vec<Self>, ApiError> {
+        let room_memberships: Vec<Self> = room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .get_results(connection)
             .map_err(|err| match err {
@@ -234,12 +228,12 @@ impl RoomMembership {
         connection: &PgConnection,
         domain: &str,
         options: RoomMembershipOptions,
-    ) -> Result<RoomMembership, ApiError> {
-        let room_membership = RoomMembership::find(connection, &options.room_id, &options.user_id)?;
+    ) -> Result<Self, ApiError> {
+        let room_membership = Self::find(connection, &options.room_id, &options.user_id)?;
 
         match room_membership {
             Some(mut entry) => entry.update(connection, domain, options),
-            None => RoomMembership::create(connection, domain, options),
+            None => Self::create(connection, domain, options),
         }
     }
 
@@ -251,23 +245,22 @@ impl RoomMembership {
         connection: &PgConnection,
         homeserver_domain: &str,
         options: RoomMembershipOptions,
-    ) -> Result<RoomMembership, ApiError> {
+    ) -> Result<Self, ApiError> {
         let profile = Profile::find_by_uid(connection, &options.user_id)?;
 
-        let event =
-            RoomMembership::create_new_room_member_event(homeserver_domain, &options, profile)?;
+        let event = Self::create_new_room_member_event(homeserver_domain, &options, profile)?;
 
         self.membership = options.membership.clone();
         self.sender = options.sender.clone();
 
         connection
-            .transaction::<RoomMembership, ApiError, _>(|| {
+            .transaction::<Self, ApiError, _>(|| {
                 diesel::insert_into(events::table)
                     .values(&event)
                     .execute(connection)
                     .map_err(ApiError::from)?;
 
-                self.save_changes::<RoomMembership>(connection)
+                self.save_changes::<Self>(connection)
                     .map_err(ApiError::from)?;
 
                 // Use the new `EventId` as primary key.
@@ -354,7 +347,7 @@ impl RoomMembership {
             })
             .collect::<Vec<RoomMembershipOptions>>();
 
-        RoomMembership::create_many(connection, homeserver_domain, options)?;
+        Self::create_many(connection, homeserver_domain, options)?;
 
         Ok(())
     }
@@ -383,7 +376,7 @@ impl RoomMembership {
     pub fn find_all_by_uid(
         connection: &PgConnection,
         user_id: &UserId,
-    ) -> Result<Vec<RoomMembership>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .get_results(connection)
@@ -398,7 +391,7 @@ impl RoomMembership {
         connection: &PgConnection,
         user_id: UserId,
         membership: &str,
-    ) -> Result<Vec<RoomMembership>, ApiError> {
+    ) -> Result<Vec<Self>, ApiError> {
         room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .filter(room_memberships::membership.eq(membership))

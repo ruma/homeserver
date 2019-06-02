@@ -28,8 +28,8 @@ impl Transaction {
         path: String,
         access_token: String,
         response: String,
-    ) -> Result<Transaction, ApiError> {
-        let new_transaction = Transaction {
+    ) -> Result<Self, ApiError> {
+        let new_transaction = Self {
             path,
             access_token,
             response,
@@ -46,7 +46,7 @@ impl Transaction {
         connection: &PgConnection,
         path: &str,
         access_token: &str,
-    ) -> Result<Option<Transaction>, ApiError> {
+    ) -> Result<Option<Self>, ApiError> {
         let transaction = transactions::table
             .find((path, access_token))
             .get_result(connection);

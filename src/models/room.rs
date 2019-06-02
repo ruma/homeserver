@@ -35,7 +35,7 @@ pub struct CreationOptions {
     /// Whether or not the room should be federated.
     pub federate: Option<bool>,
     /// A list of state events to set in the new room.
-    pub initial_state: Option<Vec<Box<StrippedState>>>,
+    pub initial_state: Option<Vec<StrippedState>>,
     /// A list of users to invite to the room.
     pub invite_list: Option<Vec<UserId>>,
     /// An initial name for the room.
@@ -109,9 +109,9 @@ impl Room {
         new_room: &NewRoom,
         homeserver_domain: &str,
         creation_options: &CreationOptions,
-    ) -> Result<Room, ApiError> {
-        connection.transaction::<Room, ApiError, _>(|| {
-            let room: Room = diesel::insert_into(rooms::table)
+    ) -> Result<Self, ApiError> {
+        connection.transaction::<Self, ApiError, _>(|| {
+            let room: Self = diesel::insert_into(rooms::table)
                 .values(new_room)
                 .get_result(connection)
                 .map_err(ApiError::from)?;
@@ -231,7 +231,7 @@ impl Room {
                 let initial_events = creation_options.initial_state.clone().unwrap();
 
                 for state_event in initial_events {
-                    match *state_event {
+                    match state_event {
                         StrippedState::RoomAliases(event) => {
                             for alias in event.content.aliases {
                                 if alias.hostname().to_string() != homeserver_domain {
@@ -537,7 +537,7 @@ impl Room {
     }
 
     /// Look up a `Room` given the `RoomId`.
-    pub fn find(connection: &PgConnection, room_id: &RoomId) -> Result<Option<Room>, ApiError> {
+    pub fn find(connection: &PgConnection, room_id: &RoomId) -> Result<Option<Self>, ApiError> {
         let result = rooms::table.find(room_id).get_result(connection);
 
         match result {

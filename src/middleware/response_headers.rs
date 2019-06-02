@@ -1,3 +1,5 @@
+//! Iron middleware to add HTTP headers to API responses.
+
 use iron::headers::{
     AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin, Server,
 };

@@ -1,3 +1,5 @@
+//! Iron middleware to handle user authentication.
+
 use std::convert::TryFrom;
 
 use bodyparser;
@@ -20,13 +22,14 @@ pub struct AccessTokenAuth;
 /// Handles Matrix's interactive authentication protocol for all API endpoints that require it.
 #[derive(Clone, Debug)]
 pub struct UIAuth {
+    /// The interactive authentication flows to use.
     interactive_auth: InteractiveAuth,
 }
 
 impl UIAuth {
     /// Creates a new `UIAuth` from the given `InteractiveAuth`.
     pub fn new(interactive_auth: InteractiveAuth) -> Self {
-        UIAuth { interactive_auth }
+        Self { interactive_auth }
     }
 }
 
