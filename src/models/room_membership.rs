@@ -430,10 +430,12 @@ impl RoomMembership {
         observed_user_id: &UserId,
         membership: &str,
     ) -> Result<Vec<RoomId>, ApiError> {
-        let rooms = room_memberships::table
+        let rooms: Vec<String> = room_memberships::table
             .filter(room_memberships::user_id.eq(user_id))
             .filter(room_memberships::membership.eq(membership))
-            .select(room_memberships::room_id);
+            .select(room_memberships::room_id)
+            .get_results(connection)
+            .map_err(ApiError::from)?;
 
         room_memberships::table
             .filter(room_memberships::user_id.eq(observed_user_id))

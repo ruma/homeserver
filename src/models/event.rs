@@ -166,12 +166,14 @@ impl Event {
     ) -> Result<Vec<Event>, ApiError> {
         let state_events: Vec<String> = STATE_EVENTS.iter().map(EventType::to_string).collect();
 
-        let ordering = events::table
+        let ordering: Vec<Option<i64>> = events::table
             .select(max(events::ordering))
             .filter(events::room_id.eq(room_id))
             .filter(events::event_type.eq(any(state_events)))
             .filter(events::ordering.lt(until.ordering))
-            .group_by(events::event_type);
+            .group_by(events::event_type)
+            .get_results(connection)
+            .map_err(ApiError::from)?;
 
         events::table
             .filter(events::ordering.nullable().eq(any(ordering)))
@@ -195,12 +197,14 @@ impl Event {
     ) -> Result<Vec<Event>, ApiError> {
         let state_events: Vec<String> = STATE_EVENTS.iter().map(EventType::to_string).collect();
 
-        let ordering = events::table
+        let ordering: Vec<Option<i64>> = events::table
             .select(max(events::ordering))
             .filter(events::room_id.eq(room_id))
             .filter(events::event_type.eq(any(state_events)))
             .filter(events::ordering.gt(since))
-            .group_by(events::event_type);
+            .group_by(events::event_type)
+            .get_results(connection)
+            .map_err(ApiError::from)?;
 
         events::table
             .filter(events::ordering.nullable().eq(any(ordering)))
