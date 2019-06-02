@@ -14,6 +14,7 @@ use crate::models::user::User;
 use crate::modifier::SerializableResponse;
 
 /// The GET `/user/:user_id/filter/:filter_id` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetFilter;
 
 middleware_chain!(GetFilter, [AccessTokenAuth, FilterIdParam, UserIdParam]);
@@ -39,6 +40,7 @@ impl Handler for GetFilter {
 }
 
 /// The POST `/user/:user_id/filter` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PostFilter;
 
 #[derive(Debug, Serialize)]

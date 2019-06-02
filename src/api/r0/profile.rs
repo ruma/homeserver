@@ -13,6 +13,7 @@ use crate::models::user::User;
 use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The `/profile/:user_id` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct Profile;
 
 #[derive(Clone, Debug, Serialize)]
@@ -30,8 +31,7 @@ impl Handler for Profile {
         request
             .extensions
             .get::<User>()
-            .expect("AccessTokenAuth should ensure a user")
-            .clone();
+            .expect("AccessTokenAuth should ensure a user");
 
         let user_id = request
             .extensions
@@ -59,6 +59,7 @@ impl Handler for Profile {
 }
 
 /// The `/profile/:user_id/avatar_url` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetAvatarUrl;
 
 #[derive(Clone, Debug, Serialize)]
@@ -74,8 +75,7 @@ impl Handler for GetAvatarUrl {
         request
             .extensions
             .get::<User>()
-            .expect("AccessTokenAuth should ensure a user")
-            .clone();
+            .expect("AccessTokenAuth should ensure a user");
 
         let user_id = request
             .extensions
@@ -106,6 +106,7 @@ impl Handler for GetAvatarUrl {
 }
 
 /// The `/profile/:user_id/avatar_url` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PutAvatarUrl;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -160,6 +161,7 @@ impl Handler for PutAvatarUrl {
 }
 
 /// The `/profile/:user_id/displayname` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetDisplayName;
 
 #[derive(Clone, Debug, Serialize)]
@@ -175,8 +177,7 @@ impl Handler for GetDisplayName {
         request
             .extensions
             .get::<User>()
-            .expect("AccessTokenAuth should ensure a user")
-            .clone();
+            .expect("AccessTokenAuth should ensure a user");
 
         let user_id = request
             .extensions
@@ -207,6 +208,7 @@ impl Handler for GetDisplayName {
 }
 
 /// The `/profile/:user_id/displayname` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PutDisplayName;
 
 #[derive(Clone, Debug, Deserialize)]

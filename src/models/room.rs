@@ -28,6 +28,7 @@ use crate::models::room_membership::RoomMembership;
 use crate::schema::{events, rooms};
 
 /// Options provided by the user to customize the room upon creation.
+#[derive(Clone, Debug)]
 pub struct CreationOptions {
     /// An initial alias for the room.
     pub alias: Option<String>,
@@ -265,7 +266,7 @@ impl Room {
                             new_events.push(new_avatar_event);
                         },
                         StrippedState::RoomCanonicalAlias(event) => {
-                            if let Some(room_alias_id) = event.content.alias {
+                            if let Some(ref room_alias_id) = event.content.alias {
                                 if room_alias_id.hostname().to_string() != homeserver_domain {
                                     return Err(ApiError::unimplemented("Federation is not yet supported".to_string()));
                                 }

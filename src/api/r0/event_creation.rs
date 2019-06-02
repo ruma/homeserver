@@ -97,6 +97,7 @@ struct EventResponse {
 }
 
 /// The `/rooms/:room_id/send/:event_type/:transaction_id` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct SendMessageEvent;
 
 middleware_chain!(
@@ -127,8 +128,7 @@ impl Handler for SendMessageEvent {
         request
             .extensions
             .get::<TransactionIdParam>()
-            .expect("TransactionIdParam should ensure a TransactionId")
-            .clone();
+            .expect("TransactionIdParam should ensure a TransactionId");
 
         let user = request
             .extensions
@@ -252,6 +252,7 @@ impl Handler for SendMessageEvent {
 
 /// The `/rooms/:room_id/state/:event_type/:state_key and /rooms/:room_id/state/:event_type`
 /// endpoints.
+#[derive(Clone, Copy, Debug)]
 pub struct StateMessageEvent;
 
 middleware_chain!(

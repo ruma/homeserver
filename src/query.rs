@@ -103,7 +103,7 @@ pub struct Sync {
 }
 
 /// A State Ordering.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Batch {
     /// The room ordering key.
     pub room_key: i64,

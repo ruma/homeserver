@@ -17,6 +17,7 @@ use crate::models::user::User;
 use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The GET `/user/:user_id/rooms/:room_id/tags` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetTags;
 
 middleware_chain!(GetTags, [UserIdParam, RoomIdParam, AccessTokenAuth]);
@@ -62,6 +63,7 @@ impl Handler for GetTags {
 }
 
 /// The PUT `/user/:user_id/rooms/:room_id/tags/:tag` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PutTag;
 
 middleware_chain!(
@@ -120,6 +122,7 @@ impl Handler for PutTag {
 }
 
 /// The DELETE `/user/:user_id/rooms/:room_id/tags/:tag` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct DeleteTag;
 
 middleware_chain!(

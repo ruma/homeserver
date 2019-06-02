@@ -11,6 +11,7 @@ use crate::models::user::User;
 use crate::modifier::SerializableResponse;
 
 /// The `/rooms/:room_id/members` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct Members;
 
 #[derive(Debug, Serialize)]

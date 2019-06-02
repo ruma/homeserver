@@ -30,7 +30,7 @@ pub struct ApiError {
 }
 
 /// The error code for a client-facing error.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ApiErrorCode {
     /// The requested room alias is already taken.
     AliasTaken,
@@ -62,6 +62,7 @@ pub enum ApiErrorCode {
 }
 
 /// An operator-facing error.
+#[derive(Clone, Debug)]
 pub struct CliError {
     error: String,
 }

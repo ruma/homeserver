@@ -12,6 +12,7 @@ use crate::models::user::User;
 use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The GET `/pushers` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetPushers;
 
 #[derive(Clone, Debug, Serialize)]
@@ -42,6 +43,7 @@ impl Handler for GetPushers {
 }
 
 /// The POST `/pushers/set` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct SetPushers;
 
 middleware_chain!(SetPushers, [JsonRequest, AccessTokenAuth]);

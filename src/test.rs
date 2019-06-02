@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::{Once, ONCE_INIT};
 
 use diesel::pg::PgConnection;
@@ -45,10 +46,18 @@ impl TestUser {
     }
 }
 
-/// Manages the Postgres for the duration of a test case and provides helper methods for
+/// Manages the Postgres database for the duration of a test case and provides helper methods for
 /// interacting with the Ruma API server.
 pub struct Test {
     mount: Mount,
+}
+
+impl Debug for Test {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("Server")
+            .field("mount", &"Mount { ... }")
+            .finish()
+    }
 }
 
 /// An HTTP response from the server.
@@ -62,7 +71,7 @@ pub struct Response {
 
 /// An r2d2 plugin for starting a test transaction whenever a database connection is acquired from
 /// the connection pool.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct TestTransactionConnectionCustomizer;
 
 impl CustomizeConnection<PgConnection, R2d2DieselError> for TestTransactionConnectionCustomizer {
@@ -78,7 +87,7 @@ impl Test {
         // Since we don't have control of the `main` function during tests, we initialize the
         // logger here. It will only actually initialize on the first test that is run. Subsequent
         // calls will return an error, but we don't care, so just ignore the result.
-        match env_logger::init() {
+        match env_logger::try_init() {
             _ => {}
         }
 

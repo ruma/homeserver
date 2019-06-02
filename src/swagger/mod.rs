@@ -7,6 +7,7 @@ use iron::{status, Chain, Handler, IronResult, Request, Response};
 use crate::middleware::{MiddlewareChain, ResponseHeaders};
 
 /// Mounts the Swagger endpoint onto the given `Mount`.
+#[derive(Clone, Copy, Debug)]
 pub struct Swagger;
 
 impl Handler for Swagger {

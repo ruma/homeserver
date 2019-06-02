@@ -13,6 +13,7 @@ use crate::error::{ApiError, MapApiError};
 use url::percent_encoding::percent_decode;
 
 /// Extracts a `RoomId` from the URL path parameter `room_id`.
+#[derive(Clone, Copy, Debug)]
 pub struct RoomIdParam;
 
 impl Key for RoomIdParam {
@@ -43,6 +44,7 @@ impl BeforeMiddleware for RoomIdParam {
 }
 
 /// Extracts a `RoomIdOrAlias` from the URL path parameter `room_id_or_alias`.
+#[derive(Clone, Copy, Debug)]
 pub struct RoomIdOrAliasParam;
 
 impl Key for RoomIdOrAliasParam {
@@ -78,6 +80,7 @@ impl BeforeMiddleware for RoomIdOrAliasParam {
 }
 
 /// Extracts a `UserId` from the URL path parameter `user_id`.
+#[derive(Clone, Copy, Debug)]
 pub struct UserIdParam;
 
 impl Key for UserIdParam {
@@ -111,6 +114,7 @@ impl BeforeMiddleware for UserIdParam {
 }
 
 /// Extracts the URL path parameter `type`.
+#[derive(Clone, Copy, Debug)]
 pub struct DataTypeParam;
 
 impl Key for DataTypeParam {
@@ -138,6 +142,7 @@ impl BeforeMiddleware for DataTypeParam {
 }
 
 /// Extracts the URL path parameter `filter_id`.
+#[derive(Clone, Copy, Debug)]
 pub struct FilterIdParam;
 
 impl Key for FilterIdParam {
@@ -166,6 +171,7 @@ impl BeforeMiddleware for FilterIdParam {
 }
 
 /// Extracts `RoomAliasId` from the URL path parameter `room_alias`.
+#[derive(Clone, Copy, Debug)]
 pub struct RoomAliasIdParam;
 
 impl Key for RoomAliasIdParam {
@@ -199,6 +205,7 @@ impl BeforeMiddleware for RoomAliasIdParam {
 }
 
 /// Extracts `EventType` from the URL path parameter `event_type`.
+#[derive(Clone, Copy, Debug)]
 pub struct EventTypeParam;
 
 impl Key for EventTypeParam {
@@ -225,6 +232,7 @@ impl BeforeMiddleware for EventTypeParam {
 }
 
 /// Extracts the URL path paramater `tag`.
+#[derive(Clone, Copy, Debug)]
 pub struct TagParam;
 
 impl Key for TagParam {
@@ -252,6 +260,7 @@ impl BeforeMiddleware for TagParam {
 }
 
 /// Extracts the URL path paramater `transaction_id`.
+#[derive(Clone, Copy, Debug)]
 pub struct TransactionIdParam;
 
 impl Key for TransactionIdParam {

@@ -16,6 +16,7 @@ use crate::models::access_token::AccessToken;
 use crate::modifier::SerializableResponse;
 
 /// The `/login` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct Login;
 
 #[derive(Clone, Debug, PartialEq)]

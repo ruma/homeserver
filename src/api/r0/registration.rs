@@ -18,6 +18,7 @@ use crate::models::user::{NewUser, User};
 use crate::modifier::SerializableResponse;
 
 /// The `/register` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct Register;
 
 #[derive(Clone, Debug, Deserialize)]

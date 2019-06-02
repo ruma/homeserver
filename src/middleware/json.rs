@@ -8,6 +8,7 @@ use serde_json::Value;
 use crate::error::ApiError;
 
 /// Ensures that requests contain valid JSON and stores the parsed JSON in the Iron request.
+#[derive(Clone, Copy, Debug)]
 pub struct JsonRequest;
 
 impl Key for JsonRequest {

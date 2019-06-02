@@ -16,6 +16,7 @@ use crate::models::user::User;
 use crate::modifier::SerializableResponse;
 
 /// The `/rooms/:room_id/state` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct RoomState;
 
 middleware_chain!(RoomState, [RoomIdParam, AccessTokenAuth]);

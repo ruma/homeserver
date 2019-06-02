@@ -14,11 +14,11 @@ use crate::models::access_token::AccessToken;
 use crate::models::user::User;
 
 /// Handles access token authentication for all API endpoints that require it.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct AccessTokenAuth;
 
 /// Handles Matrix's interactive authentication protocol for all API endpoints that require it.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct UIAuth {
     interactive_auth: InteractiveAuth,
 }

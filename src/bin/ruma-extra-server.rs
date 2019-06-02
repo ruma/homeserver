@@ -8,7 +8,7 @@ use ruma::config::Config;
 use ruma::server::Server;
 
 fn main() {
-    if let Err(error) = env_logger::init() {
+    if let Err(error) = env_logger::try_init() {
         eprintln!("Failed to initialize logger: {}", error);
     }
 

@@ -9,6 +9,7 @@ use persistent::Write;
 use crate::error::ApiError;
 
 /// An Iron plugin for attaching a database connection pool to an Iron request.
+#[derive(Clone, Copy, Debug)]
 pub struct DB;
 
 impl DB {

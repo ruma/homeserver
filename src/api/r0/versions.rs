@@ -5,7 +5,7 @@ use iron::{status, Handler, IronResult, Request, Response};
 use crate::modifier::SerializableResponse;
 
 /// The /versions endpoint.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Versions {
     versions: Vec<&'static str>,
 }

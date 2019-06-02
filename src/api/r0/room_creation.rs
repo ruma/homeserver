@@ -19,6 +19,7 @@ use crate::models::user::User;
 use crate::modifier::SerializableResponse;
 
 /// The `/createRoom` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct CreateRoom;
 
 #[derive(Clone, Debug, Deserialize)]

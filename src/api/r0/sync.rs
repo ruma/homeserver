@@ -18,6 +18,7 @@ use crate::modifier::SerializableResponse;
 use crate::query::{self, Batch, SyncOptions};
 
 /// The `/sync` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct Sync;
 
 middleware_chain!(Sync, [AccessTokenAuth]);

@@ -6,6 +6,7 @@ use iron::{status, AfterMiddleware, IronError, IronResult, Request, Response};
 use unicase::UniCase;
 
 /// Adds a number of response headers to Ruma HTTP responses.
+#[derive(Clone, Copy, Debug)]
 pub struct ResponseHeaders;
 
 /// Adds a Server header to HTTP responses

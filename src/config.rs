@@ -39,7 +39,7 @@ struct V1Config {
 }
 
 /// Server configuration provided by the user.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Config {
     /// The network address where the server should listen for connections. Defaults to 127.0.0.1.
     pub bind_address: String,

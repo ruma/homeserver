@@ -17,6 +17,7 @@ use crate::models::user::User;
 use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The PUT `/presence/:user_id/status` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PutPresenceStatus;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -75,6 +76,7 @@ impl Handler for PutPresenceStatus {
 }
 
 /// The GET `/presence/:user_id/status` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetPresenceStatus;
 
 middleware_chain!(GetPresenceStatus, [UserIdParam, AccessTokenAuth]);
@@ -145,6 +147,7 @@ impl Handler for GetPresenceStatus {
 }
 
 /// The POST `/presence/list/:user_id` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PostPresenceList;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -201,6 +204,7 @@ impl Handler for PostPresenceList {
 }
 
 /// The GET `/presence/list/:user_id` endpoint with response of `Vec<PresenceEvent>`.
+#[derive(Clone, Copy, Debug)]
 pub struct GetPresenceList;
 
 middleware_chain!(GetPresenceList, [UserIdParam, AccessTokenAuth]);

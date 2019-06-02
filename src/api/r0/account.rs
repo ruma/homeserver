@@ -19,7 +19,7 @@ use crate::models::user::User;
 use crate::modifier::EmptyResponse;
 
 /// The `/account/password` endpoint.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct AccountPassword;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -55,7 +55,7 @@ impl Handler for AccountPassword {
 }
 
 /// The `/account/deactivate` endpoint.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct DeactivateAccount;
 
 middleware_chain!(DeactivateAccount, [AccessTokenAuth]);
@@ -89,7 +89,7 @@ impl Handler for DeactivateAccount {
 }
 
 /// The `/user/:user_id/account_data/:type` endpoint.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PutAccountData;
 
 middleware_chain!(
@@ -145,7 +145,7 @@ impl Handler for PutAccountData {
 }
 
 /// The `/user/:user_id/rooms/:room_id/account_data/:type` endpoint.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PutRoomAccountData;
 
 middleware_chain!(

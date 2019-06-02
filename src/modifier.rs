@@ -25,7 +25,7 @@ where
 }
 
 /// `EmptyResponse` ensures a valid json result.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct EmptyResponse(pub Status);
 
 impl Modifier<Response> for EmptyResponse {

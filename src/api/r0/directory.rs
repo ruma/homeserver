@@ -14,6 +14,7 @@ use crate::models::user::User;
 use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The GET `/directory/room/:room_alias` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct GetRoomAlias;
 
 #[derive(Debug, Serialize)]
@@ -48,6 +49,7 @@ impl Handler for GetRoomAlias {
 }
 
 /// The DELETE `/directory/room/:room_alias` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct DeleteRoomAlias;
 
 middleware_chain!(DeleteRoomAlias, [RoomAliasIdParam, AccessTokenAuth]);
@@ -82,6 +84,7 @@ impl Handler for DeleteRoomAlias {
 }
 
 /// The PUT `/directory/room/:room_alias` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct PutRoomAlias;
 
 #[derive(Clone, Debug, Deserialize)]

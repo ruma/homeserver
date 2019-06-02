@@ -22,6 +22,7 @@ use crate::models::user::User;
 use crate::modifier::{EmptyResponse, SerializableResponse};
 
 /// The `/rooms/:room_id/join` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct JoinRoom;
 
 #[derive(Debug, Serialize)]
@@ -54,6 +55,7 @@ impl Handler for JoinRoom {
 }
 
 /// The `/join/:room_id_or_alias` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct JoinRoomWithIdOrAlias;
 
 middleware_chain!(
@@ -115,6 +117,7 @@ fn join_room(
 }
 
 /// The `/rooms/:room_id/leave` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct LeaveRoom;
 
 middleware_chain!(LeaveRoom, [JsonRequest, RoomIdParam, AccessTokenAuth]);
@@ -171,6 +174,7 @@ impl Handler for LeaveRoom {
 }
 
 /// The `/rooms/:room_id/kick` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct KickFromRoom;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -253,7 +257,7 @@ impl Handler for KickFromRoom {
 }
 
 /// The `/rooms/:room_id/invite` endpoint.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct InviteToRoom;
 
 #[derive(Clone, Debug, Deserialize)]

@@ -7,6 +7,7 @@ use crate::models::access_token::AccessToken;
 use crate::modifier::EmptyResponse;
 
 /// The `/logout` endpoint.
+#[derive(Clone, Copy, Debug)]
 pub struct Logout;
 
 middleware_chain!(Logout, [AccessTokenAuth]);

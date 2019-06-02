@@ -10,7 +10,7 @@ use crate::error::{ApiError, ApiErrorCode};
 use crate::models::user::User;
 
 /// A set of authorization flows the user can follow to authenticate a request.
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct InteractiveAuth {
     flows: Vec<Flow>,
 }
@@ -30,7 +30,7 @@ impl<'a> Modifier<Response> for &'a InteractiveAuth {
 }
 
 /// A list of `AuthType`s that satisfy authentication requirements.
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Flow {
     #[serde(rename = "stages")]
     auth_types: Vec<AuthType>,
@@ -44,7 +44,7 @@ impl Flow {
 }
 
 /// An individiual authentication mechanism to be used in a `Flow`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum AuthType {
     /// m.login.password
     Password,

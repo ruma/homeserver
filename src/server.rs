@@ -1,4 +1,7 @@
 //! Iron web server that serves the API.
+
+use std::fmt::{Debug, Formatter, Result as FmtResult};
+
 use diesel::pg::PgConnection;
 use diesel::r2d2::{Builder, ConnectionManager, Pool};
 use diesel_migrations::setup_database;
@@ -263,6 +266,15 @@ impl<'a> Server<'a> {
     /// Moves out the server's `Mount`. Useful for testing.
     pub fn into_mount(self) -> Mount {
         self.mount
+    }
+}
+
+impl<'a> Debug for Server<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("Server")
+            .field("config", self.config)
+            .field("mount", &"Mount { ... }")
+            .finish()
     }
 }
 
