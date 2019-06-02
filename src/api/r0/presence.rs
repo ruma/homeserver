@@ -379,7 +379,7 @@ mod tests {
             events
                 .next()
                 .unwrap()
-                .pointer("/content/user_id")
+                .pointer("/sender")
                 .unwrap()
                 .as_str()
                 .unwrap(),
@@ -390,7 +390,7 @@ mod tests {
             events
                 .next()
                 .unwrap()
-                .pointer("/content/user_id")
+                .pointer("/sender")
                 .unwrap()
                 .as_str()
                 .unwrap(),

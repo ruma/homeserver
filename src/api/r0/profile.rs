@@ -537,9 +537,12 @@ mod tests {
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        let event = events.next().unwrap();
+        assert_eq!(event.get("sender").unwrap().as_str().unwrap(), carl.id);
+
+        let content = event.get("content").unwrap();
+
         assert_eq!(
             content.get("avatar_url").unwrap().as_str().unwrap(),
             "mxc://matrix.org/some/url"
@@ -576,9 +579,12 @@ mod tests {
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        let event = events.next().unwrap();
+        assert_eq!(event.get("sender").unwrap().as_str().unwrap(), carl.id);
+
+        let content = event.get("content").unwrap();
+
         assert_eq!(
             content.get("avatar_url").unwrap().as_str().unwrap(),
             "mxc://matrix.org/some/new"
@@ -630,9 +636,12 @@ mod tests {
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        let event = events.next().unwrap();
+        assert_eq!(event.get("sender").unwrap().as_str().unwrap(), carl.id);
+
+        let content = event.get("content").unwrap();
+
         assert_eq!(
             content.get("displayname").unwrap().as_str().unwrap(),
             "Alice"
@@ -668,9 +677,12 @@ mod tests {
             .unwrap();
         let mut events = array.into_iter();
         assert_eq!(events.len(), 1);
-        let content = events.next().unwrap().get("content").unwrap();
 
-        assert_eq!(content.get("user_id").unwrap().as_str().unwrap(), carl.id);
+        let event = events.next().unwrap();
+        assert_eq!(event.get("sender").unwrap().as_str().unwrap(), carl.id);
+
+        let content = event.get("content").unwrap();
+
         assert_eq!(
             content.get("displayname").unwrap().as_str().unwrap(),
             "Bogus"

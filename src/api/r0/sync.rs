@@ -1087,7 +1087,7 @@ mod tests {
             events
                 .next()
                 .unwrap()
-                .pointer("/content/user_id")
+                .get("sender")
                 .unwrap()
                 .as_str()
                 .unwrap(),
@@ -1098,7 +1098,7 @@ mod tests {
             events
                 .next()
                 .unwrap()
-                .pointer("/content/user_id")
+                .get("sender")
                 .unwrap()
                 .as_str()
                 .unwrap(),

@@ -168,7 +168,7 @@ mod tests {
                     );
 
                     assert_eq!(
-                        e.pointer("/content/federate").unwrap().as_bool().unwrap(),
+                        e.pointer("/content/m.federate").unwrap().as_bool().unwrap(),
                         true
                     );
                 }

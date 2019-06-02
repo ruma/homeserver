@@ -8,6 +8,7 @@ use iron::status::Status;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response};
 use ruma_events::stripped::StrippedState;
 use ruma_identifiers::{RoomId, UserId};
+use serde_json::{from_value, Value};
 
 use crate::config::Config;
 use crate::db::DB;
@@ -64,10 +65,8 @@ impl Handler for CreateRoom {
             .get::<User>()
             .expect("AccessTokenAuth should ensure a user")
             .clone();
-        let create_room_request = match request.get::<bodyparser::Struct<CreateRoomRequest>>() {
-            Ok(Some(create_room_request)) => create_room_request,
-            Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
-        };
+
+        let create_room_request = extract_create_room_request(request, &user.id)?;
 
         let connection = DB::from_request(request)?;
         let config = Config::from_request(request)?;
@@ -127,6 +126,39 @@ impl Handler for CreateRoom {
 
         Ok(Response::with((Status::Ok, SerializableResponse(response))))
     }
+}
+
+/// Extracts the `CreateRoomRequest` from the request body.
+///
+/// This requires some manipulation of the JSON before deserializing into a `CreateRoomRequest`
+/// because the `initial_state` field contains `StrippedState` events which require a `sender` key,
+/// which are generally not present in requests to this API, but can be inferred as the user making
+/// the request.
+///
+/// This could also be addressed by adding a version of `StrippedState` without a `sender` field to
+/// ruma-events. It shouldn't just be optional because most APIs involving `StrippedState` require
+/// this field.
+fn extract_create_room_request(
+    request: &mut Request<'_, '_>,
+    user_id: &UserId,
+) -> Result<CreateRoomRequest, ApiError> {
+    let mut json = match request.get::<bodyparser::Json>() {
+        Ok(Some(json)) => json,
+        Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
+    };
+
+    if let Some(Some(initial_state)) = json.get_mut("initial_state").map(|opt| opt.as_array_mut()) {
+        let sender = Value::String(user_id.to_string());
+
+        for stripped_state in initial_state {
+            let map = stripped_state
+                .as_object_mut()
+                .ok_or_else(|| ApiError::bad_json(None))?;
+            map.entry("sender").or_insert(sender.clone());
+        }
+    };
+
+    from_value::<CreateRoomRequest>(json).map_err(|_| ApiError::bad_json(None))
 }
 
 #[cfg(test)]
