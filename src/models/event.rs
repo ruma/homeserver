@@ -41,6 +41,7 @@ use serde_json::{from_str, to_string};
 use crate::error::ApiError;
 use crate::schema::events;
 
+/// A list of all the state events.
 const STATE_EVENTS: [EventType; 12] = [
     EventType::RoomAliases,
     EventType::RoomAvatar,

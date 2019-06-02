@@ -22,8 +22,10 @@ pub struct GetTags;
 
 middleware_chain!(GetTags, [UserIdParam, RoomIdParam, AccessTokenAuth]);
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 pub struct TagsResponse {
+    /// A map of tag names to information about the tag.
     tags: HashMap<String, TagInfo>,
 }
 

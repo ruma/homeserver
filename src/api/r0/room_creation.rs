@@ -23,6 +23,7 @@ use crate::modifier::SerializableResponse;
 #[derive(Clone, Copy, Debug)]
 pub struct CreateRoom;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct CreateRoomRequest {
     /// Extra keys to be added to the content of the m.room.create.
@@ -44,12 +45,15 @@ struct CreateRoomRequest {
     pub visibility: Option<RoomVisibility>,
 }
 
+/// Extra keys to be added to the content of the m.room.create event.
 #[derive(Clone, Debug, Deserialize)]
 struct CreationContent {
+    /// Whether or not this room should participate in federation with other homeservers.
     #[serde(rename = "m.federate")]
     pub federate: Option<bool>,
 }
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct CreateRoomResponse {
     /// The fully qualified ID of the room that was created.

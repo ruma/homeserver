@@ -1,3 +1,5 @@
+//! Endpoints for logging in users.
+
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt::{Formatter, Result as FmtResult};
@@ -19,6 +21,7 @@ use crate::modifier::SerializableResponse;
 #[derive(Clone, Copy, Debug)]
 pub struct Login;
 
+/// The login type specified by the user.
 #[derive(Clone, Debug, PartialEq)]
 enum LoginType {
     /// The m.login.password type.
@@ -30,6 +33,7 @@ impl<'de> Deserialize<'de> for LoginType {
     where
         D: Deserializer<'de>,
     {
+        /// A serde visitor for deserializing `LoginType`.
         struct LoginTypeVisitor;
 
         impl<'de> Visitor<'de> for LoginTypeVisitor {
@@ -56,6 +60,7 @@ impl<'de> Deserialize<'de> for LoginType {
     }
 }
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct LoginRequest {
     /// The login type being used. Currently only "m.login.password" is supported.
@@ -67,6 +72,7 @@ struct LoginRequest {
     pub password: String,
 }
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct LoginResponse {
     /// An access token for the account. This access token can then be used to authorize other requests.

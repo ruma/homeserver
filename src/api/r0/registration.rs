@@ -21,6 +21,7 @@ use crate::modifier::SerializableResponse;
 #[derive(Clone, Copy, Debug)]
 pub struct Register;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct RegistrationRequest {
     /// If true, the server binds the email used for authentication to the Matrix ID with the ID Server.
@@ -34,12 +35,16 @@ struct RegistrationRequest {
     pub username: Option<String>,
 }
 
+/// The kind of registration, either a guest account or a full user account.
 #[derive(Copy, Clone, Debug)]
 enum RegistrationKind {
+    /// A guest account.
     Guest,
+    /// A full user account.
     User,
 }
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct RegistrationResponse {
     /// An access token for the account. This access token can then be used to authorize other requests.
@@ -57,6 +62,7 @@ impl<'de> Deserialize<'de> for RegistrationKind {
     where
         D: Deserializer<'de>,
     {
+        /// A serde visitor for deserializing `RegistrationKind`.
         struct RegistrationKindVisitor;
 
         impl<'de> Visitor<'de> for RegistrationKindVisitor {

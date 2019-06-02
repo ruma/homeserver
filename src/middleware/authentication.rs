@@ -91,6 +91,7 @@ impl BeforeMiddleware for UIAuth {
     }
 }
 
+/// Attempts to extract a user ID and password from the supplied JSON value.
 fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, String), ()> {
     let username = json
         .get("user")
@@ -113,6 +114,7 @@ fn get_user_id_and_password(json: &Value, config: &Config) -> Result<(UserId, St
     }
 }
 
+/// Determines whether or not the authentication mechanism is "m.login.password".
 fn is_m_login_password(json: &Value) -> bool {
     if let Some(type_string) = json.get("type").and_then(|type_json| type_json.as_str()) {
         return type_string == "m.login.password";

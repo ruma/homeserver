@@ -28,7 +28,9 @@ use crate::swagger::Swagger;
 
 /// Ruma's web server.
 pub struct Server<'a> {
+    /// Homeserver configuration.
     config: &'a Config,
+    /// The APIs included in this server.
     mount: Mount,
 }
 
@@ -278,6 +280,8 @@ impl<'a> Debug for Server<'a> {
     }
 }
 
+/// A simple Iron handler used for the deprecated `/tokenrefresh` API, which Ruma has never
+/// supported.
 fn deprecated(_: &mut Request<'_, '_>) -> IronResult<Response> {
     Err(IronError::from(ApiError::unauthorized(
         "tokenrefresh is no longer supported".to_string(),

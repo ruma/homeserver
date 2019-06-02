@@ -95,6 +95,7 @@ impl Key for AccessToken {
     type Value = Self;
 }
 
+/// Creates a macaroon for the given user using the master cryptographic key.
 fn create_macaroon(macaroon_secret_key: &[u8], user_id: &UserId) -> Result<String, ApiError> {
     let expiration = match Utc::now().checked_add_signed(Duration::hours(1)) {
         Some(datetime) => datetime,

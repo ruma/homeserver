@@ -14,8 +14,10 @@ use crate::modifier::SerializableResponse;
 #[derive(Clone, Copy, Debug)]
 pub struct Members;
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct MembersResponse {
+    /// A list of `MemberEvent`s for the room.
     chunk: Vec<MemberEvent>,
 }
 

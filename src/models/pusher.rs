@@ -71,6 +71,7 @@ impl From<Pusher> for PusherOptions {
     }
 }
 
+/// Helper function for `PusherOptions::append` when serializing with serde.
 fn default_append() -> bool {
     false
 }

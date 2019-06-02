@@ -25,16 +25,23 @@ static DEFAULT_CONFIG_FILES: [&'static str; 4] =
 #[derive(Deserialize)]
 #[serde(tag = "version")]
 enum RawConfig {
+    /// Version 1 of the configuration format.
     #[serde(rename = "1")]
     V1(V1Config),
 }
 
+/// Version 1 of the configuration format.
 #[derive(Deserialize)]
 struct V1Config {
+    /// See the similarly named field on `Config`.
     bind_address: Option<String>,
+    /// See the similarly named field on `Config`.
     bind_port: Option<String>,
+    /// See the similarly named field on `Config`.
     domain: String,
+    /// See the similarly named field on `Config`.
     macaroon_secret_key: String,
+    /// See the similarly named field on `Config`.
     postgres_url: String,
 }
 

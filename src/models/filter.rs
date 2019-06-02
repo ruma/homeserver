@@ -66,14 +66,17 @@ pub struct RoomEventFilter {
     pub senders: Vec<UserId>,
 }
 
+/// Helper function for `RoomFilter::include_leave` when serializing with serde.
 fn default_include_leave() -> bool {
     false
 }
 
+/// Helper function for `Vec<RoomId> fields when serializing with serde.
 fn default_vec_room_id() -> Vec<RoomId> {
     Vec::new()
 }
 
+/// Helper function for `Vec<UserId> fields when serializing with serde.
 fn default_vec_user_id() -> Vec<UserId> {
     Vec::new()
 }
@@ -133,6 +136,7 @@ impl<'de> ::serde::Deserialize<'de> for EventFormat {
     where
         D: Deserializer<'de>,
     {
+        /// A serde visitor for deserializing `EventFormat`.
         struct EventFormatVisitor;
 
         impl<'de> Visitor<'de> for EventFormatVisitor {

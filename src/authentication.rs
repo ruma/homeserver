@@ -12,6 +12,7 @@ use crate::models::user::User;
 /// A set of authorization flows the user can follow to authenticate a request.
 #[derive(Clone, Debug, Serialize)]
 pub struct InteractiveAuth {
+    /// The authorization flows.
     flows: Vec<Flow>,
 }
 
@@ -32,6 +33,7 @@ impl<'a> Modifier<Response> for &'a InteractiveAuth {
 /// A list of `AuthType`s that satisfy authentication requirements.
 #[derive(Clone, Debug, Serialize)]
 pub struct Flow {
+    /// A list of `AuthType`s in this `Flow`.
     #[serde(rename = "stages")]
     auth_types: Vec<AuthType>,
 }

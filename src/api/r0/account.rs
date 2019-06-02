@@ -22,8 +22,10 @@ use crate::modifier::EmptyResponse;
 #[derive(Clone, Copy, Debug)]
 pub struct AccountPassword;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct AccountPasswordRequest {
+    /// The new password for the account.
     pub new_password: String,
 }
 

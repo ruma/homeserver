@@ -17,6 +17,7 @@ use crate::modifier::{EmptyResponse, SerializableResponse};
 #[derive(Clone, Copy, Debug)]
 pub struct GetRoomAlias;
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct GetRoomAliasResponse {
     /// The room ID associated with the room alias.
@@ -87,6 +88,7 @@ impl Handler for DeleteRoomAlias {
 #[derive(Clone, Copy, Debug)]
 pub struct PutRoomAlias;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct PutRoomAliasRequest {
     /// The room ID for which the alias will be set.

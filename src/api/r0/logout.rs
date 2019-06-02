@@ -1,3 +1,5 @@
+//! Endpoints for logging out users.
+
 use iron::status::Status;
 use iron::{Chain, Handler, IronResult, Request, Response};
 

@@ -25,7 +25,9 @@ use serde_json::{to_string, Error as SerdeJsonError};
 /// A client-facing error.
 #[derive(Clone, Debug, Serialize)]
 pub struct ApiError {
+    /// An error code categorizing the error.
     errcode: ApiErrorCode,
+    /// A human-readable message describing the error.
     error: String,
 }
 
@@ -64,6 +66,7 @@ pub enum ApiErrorCode {
 /// An operator-facing error.
 #[derive(Clone, Debug)]
 pub struct CliError {
+    /// A human-readable message describing the error.
     error: String,
 }
 

@@ -43,6 +43,7 @@ impl Handler for GetFilter {
 #[derive(Clone, Copy, Debug)]
 pub struct PostFilter;
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct PostFilterResponse {
     /// The ID of the filter that was created.

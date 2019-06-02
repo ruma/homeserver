@@ -15,8 +15,10 @@ use crate::modifier::{EmptyResponse, SerializableResponse};
 #[derive(Clone, Copy, Debug)]
 pub struct GetPushers;
 
+/// The body of the response for this API.
 #[derive(Clone, Debug, Serialize)]
 struct GetPushersResponse {
+    /// A list of the `PusherOptions` for the user.
     pushers: Vec<PusherOptions>,
 }
 

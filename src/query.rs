@@ -34,6 +34,7 @@ struct UnreadNotificationCounts {
     notification_count: u64,
 }
 
+/// A timeline of events.
 #[derive(Debug, Clone, Serialize)]
 struct Timeline {
     /// List of events.
@@ -47,9 +48,11 @@ struct Timeline {
 /// Generic placeholder for the different event types.
 #[derive(Debug, Clone, Serialize)]
 struct Events<T> {
+    /// A list of events.
     events: Vec<T>,
 }
 
+/// Information about rooms the user has left or been banned from.
 #[derive(Debug, Clone, Serialize)]
 struct LeftRoom {
     /// The state updates for the room up to the start of the timeline.
@@ -58,12 +61,14 @@ struct LeftRoom {
     timeline: Timeline,
 }
 
+/// Information about the rooms the user has been invited to.
 #[derive(Debug, Clone, Serialize)]
 struct InvitedRoom {
     /// The state of a room that the user has been invited to.
     invite_state: Events<StrippedState>,
 }
 
+/// Information about the rooms the user has joined.
 #[derive(Debug, Clone, Serialize)]
 struct JoinedRoom {
     /// Counts of unread notifications for this room.
@@ -81,6 +86,7 @@ struct JoinedRoom {
     ephemeral: Events<Value>,
 }
 
+/// Information about rooms the user has joined, been invited to, or left.
 #[derive(Debug, Clone, Serialize)]
 struct Rooms {
     /// The rooms that the user has been invited to.

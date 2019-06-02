@@ -25,6 +25,7 @@ use crate::modifier::{EmptyResponse, SerializableResponse};
 #[derive(Clone, Copy, Debug)]
 pub struct JoinRoom;
 
+/// The body of the response for this API.
 #[derive(Debug, Serialize)]
 struct JoinRoomResponse {
     /// The joined room.
@@ -177,6 +178,7 @@ impl Handler for LeaveRoom {
 #[derive(Clone, Copy, Debug)]
 pub struct KickFromRoom;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct KickFromRoomRequest {
     /// The reason the user has been kicked.
@@ -260,6 +262,7 @@ impl Handler for KickFromRoom {
 #[derive(Clone, Copy, Debug)]
 pub struct InviteToRoom;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct InviteToRoomRequest {
     /// The fully qualified user ID of the invitee.

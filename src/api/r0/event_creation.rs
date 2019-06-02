@@ -90,6 +90,7 @@ macro_rules! state_event {
     };
 }
 
+/// The body of the response for this API.
 #[derive(Debug, Deserialize, Serialize)]
 struct EventResponse {
     /// A unique identifier for the event.

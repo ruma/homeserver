@@ -20,6 +20,7 @@ use crate::modifier::{EmptyResponse, SerializableResponse};
 #[derive(Clone, Copy, Debug)]
 pub struct PutPresenceStatus;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct PutPresenceStatusRequest {
     /// The status message to attach to this state.
@@ -81,6 +82,7 @@ pub struct GetPresenceStatus;
 
 middleware_chain!(GetPresenceStatus, [UserIdParam, AccessTokenAuth]);
 
+/// The body of the response for this API.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct GetPresenceStatusResponse {
     /// The state message for this user if one was set.
@@ -150,6 +152,7 @@ impl Handler for GetPresenceStatus {
 #[derive(Clone, Copy, Debug)]
 pub struct PostPresenceList;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct PostPresenceListRequest {
     /// A list of user IDs to remove from the list.

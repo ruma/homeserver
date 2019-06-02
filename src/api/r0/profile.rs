@@ -16,6 +16,7 @@ use crate::modifier::{EmptyResponse, SerializableResponse};
 #[derive(Clone, Copy, Debug)]
 pub struct Profile;
 
+/// The body of the response for this API.
 #[derive(Clone, Debug, Serialize)]
 struct ProfileResponse {
     /// The user's avatar URL if they have set one, otherwise not present.
@@ -62,6 +63,7 @@ impl Handler for Profile {
 #[derive(Clone, Copy, Debug)]
 pub struct GetAvatarUrl;
 
+/// The body of the response for this API.
 #[derive(Clone, Debug, Serialize)]
 struct GetAvatarUrlResponse {
     /// The user's avatar URL.
@@ -109,6 +111,7 @@ impl Handler for GetAvatarUrl {
 #[derive(Clone, Copy, Debug)]
 pub struct PutAvatarUrl;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct PutAvatarUrlRequest {
     /// The new avatar URL for this user.
@@ -164,6 +167,7 @@ impl Handler for PutAvatarUrl {
 #[derive(Clone, Copy, Debug)]
 pub struct GetDisplayName;
 
+/// The body of the response for this API.
 #[derive(Clone, Debug, Serialize)]
 struct GetDisplayNameResponse {
     /// The user's display name.
@@ -211,6 +215,7 @@ impl Handler for GetDisplayName {
 #[derive(Clone, Copy, Debug)]
 pub struct PutDisplayName;
 
+/// The body of the request for this API.
 #[derive(Clone, Debug, Deserialize)]
 struct PutDisplayNameRequest {
     /// The new display name for this user.

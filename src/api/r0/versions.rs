@@ -7,6 +7,7 @@ use crate::modifier::SerializableResponse;
 /// The /versions endpoint.
 #[derive(Debug, Serialize)]
 pub struct Versions {
+    /// A list of API versions supported by the homeserver.
     versions: Vec<&'static str>,
 }
 
