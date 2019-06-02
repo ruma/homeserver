@@ -6,4 +6,13 @@ else
   rust_log=""
 fi
 
-docker-compose run --rm -e RUST_BACKTRACE=1 $rust_log rust cargo "$@"
+case "$1" in
+  run|test)
+    deps_opt=
+    ;;
+  *)
+    deps_opt="--no-deps"
+    ;;
+esac
+
+docker-compose run --rm $deps_opt -e RUST_BACKTRACE=1 $rust_log rust cargo "$@"
