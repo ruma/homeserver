@@ -299,13 +299,13 @@ mod tests {
             user.id, data_type, user.token
         );
 
-        let response = test.put(&account_data_path, &content);
+        let response = test.put(&account_data_path, content);
         test.check_empty_response(response);
 
         let new_content =
             r#"{"email": "user@email.org", "phone": "123456789", "fax": "123456991"}"#;
 
-        let response = test.put(&account_data_path, &new_content);
+        let response = test.put(&account_data_path, new_content);
         test.check_empty_response(response);
     }
 
@@ -322,7 +322,7 @@ mod tests {
             user_id, data_type, user.token
         );
 
-        let response = test.put(&account_data_path, &content);
+        let response = test.put(&account_data_path, content);
 
         // Invalid UserId.
         assert_eq!(response.status, Status::BadRequest);
@@ -343,7 +343,7 @@ mod tests {
         );
 
         assert_eq!(
-            test.put(&account_data_path, &content).status,
+            test.put(&account_data_path, content).status,
             Status::Forbidden
         );
     }
@@ -364,12 +364,12 @@ mod tests {
         let response = test.join_room(&user.token, &room_id);
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.put(&path, &content);
+        let response = test.put(&path, content);
         test.check_empty_response(response);
 
         let new_content = r#"{"ui_color": "yellow", "show_nicknames": "true"}"#;
 
-        let response = test.put(&path, &new_content);
+        let response = test.put(&path, new_content);
         test.check_empty_response(response);
     }
 
@@ -390,10 +390,10 @@ mod tests {
 
         assert_eq!(test.join_room(&user.token, &room_id).status, Status::Ok);
 
-        assert_eq!(test.put(&path, &content).status, Status::Forbidden);
+        assert_eq!(test.put(&path, content).status, Status::Forbidden);
 
         assert_eq!(
-            test.put(&path, &content)
+            test.put(&path, content)
                 .json()
                 .get("error")
                 .unwrap()
@@ -417,7 +417,7 @@ mod tests {
             carl.id, room_id, data_type, carl.token
         );
 
-        let response = test.put(&path, &content);
+        let response = test.put(&path, content);
 
         assert_eq!(response.status, Status::BadRequest);
         assert_eq!(
@@ -445,10 +445,10 @@ mod tests {
             carl.id, room_id, data_type, carl.token
         );
 
-        assert_eq!(test.put(&path, &content).status, Status::Forbidden);
+        assert_eq!(test.put(&path, content).status, Status::Forbidden);
 
         assert_eq!(
-            test.put(&path, &content)
+            test.put(&path, content)
                 .json()
                 .get("error")
                 .unwrap()

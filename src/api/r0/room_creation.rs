@@ -441,7 +441,7 @@ mod tests {
             }]
         }"##;
 
-        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, room_options);
 
         let first_alias_response = test.get_room_by_alias("alias_1");
         let second_alias_response = test.get_room_by_alias("alias_2");
@@ -481,7 +481,7 @@ mod tests {
             }]
         }"#;
 
-        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, room_options);
 
         // Bob can join without an invite.
         assert_eq!(test.join_room(&bob.token, &room_id).status, Status::Ok);

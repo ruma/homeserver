@@ -375,7 +375,7 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
         let events = response.json().as_array().unwrap();
         println!("{:#?}", events);
-        let mut events = events.into_iter();
+        let mut events = events.iter();
         assert_eq!(events.len(), 2);
 
         assert_eq!(

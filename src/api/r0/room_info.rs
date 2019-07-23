@@ -132,7 +132,7 @@ mod tests {
             }]
         }"##;
 
-        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, room_options);
 
         let room_state_path = format!(
             "/_matrix/client/r0/rooms/{}/state?access_token={}",
@@ -143,7 +143,7 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
 
         let events = response.json().as_array().unwrap();
-        assert!(events.len() > 0);
+        assert!(!events.is_empty());
 
         for e in events.iter() {
             match e.get("type").unwrap().as_str().unwrap() {
@@ -195,7 +195,7 @@ mod tests {
 
                     assert_eq!(
                         e.get("sender").unwrap().as_str().unwrap(),
-                        format!("{}", alice.id)
+                        alice.id.to_string()
                     );
                 }
                 "m.room.name" => {
@@ -224,7 +224,7 @@ mod tests {
                         "Test Topic"
                     );
                 }
-                _ => assert!(false),
+                _ => panic!("unexpected event type"),
             }
         }
     }
@@ -234,7 +234,7 @@ mod tests {
         let test = Test::new();
         let alice = test.create_user();
         let room_options = r#"{"room_alias_name":"alias_1"}"#;
-        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, room_options);
 
         let put_room_alias_path = format!(
             "/_matrix/client/r0/directory/room/alias_2?access_token={}",
@@ -257,17 +257,14 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
 
         let events = response.json().as_array().unwrap();
-        assert!(events.len() > 0);
+        assert!(!events.is_empty());
 
         for e in events.iter() {
-            match e.get("type").unwrap().as_str().unwrap() {
-                "m.room.aliases" => {
-                    let aliases = e.pointer("/content/aliases").unwrap().as_array().unwrap();
+            if e.get("type").unwrap().as_str().unwrap() == "m.room.aliases" {
+                let aliases = e.pointer("/content/aliases").unwrap().as_array().unwrap();
 
-                    assert!(aliases.contains(&Value::String("#alias_1:ruma.test".to_string())));
-                    assert!(aliases.contains(&Value::String("#alias_2:ruma.test".to_string())));
-                }
-                _ => {}
+                assert!(aliases.contains(&Value::String("#alias_1:ruma.test".to_string())));
+                assert!(aliases.contains(&Value::String("#alias_2:ruma.test".to_string())));
             }
         }
     }
@@ -303,17 +300,14 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
 
         let events = response.json().as_array().unwrap();
-        assert!(events.len() > 0);
+        assert!(!events.is_empty());
 
         for e in events.iter() {
-            match e.get("type").unwrap().as_str().unwrap() {
-                "m.room.topic" => {
-                    assert_eq!(
-                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
-                        "Topic for Bob"
-                    );
-                }
-                _ => {}
+            if e.get("type").unwrap().as_str().unwrap() == "m.room.topic" {
+                assert_eq!(
+                    e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                    "Topic for Bob"
+                );
             }
         }
 
@@ -321,8 +315,7 @@ mod tests {
 
         // Alice updates the topic.
         let event_content = r#"{"topic": "Topic for Alice"}"#;
-        let response =
-            test.send_state_event(&alice.token, &room_id, "m.room.topic", &event_content);
+        let response = test.send_state_event(&alice.token, &room_id, "m.room.topic", event_content);
         assert_eq!(response.status, Status::Ok);
 
         // Bob can't see the changes.
@@ -330,17 +323,14 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
 
         let events = response.json().as_array().unwrap();
-        assert!(events.len() > 0);
+        assert!(!events.is_empty());
 
         for e in events.iter() {
-            match e.get("type").unwrap().as_str().unwrap() {
-                "m.room.topic" => {
-                    assert_eq!(
-                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
-                        "Topic for Bob"
-                    );
-                }
-                _ => {}
+            if e.get("type").unwrap().as_str().unwrap() == "m.room.topic" {
+                assert_eq!(
+                    e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                    "Topic for Bob"
+                );
             }
         }
 
@@ -354,17 +344,14 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
 
         let events = response.json().as_array().unwrap();
-        assert!(events.len() > 0);
+        assert!(!events.is_empty());
 
         for e in events.iter() {
-            match e.get("type").unwrap().as_str().unwrap() {
-                "m.room.topic" => {
-                    assert_eq!(
-                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
-                        "Topic for Alice"
-                    );
-                }
-                _ => {}
+            if e.get("type").unwrap().as_str().unwrap() == "m.room.topic" {
+                assert_eq!(
+                    e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                    "Topic for Alice"
+                );
             }
         }
     }

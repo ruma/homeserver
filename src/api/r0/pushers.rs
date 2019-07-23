@@ -125,7 +125,7 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap()
-            .into_iter();
+            .iter();
         assert_eq!(pushers.len(), 1);
         let pusher = pushers.next().unwrap().clone();
         let pusher: PusherOptions = from_value(pusher).unwrap();
@@ -216,7 +216,7 @@ mod tests {
         let response = test.get(&get_pusher);
         assert_eq!(response.status, Status::Ok);
         let json = response.json();
-        let mut pushers = json.get("pushers").unwrap().as_array().unwrap().into_iter();
+        let mut pushers = json.get("pushers").unwrap().as_array().unwrap().iter();
         assert_eq!(
             pushers
                 .next()

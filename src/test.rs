@@ -25,8 +25,8 @@ use crate::server::Server;
 
 static START: Once = ONCE_INIT;
 
-const DATABASE_URL: &'static str = "postgres://postgres:test@postgres:5432/ruma_test";
-const POSTGRES_URL: &'static str = "postgres://postgres:test@postgres:5432";
+const DATABASE_URL: &str = "postgres://postgres:test@postgres:5432/ruma_test";
+const POSTGRES_URL: &str = "postgres://postgres:test@postgres:5432";
 
 /// Used to return the randomly generated user id and access token
 #[derive(Debug)]
@@ -38,9 +38,9 @@ pub struct TestUser {
 
 impl TestUser {
     pub fn new(user: UserId, token: String) -> Self {
-        TestUser {
+        Self {
             id: user.to_string(),
-            token: token,
+            token,
             name: user.localpart().to_string(),
         }
     }
@@ -77,7 +77,7 @@ pub struct TestTransactionConnectionCustomizer;
 impl CustomizeConnection<PgConnection, R2d2DieselError> for TestTransactionConnectionCustomizer {
     fn on_acquire(&self, conn: &mut PgConnection) -> Result<(), R2d2DieselError> {
         conn.begin_test_transaction()
-            .map_err(|error| R2d2DieselError::QueryError(error))
+            .map_err(R2d2DieselError::QueryError)
     }
 }
 
@@ -132,7 +132,7 @@ impl Test {
             Err(error) => panic!("Failed to create Iron server: {}", error),
         };
 
-        Test {
+        Self {
             mount: server.into_mount(),
         }
     }
@@ -191,7 +191,7 @@ impl Test {
     /// Registers a new user account with a random user id and returns
     /// the `TestUser`
     pub fn create_user(&self) -> TestUser {
-        let response = self.register_user(&format!(r#"{{"password": "secret"}}"#));
+        let response = self.register_user(&r#"{{"password": "secret"}}"#.to_string());
 
         let access_token = response
             .json()
@@ -366,7 +366,7 @@ impl Test {
             room_id, event_type, access_token
         );
 
-        self.put(&state_event_path, &event_content)
+        self.put(&state_event_path, event_content)
     }
 
     /// Create a User and Room.
@@ -449,11 +449,17 @@ impl Test {
     }
 }
 
+impl Default for Test {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Response {
     /// Creates a `Response` from an `iron::response::Response`.
-    pub fn from_iron_response(response: iron::response::Response) -> Response {
+    pub fn from_iron_response(response: iron::response::Response) -> Self {
         let headers = response.headers.clone();
-        let status = response.status.expect("Response had no status").clone();
+        let status = response.status.expect("Response had no status");
         let body = response::extract_body_to_string(response);
 
         let json = match from_str(&body) {
@@ -461,11 +467,11 @@ impl Response {
             _ => None,
         };
 
-        Response {
-            body: body,
-            headers: headers,
-            json: json,
-            status: status,
+        Self {
+            body,
+            headers,
+            json,
+            status,
         }
     }
 

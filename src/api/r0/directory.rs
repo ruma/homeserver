@@ -253,7 +253,7 @@ mod tests {
             user.token
         );
         let put_room_alias_body = r#"{"room_id": "!nonexistent:ruma.test"}"#;
-        let response = test.put(&put_room_alias_path, &put_room_alias_body);
+        let response = test.put(&put_room_alias_path, put_room_alias_body);
 
         assert_eq!(response.status, Status::UnprocessableEntity);
     }

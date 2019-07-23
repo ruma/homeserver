@@ -132,7 +132,7 @@ mod tests {
         // The next_batch token should be the same.
         let options = SyncOptions {
             filter: None,
-            since: Some(first_batch.clone()),
+            since: Some(first_batch),
             full_state: false,
             set_presence: None,
             timeout: 0,
@@ -297,7 +297,7 @@ mod tests {
         assert!(events.is_array());
         let events = events.as_array().unwrap();
         assert_eq!(events.len(), 2);
-        let mut events = events.into_iter();
+        let mut events = events.iter();
         let event = events.next().unwrap();
         assert_eq!(
             EventId::try_from(event.get("event_id").unwrap().as_str().unwrap())
@@ -438,14 +438,11 @@ mod tests {
         for e in state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
 
-            match event_type {
-                "m.room.topic" => {
-                    assert_eq!(
-                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
-                        "Updated Topic"
-                    );
-                }
-                _ => {}
+            if event_type == "m.room.topic" {
+                assert_eq!(
+                    e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                    "Updated Topic"
+                );
             }
         }
 
@@ -520,19 +517,16 @@ mod tests {
             .as_array()
             .unwrap();
 
-        assert!(joined_state_events.len() > 0);
+        assert!(!joined_state_events.is_empty());
 
         for e in joined_state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
 
-            match event_type {
-                "m.room.name" => {
-                    assert_eq!(
-                        e.pointer("/content/name").unwrap().as_str().unwrap(),
-                        "Initial Name"
-                    );
-                }
-                _ => {}
+            if event_type == "m.room.name" {
+                assert_eq!(
+                    e.pointer("/content/name").unwrap().as_str().unwrap(),
+                    "Initial Name"
+                );
             }
         }
 
@@ -547,7 +541,7 @@ mod tests {
             .as_array()
             .unwrap();
 
-        assert!(invited_state_events.len() > 0);
+        assert!(!invited_state_events.is_empty());
 
         for e in invited_state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
@@ -600,14 +594,11 @@ mod tests {
         for e in invited_state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
 
-            match event_type {
-                "m.room.name" => {
-                    assert_eq!(
-                        e.pointer("/content/name").unwrap().as_str().unwrap(),
-                        "Updated Name"
-                    );
-                }
-                _ => {}
+            if event_type == "m.room.name" {
+                assert_eq!(
+                    e.pointer("/content/name").unwrap().as_str().unwrap(),
+                    "Updated Name"
+                );
             }
         }
     }
@@ -642,7 +633,7 @@ mod tests {
             .as_array()
             .unwrap();
 
-        assert!(state_events.len() > 0);
+        assert!(!state_events.is_empty());
 
         assert_eq!(test.leave_room(&bob.token, &room_id).status, Status::Ok);
 
@@ -680,14 +671,11 @@ mod tests {
         for e in left_state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
 
-            match event_type {
-                "m.room.topic" => {
-                    assert_eq!(
-                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
-                        "New Topic"
-                    );
-                }
-                _ => {}
+            if event_type == "m.room.topic" {
+                assert_eq!(
+                    e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                    "New Topic"
+                );
             }
         }
 
@@ -717,7 +705,7 @@ mod tests {
             .unwrap()
             .as_object()
             .unwrap();
-        assert_eq!(leave_rooms.len(), 0);
+        assert!(!leave_rooms.is_empty());
 
         // Sync with the custom filter to include the left rooms.
         // Bob can't access the latest state changes because he left the room.
@@ -742,14 +730,11 @@ mod tests {
         for e in left_state_events.iter() {
             let event_type = e.get("type").unwrap().as_str().unwrap();
 
-            match event_type {
-                "m.room.topic" => {
-                    assert_eq!(
-                        e.pointer("/content/topic").unwrap().as_str().unwrap(),
-                        "New Topic"
-                    );
-                }
-                _ => {}
+            if event_type == "m.room.topic" {
+                assert_eq!(
+                    e.pointer("/content/topic").unwrap().as_str().unwrap(),
+                    "New Topic"
+                );
             }
         }
     }
@@ -839,7 +824,7 @@ mod tests {
             }]
         }"#;
 
-        let room_id = test.create_room_with_params(&alice.token, &room_options);
+        let room_id = test.create_room_with_params(&alice.token, room_options);
 
         let options = SyncOptions {
             filter: None,
@@ -860,7 +845,7 @@ mod tests {
             .as_array()
             .unwrap();
 
-        assert!(state_events.len() > 0);
+        assert!(!state_events.is_empty());
 
         let timeline_events = response
             .json()
@@ -869,7 +854,7 @@ mod tests {
             .as_array()
             .unwrap();
 
-        assert!(timeline_events.len() > 0);
+        assert!(!timeline_events.is_empty());
 
         let initial_state_events_len = state_events.len();
         assert!(initial_state_events_len > 0);
@@ -922,7 +907,7 @@ mod tests {
             .as_array()
             .unwrap();
 
-        assert_eq!(timeline_events.len(), 0);
+        assert!(timeline_events.is_empty());
     }
 
     #[test]
@@ -1080,7 +1065,7 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        let mut events = array.into_iter();
+        let mut events = array.iter();
         assert_eq!(events.len(), 2);
 
         assert_eq!(

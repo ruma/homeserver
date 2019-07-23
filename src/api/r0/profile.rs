@@ -540,7 +540,7 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        let mut events = array.into_iter();
+        let mut events = array.iter();
         assert_eq!(events.len(), 1);
 
         let event = events.next().unwrap();
@@ -582,7 +582,7 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        let mut events = array.into_iter();
+        let mut events = array.iter();
         assert_eq!(events.len(), 1);
 
         let event = events.next().unwrap();
@@ -639,7 +639,7 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        let mut events = array.into_iter();
+        let mut events = array.iter();
         assert_eq!(events.len(), 1);
 
         let event = events.next().unwrap();
@@ -680,7 +680,7 @@ mod tests {
             .unwrap()
             .as_array()
             .unwrap();
-        let mut events = array.into_iter();
+        let mut events = array.iter();
         assert_eq!(events.len(), 1);
 
         let event = events.next().unwrap();
