@@ -1,3 +1,4 @@
+cache: "cargo"
 git:
   depth: 1
 notifications:
@@ -7,7 +8,11 @@ notifications:
       - secure: "UcOFeCiFSHF/lPwGEVugm5V2pOMOei6KeY3fiZLZIiubL3kbp/h5ZOFBvv8xaDVZOlwh970+IExft1Vp4dMgWCH4cjZy6OPZGByo6byMlEKStktbglqGQRcXbIz+rA2J2BCOk4I0ahi3Qb8PrYe9ZZ5nYSlqR/m0sNVM+Y67MoWsNyRmz2G9tEKOZo7SyCvJVhf24GmwjEJhRyuWAWAVNiFCzirkoZYf+EyBe9MktpS7m+T6XnXr9uUxbONuXZgq5CvziAMow/P8NBTUBapE1MA29o6S4pw6qYwF0tELvBI7+yWi/6DX7uliEZ4PE3WC6djaiIsbA2GNcDfGFfOXogdLdXwlUmsKKk80JkXQ7+cLBtw/gzvPXn8jACQupQCPJAqzfu7OIo+dzBvX8yyd6nZ0XB7i688S7cwm4voGlOCLupFmahuxwQvNYfo8wMvkhKlLulVVpDtQg7N3S6lL4aG1IdmZcAuBrJNOiyDGce+yWGgGcPxA8g1/gTswHyKbp0TYLewrAINpYB1NK/IbmRCgt+mTlrUGPjYUHQnUlWvPY6ncNBE9b3YXBI4G2kXp65sNko7XU3iLkVUu+3CXXJZrl8AF4i6LYgnHKr+yXBlpeIaNBjkqD1I8AME6uylhS0dmC61eft1EPOwhdIcloIvgDdSMsE7p8GRV8QJnGhU="
     use_notice: true
     skip_join: true
+before_script:
+  - "cargo install --force cargo-audit"
+  - "cargo generate-lockfile"
 script:
+  - "cargo audit"
   - "docker version"
   - "docker-compose version"
   - "make ci"
