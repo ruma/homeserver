@@ -16,6 +16,7 @@ script:
   - "docker version"
   - "docker-compose version"
   - "make ci"
+if: "type != push OR (tag IS blank AND branch = master)"
 services:
   - "docker"
 sudo: "required"
