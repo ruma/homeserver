@@ -191,7 +191,7 @@ impl Test {
     /// Registers a new user account with a random user id and returns
     /// the `TestUser`
     pub fn create_user(&self) -> TestUser {
-        let response = self.register_user(&r#"{{"password": "secret"}}"#.to_string());
+        let response = self.register_user(&r#"{"password": "secret"}"#.to_string());
 
         let access_token = response
             .json()
