@@ -1,3 +1,4 @@
+language: "rust"
 cache: "cargo"
 git:
   depth: 1
