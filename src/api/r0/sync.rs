@@ -705,7 +705,7 @@ mod tests {
             .unwrap()
             .as_object()
             .unwrap();
-        assert!(!leave_rooms.is_empty());
+        assert!(leave_rooms.is_empty());
 
         // Sync with the custom filter to include the left rooms.
         // Bob can't access the latest state changes because he left the room.
