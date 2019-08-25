@@ -196,17 +196,17 @@ impl Test {
         let access_token = response
             .json()
             .get("access_token")
-            .unwrap()
+            .expect("access_token does not exist in response")
             .as_str()
-            .unwrap()
+            .expect("access_token is not a string")
             .to_string();
 
         let user_id = response
             .json()
             .get("user_id")
-            .unwrap()
+            .expect("user_id does not exist in response")
             .as_str()
-            .unwrap()
+            .expect("user_id is not a string")
             .to_string();
 
         TestUser::new(UserId::try_from(user_id.as_ref()).unwrap(), access_token)
