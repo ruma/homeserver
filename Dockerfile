@@ -1,9 +1,10 @@
-FROM rust:1.35
+FROM rust:1.37
 
 ENV PATH="/root/.cargo/bin:$PATH"
 
 RUN rustup component add clippy && \
     rustup component add rustfmt && \
+    cargo install cargo-audit && \
     apt-get update && \
     apt-get -y --no-install-recommends install build-essential ca-certificates curl git libclang-dev libpq-dev libssl-dev openssl pkg-config && \
     curl -LOs https://github.com/jedisct1/libsodium/releases/download/1.0.17/libsodium-1.0.17.tar.gz && \
