@@ -53,8 +53,6 @@ fn main() {
                 }
                 Err(error) => {
                     eprintln!("Failed to create server: {}", error);
-
-                    return;
                 }
             }
         }

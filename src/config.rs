@@ -16,8 +16,7 @@ use toml;
 use crate::error::{ApiError, CliError};
 
 /// Default paths where Ruma will look for a configuration file if left unspecified.
-static DEFAULT_CONFIG_FILES: [&'static str; 4] =
-    ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
+static DEFAULT_CONFIG_FILES: [&str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
 
 /// The user's configuration as loaded from the configuration file.
 ///
