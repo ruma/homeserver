@@ -17,6 +17,7 @@ use crate::error::{ApiError, CliError};
 
 /// Default paths where Ruma will look for a configuration file if left unspecified.
 const DEFAULT_CONFIG_FILES: [&str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
+/// Directory for system-wide configuration files.
 const CONFIG_DIR: &str = "/etc/ruma";
 
 /// The user's configuration as loaded from the configuration file.
@@ -86,6 +87,7 @@ impl Config {
                 .map(|file| Path::new(file).to_path_buf())
                 .find(|path| path.is_file())
                 .or_else(|| {
+                    // Look in system configuration dir (/etc/ruma)
                     DEFAULT_CONFIG_FILES
                         .iter()
                         .map(|file| Path::new(CONFIG_DIR).join(Path::new(file)))
