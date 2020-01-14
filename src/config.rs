@@ -16,7 +16,8 @@ use toml;
 use crate::error::{ApiError, CliError};
 
 /// Default paths where Ruma will look for a configuration file if left unspecified.
-static DEFAULT_CONFIG_FILES: [&str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
+const DEFAULT_CONFIG_FILES: [&str; 4] = ["ruma.json", "ruma.toml", "ruma.yaml", "ruma.yml"];
+const CONFIG_DIR: &str = "/etc/ruma";
 
 /// The user's configuration as loaded from the configuration file.
 ///
@@ -77,19 +78,26 @@ impl Config {
                     path_str
                 )));
             }
-            path
+            path.to_path_buf()
         } else {
+            // Look in working directory
             DEFAULT_CONFIG_FILES
                 .iter()
-                .map(Path::new)
+                .map(|file| Path::new(file).to_path_buf())
                 .find(|path| path.is_file())
+                .or_else(|| {
+                    DEFAULT_CONFIG_FILES
+                        .iter()
+                        .map(|file| Path::new(CONFIG_DIR).join(Path::new(file)))
+                        .find(|path| path.is_file())
+                })
                 .ok_or_else(|| CliError::new("No configuration file was found."))?
         };
 
         let raw_config = match config_path.extension().and_then(|ext| ext.to_str()) {
-            Some("json") => Self::load_json(config_path),
-            Some("toml") => Self::load_toml(config_path),
-            Some("yml") | Some("yaml") => Self::load_yaml(config_path),
+            Some("json") => Self::load_json(&config_path),
+            Some("toml") => Self::load_toml(&config_path),
+            Some("yml") | Some("yaml") => Self::load_yaml(&config_path),
             _ => Err(CliError::new("Unsupported configuration file format")),
         }?;
 
