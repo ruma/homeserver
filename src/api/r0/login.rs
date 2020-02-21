@@ -1,7 +1,6 @@
 //! Endpoints for logging in users.
 
 use std::convert::TryFrom;
-use std::error::Error;
 use std::fmt::{Formatter, Result as FmtResult};
 
 use bodyparser;
@@ -90,7 +89,7 @@ impl Handler for Login {
         let login_request = match request.get::<bodyparser::Struct<LoginRequest>>() {
             Ok(Some(request)) => request,
             Ok(None) => Err(ApiError::bad_json(None))?,
-            Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
+            Err(err) => Err(ApiError::bad_json(err.to_string()))?,
         };
 
         let config = Config::from_request(request)?;

@@ -1,7 +1,6 @@
 //! Matrix room membership.
 
 use std::convert::TryInto;
-use std::error::Error;
 
 use diesel::expression::dsl::any;
 use diesel::pg::data_types::PgTimestamp;
@@ -216,7 +215,7 @@ impl RoomMembership {
             .filter(room_memberships::user_id.eq(user_id))
             .get_results(connection)
             .map_err(|err| match err {
-                DieselError::NotFound => ApiError::not_found(err.description().to_string()),
+                DieselError::NotFound => ApiError::not_found(err.to_string()),
                 _ => ApiError::from(err),
             })?;
 

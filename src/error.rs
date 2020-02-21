@@ -125,7 +125,7 @@ impl ApiError {
     }
 
     /// Create an error for invalid input parameters.
-    pub fn invalid_param(param_name: &str, msg: &str) -> Self {
+    pub fn invalid_param(param_name: &str, msg: impl Display) -> Self {
         Self {
             errcode: ApiErrorCode::InvalidParam,
             error: format!("Parameter '{}' is not valid: {}", param_name, msg),
@@ -391,7 +391,7 @@ where
     E: Error,
 {
     fn from(error: E) -> Self {
-        Self::new(error.description())
+        Self::new(error.to_string())
     }
 }
 

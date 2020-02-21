@@ -1,5 +1,4 @@
 //! Endpoints for syncing.
-use std::error::Error;
 use std::str::FromStr;
 use std::u64;
 
@@ -45,13 +44,13 @@ impl Handler for Sync {
         for tuple in query_pairs {
             match (tuple.0.as_ref(), tuple.1.as_ref()) {
                 ("filter", value) => {
-                    let content = from_str(value)
-                        .map_err(|err| ApiError::invalid_param("filter", err.description()))?;
+                    let content =
+                        from_str(value).map_err(|err| ApiError::invalid_param("filter", err))?;
                     filter = Some(content);
                 }
                 ("since", value) => {
                     let batch = Batch::from_str(value)
-                        .map_err(|err| ApiError::invalid_param("since", &err))?;
+                        .map_err(|err| ApiError::invalid_param("since", err))?;
                     since = Some(batch);
                 }
                 ("full_state", "true") => {
@@ -77,7 +76,7 @@ impl Handler for Sync {
                 }
                 ("timeout", value) => {
                     timeout = u64::from_str_radix(value, 10)
-                        .map_err(|err| ApiError::invalid_param("timeout", err.description()))?;
+                        .map_err(|err| ApiError::invalid_param("timeout", err))?;
                 }
                 _ => (),
             }

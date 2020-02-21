@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -23,7 +23,7 @@ use crate::models::pusher::PusherOptions;
 use crate::query::{Batch, SyncOptions};
 use crate::server::Server;
 
-static START: Once = ONCE_INIT;
+static START: Once = Once::new();
 
 const DATABASE_URL: &str = "postgres://postgres:test@postgres:5432/ruma_test";
 const POSTGRES_URL: &str = "postgres://postgres:test@postgres:5432";

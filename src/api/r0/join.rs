@@ -1,7 +1,5 @@
 //! Endpoints for joining rooms.
 
-use std::error::Error;
-
 use bodyparser;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -206,7 +204,7 @@ impl Handler for KickFromRoom {
         let kickee_id = match request.get::<bodyparser::Struct<KickFromRoomRequest>>() {
             Ok(Some(req)) => req.user_id,
             Ok(None) => Err(ApiError::bad_json(None))?,
-            Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
+            Err(err) => Err(ApiError::bad_json(err.to_string()))?,
         };
 
         let connection = DB::from_request(request)?;
@@ -288,7 +286,7 @@ impl Handler for InviteToRoom {
         let invitee_id = match request.get::<bodyparser::Struct<InviteToRoomRequest>>() {
             Ok(Some(req)) => req.user_id,
             Ok(None) => Err(ApiError::missing_param("user_id"))?,
-            Err(err) => Err(ApiError::bad_json(err.description().to_string()))?,
+            Err(err) => Err(ApiError::bad_json(err.to_string()))?,
         };
 
         let connection = DB::from_request(request)?;
