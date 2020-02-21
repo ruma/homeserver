@@ -87,9 +87,7 @@ impl Test {
         // Since we don't have control of the `main` function during tests, we initialize the
         // logger here. It will only actually initialize on the first test that is run. Subsequent
         // calls will return an error, but we don't care, so just ignore the result.
-        match env_logger::try_init() {
-            _ => {}
-        }
+        let _ = env_logger::try_init();
 
         START.call_once(|| {
             if PgConnection::establish(DATABASE_URL).is_ok() {
@@ -390,13 +388,14 @@ impl Test {
 
     /// Query sync with query parameter.
     pub fn sync(&self, access_token: &str, options: SyncOptions) -> Response {
-        let mut path = match options.filter {
-            Some(ref filter) => format!(
+        let mut path = if let Some(filter) = &options.filter {
+            format!(
                 "/_matrix/client/r0/sync?filter={}&access_token={}",
                 to_string(filter).unwrap(),
                 access_token
-            ),
-            None => format!("/_matrix/client/r0/sync?&access_token={}", access_token),
+            )
+        } else {
+            format!("/_matrix/client/r0/sync?&access_token={}", access_token)
         };
         path = if options.full_state {
             format!("{}&full_state=true", path)

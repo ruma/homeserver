@@ -157,7 +157,7 @@ impl Handler for PutAvatarUrl {
             avatar_url_request.avatar_url,
         )?;
 
-        DataProfile::update_memberships(&connection, &config.domain, user_id.clone())?;
+        DataProfile::update_memberships(&connection, &config.domain, user_id)?;
 
         Ok(Response::with(EmptyResponse(Status::Ok)))
     }
@@ -261,7 +261,7 @@ impl Handler for PutDisplayName {
             displayname_request.displayname,
         )?;
 
-        DataProfile::update_memberships(&connection, &config.domain, user_id.clone())?;
+        DataProfile::update_memberships(&connection, &config.domain, user_id)?;
 
         Ok(Response::with(EmptyResponse(Status::Ok)))
     }

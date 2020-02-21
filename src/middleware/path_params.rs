@@ -129,9 +129,7 @@ impl BeforeMiddleware for DataTypeParam {
             .find("type")
             .ok_or_else(|| ApiError::missing_param("type"))?;
 
-        request
-            .extensions
-            .insert::<Self>(data_type.to_string().clone());
+        request.extensions.insert::<Self>(data_type.to_string());
 
         Ok(())
     }
@@ -247,7 +245,7 @@ impl BeforeMiddleware for TagParam {
             .find("tag")
             .ok_or_else(|| ApiError::missing_param("tag"))?;
 
-        request.extensions.insert::<Self>(tag.to_string().clone());
+        request.extensions.insert::<Self>(tag.to_string());
 
         Ok(())
     }
@@ -275,7 +273,7 @@ impl BeforeMiddleware for TransactionIdParam {
 
         request
             .extensions
-            .insert::<Self>(transaction_id.to_string().clone());
+            .insert::<Self>(transaction_id.to_string());
 
         Ok(())
     }

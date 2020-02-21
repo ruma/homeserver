@@ -87,7 +87,7 @@ impl RoomMembership {
             room_id: options.room_id.clone(),
             user_id: options.user_id.clone(),
             sender: options.sender.clone(),
-            membership: options.membership.clone(),
+            membership: options.membership,
         };
 
         let memberships =
@@ -250,7 +250,7 @@ impl RoomMembership {
         let event = Self::create_new_room_member_event(homeserver_domain, &options, profile)?;
 
         self.membership = options.membership.clone();
-        self.sender = options.sender.clone();
+        self.sender = options.sender;
 
         connection
             .transaction::<Self, ApiError, _>(|| {
@@ -295,7 +295,7 @@ impl RoomMembership {
                 membership,
                 third_party_invite: None,
             },
-            event_id: event_id.clone(),
+            event_id,
             event_type: EventType::RoomMember,
             invite_room_state: None,
             origin_server_ts: 0,

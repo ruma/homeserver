@@ -1,3 +1,5 @@
+#![allow(clippy::use_self)]
+
 extern crate clap;
 extern crate env_logger;
 extern crate ruma;

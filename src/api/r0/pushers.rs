@@ -148,7 +148,7 @@ mod tests {
             append: false,
         };
 
-        let response = test.set_pusher(&carl.token, options.clone());
+        let response = test.set_pusher(&carl.token, options);
         assert_eq!(response.status, Status::UnprocessableEntity);
     }
 
@@ -170,7 +170,7 @@ mod tests {
             append: false,
         };
 
-        let response = test.set_pusher(&carl.token, options.clone());
+        let response = test.set_pusher(&carl.token, options);
         assert_eq!(response.status, Status::Ok);
 
         let post_pusher = format!(
@@ -209,7 +209,7 @@ mod tests {
         assert_eq!(response.status, Status::Ok);
 
         options.lang = "de".to_string();
-        let response = test.set_pusher(&carl.token, options.clone());
+        let response = test.set_pusher(&carl.token, options);
         assert_eq!(response.status, Status::Ok);
 
         let get_pusher = format!("/_matrix/client/r0/pushers?access_token={}", carl.token,);
@@ -252,7 +252,7 @@ mod tests {
         let response = test.set_pusher(&carl.token, options.clone());
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.set_pusher(&alice.token, options.clone());
+        let response = test.set_pusher(&alice.token, options);
         assert_eq!(response.status, Status::Ok);
 
         let get_pusher = format!("/_matrix/client/r0/pushers?access_token={}", carl.token,);
@@ -285,7 +285,7 @@ mod tests {
         let response = test.set_pusher(&carl.token, options.clone());
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.set_pusher(&alice.token, options.clone());
+        let response = test.set_pusher(&alice.token, options);
         assert_eq!(response.status, Status::Ok);
 
         let get_pusher = format!("/_matrix/client/r0/pushers?access_token={}", alice.token,);

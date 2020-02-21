@@ -99,7 +99,7 @@ fn join_room(
     config: &Config,
 ) -> IronResult<Response> {
     let room_membership_options = RoomMembershipOptions {
-        room_id: room_id.clone(),
+        room_id,
         user_id: user.id.clone(),
         sender: user.id,
         membership: "join".to_string(),

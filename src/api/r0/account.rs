@@ -128,13 +128,13 @@ impl Handler for PutAccountData {
             .clone();
 
         let content = match request.get::<bodyparser::Json>() {
-            Ok(Some(content)) => content.to_string().clone(),
+            Ok(Some(content)) => content.to_string(),
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let new_data = NewAccountData {
             user_id: user.id,
-            data_type: data_type.to_string(),
+            data_type,
             content,
         };
 
@@ -213,14 +213,14 @@ impl Handler for PutRoomAccountData {
             .clone();
 
         let content = match request.get::<bodyparser::Json>() {
-            Ok(Some(content)) => content.to_string().clone(),
+            Ok(Some(content)) => content.to_string(),
             Ok(None) | Err(_) => Err(ApiError::bad_json(None))?,
         };
 
         let new_data = NewRoomAccountData {
             user_id: user.id,
             room_id,
-            data_type: data_type.to_string(),
+            data_type,
             content,
         };
 

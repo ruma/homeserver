@@ -210,7 +210,7 @@ impl Handler for SendMessageEvent {
 
         let connection = DB::from_request(request)?;
 
-        let path = request.url.path().join("/").to_string();
+        let path = request.url.path().join("/");
         let token = (*request
             .extensions
             .get::<AccessToken>()

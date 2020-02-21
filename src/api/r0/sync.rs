@@ -422,7 +422,7 @@ mod tests {
         );
         assert_eq!(response.status, Status::Ok);
 
-        let response = test.sync(&bob.token, options.clone());
+        let response = test.sync(&bob.token, options);
         assert_eq!(response.status, Status::Ok);
 
         let state_events = response
@@ -529,7 +529,7 @@ mod tests {
             }
         }
 
-        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_sync_response = test.sync(&bob.token, options);
         let bob_next_batch = Test::get_next_batch(&bob_sync_response);
         assert_eq!(bob_sync_response.status, Status::Ok);
 
@@ -578,7 +578,7 @@ mod tests {
             timeout: 0,
         };
 
-        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_sync_response = test.sync(&bob.token, options);
         assert_eq!(bob_sync_response.status, Status::Ok);
 
         let invited_state_events = bob_sync_response
@@ -621,7 +621,7 @@ mod tests {
             timeout: 0,
         };
 
-        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_sync_response = test.sync(&bob.token, options);
         let bob_next_batch = Test::get_next_batch(&bob_sync_response);
         assert_eq!(bob_sync_response.status, Status::Ok);
 
@@ -656,7 +656,7 @@ mod tests {
             timeout: 0,
         };
 
-        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_sync_response = test.sync(&bob.token, options);
         let bob_next_batch = Test::get_next_batch(&bob_sync_response);
         assert_eq!(bob_sync_response.status, Status::Ok);
 
@@ -695,7 +695,7 @@ mod tests {
             timeout: 0,
         };
 
-        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_sync_response = test.sync(&bob.token, options);
         assert_eq!(bob_sync_response.status, Status::Ok);
 
         let leave_rooms = bob_sync_response
@@ -709,14 +709,14 @@ mod tests {
         // Sync with the custom filter to include the left rooms.
         // Bob can't access the latest state changes because he left the room.
         let options = SyncOptions {
-            filter: Some(include_leave_filter.clone()),
+            filter: Some(include_leave_filter),
             since: None,
             full_state: false,
             set_presence: None,
             timeout: 0,
         };
 
-        let bob_sync_response = test.sync(&bob.token, options.clone());
+        let bob_sync_response = test.sync(&bob.token, options);
         assert_eq!(bob_sync_response.status, Status::Ok);
 
         let left_state_events = bob_sync_response

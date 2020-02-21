@@ -19,7 +19,6 @@
     clippy::needless_continue,
     clippy::single_match_else,
     clippy::unicode_not_nfc,
-    clippy::use_self,
     clippy::used_underscore_binding,
     clippy::wrong_pub_self_convention,
     clippy::wrong_self_convention
