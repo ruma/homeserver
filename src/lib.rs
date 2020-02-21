@@ -3,8 +3,7 @@
 #![deny(
     missing_copy_implementations,
     missing_debug_implementations,
-    missing_docs,
-    warnings
+    missing_docs
 )]
 #![warn(
     clippy::empty_line_after_outer_attr,
