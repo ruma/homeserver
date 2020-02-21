@@ -35,7 +35,7 @@ impl PresenceList {
         drop: Vec<UserId>,
     ) -> Result<(), ApiError> {
         connection
-            .transaction::<(()), ApiError, _>(|| {
+            .transaction::<(), ApiError, _>(|| {
                 let missing_user_ids = User::find_missing_users(connection, invite)?;
                 if !missing_user_ids.is_empty() {
                     return Err(ApiError::bad_json(format!(
