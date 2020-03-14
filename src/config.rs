@@ -1,5 +1,6 @@
 //! User-facing configuration.
 
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -71,7 +72,7 @@ impl Config {
     /// If a path is given, it will try to load the configuration there.
     /// Otherwise, try to load a file from the defaults locations.
     pub fn from_file(path: Option<&str>) -> Result<Self, CliError> {
-        let config_path = if let Some(path_str) = path {
+        let config_path: Cow<Path> = if let Some(path_str) = path {
             let path = Path::new(path_str);
             if !path.is_file() {
                 return Err(CliError::new(format!(
@@ -79,21 +80,23 @@ impl Config {
                     path_str
                 )));
             }
-            path.to_path_buf()
+            path.into()
+        // Look in working directory
+        } else if let Some(path) = DEFAULT_CONFIG_FILES
+            .iter()
+            .map(|file| Path::new(file))
+            .find(|path| path.is_file())
+        {
+            path.into()
+        // Look in system config directory
+        } else if let Some(path_buf) = DEFAULT_CONFIG_FILES
+            .iter()
+            .map(|file| Path::new(CONFIG_DIR).join(file))
+            .find(|path| path.is_file())
+        {
+            path_buf.into()
         } else {
-            // Look in working directory
-            DEFAULT_CONFIG_FILES
-                .iter()
-                .map(|file| Path::new(file).to_path_buf())
-                .find(|path| path.is_file())
-                .or_else(|| {
-                    // Look in system configuration dir (/etc/ruma)
-                    DEFAULT_CONFIG_FILES
-                        .iter()
-                        .map(|file| Path::new(CONFIG_DIR).join(Path::new(file)))
-                        .find(|path| path.is_file())
-                })
-                .ok_or_else(|| CliError::new("No configuration file was found."))?
+            return Err(CliError::new("No configuration file was found."));
         };
 
         let raw_config = match config_path.extension().and_then(|ext| ext.to_str()) {
