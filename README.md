@@ -8,12 +8,12 @@ If you're interested in the project, please take a look at the [Ruma website](ht
 
 ## Status
 
+**Ruma is not currently being maintained and cannot realistically be used in its current state.**
+
 The goal of Ruma as a project is to provide a complete implementation of a Matrix homeserver, a Matrix identity server, a Matrix client library, and Matrix application services.
 This repository in particular aims to implement a Matrix homeserver.
 The Ruma homeserver will be packaged as a single executable for small-scale deployments, and as multiple executables for large deployments that need to scale different parts of the homeserver independently.
 Additional Matrix libraries used by Ruma can be found in the [Ruma organization on GitHub](https://github.com/ruma).
-
-Ruma is currently pre-alpha and cannot realistically be used from a standard Matrix client, but it's getting closer every week!
 
 For a detailed view of which Matrix APIs are supported by Ruma so far, see the [STATUS](STATUS.md) document.
 
