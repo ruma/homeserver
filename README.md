@@ -4,7 +4,7 @@ homeserver written in [Rust](https://www.rust-lang.org/), Ruma.
 For details on the death of the project, see [this blog post](https://www.ruma.io/news/ruma-is-dead-long-live-ruma-2020-04-10/).
 
 Below, you can find the previous contents of this readme. For the rest of the
-files, go to [the master branch](https://github.com/ruma/ruma/tree/master).
+files, go to [the master branch](https://github.com/ruma/homeserver/tree/master).
 
 # Ruma
 
